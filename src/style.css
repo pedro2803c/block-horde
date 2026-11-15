@@ -206,6 +206,25 @@ button.icon-btn.sm .ic { width: 24px; height: 24px; }
 .arena-card .check { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: var(--r-sm); display: none; align-items: center; justify-content: center; background: linear-gradient(180deg, var(--primary-hi), var(--primary-lo)); color: var(--primary-ink); border: 2px solid #8a6000; }
 .arena-card.selected .check { display: flex; }
 .arena-card .check .ic { width: 22px; height: 22px; }
+.arena-card .thumb-wrap { position: relative; display: block; }
+.arena-card .lock-veil { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 0.4rem; background: rgba(6, 8, 12, 0.72); color: #fff; font: 700 1.25rem/1 var(--body); letter-spacing: 0.04em; }
+.arena-card .lock-veil .ic { width: 26px; height: 26px; color: var(--primary); }
+.arena-card.locked { cursor: not-allowed; }
+.arena-card.locked .thumb { filter: grayscale(0.85) brightness(0.7); }
+.arena-card .a-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0 0.8rem; }
+.arena-card .a-tags > span { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.12rem 0.45rem; border-radius: var(--r-sm); font-size: 0.78rem; font-weight: 700; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(0, 0, 0, 0.35); }
+.arena-card .a-tags .ic { width: 14px; height: 14px; }
+.arena-card .diff.d1 { color: #8ee07a; }
+.arena-card .diff.d2 { color: #ffc107; }
+.arena-card .diff.d3 { color: #ff8a3a; }
+.arena-card .diff.d4 { color: #ff4a4a; border-color: rgba(255, 74, 74, 0.5); }
+.arena-card .ev { color: #c8d4e0; }
+.arena-card small.tip { color: #b8c4a8; font-style: italic; }
+.profile-line { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 0.6rem; }
+.profile-line .ic { color: var(--primary); }
+.profile-line .pbar { flex: 0 1 200px; min-width: 120px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.profile-line .pbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--primary-lo), var(--primary-hi)); }
+.profile-line small { color: var(--muted); }
 
 /* ---------- tabelas, teclas ---------- */
 table { width: 100%; border-collapse: collapse; }

@@ -123,10 +123,17 @@ No teclado, a mira segue a direção do movimento e corrige levemente para o zum
 - **Caixas** de munição e de kit médico aparecem pelo mapa.
 - **Fogo amigo**: suas explosões também ferem você e seu parceiro, com dano reduzido.
 - **Co-op**: quem cai volta na onda seguinte com metade da vida. A partida acaba quando os dois caem.
-- **3 arenas**:
-  - Praça Central, gramado aberto.
-  - Armazém 7, com corredores entre contêineres.
-  - Cemitério Velho, noturno, com lápides.
+- **4 arenas de sobrevivência**, cada uma com estratégia própria, mais a Necrópole de bônus:
+
+  | Arena | Dificuldade | Libera no | Evento | Chefão | O que muda no jogo |
+  |---|---|---|---|---|---|
+  | Cidade Abandonada | Média | início | Alarme de horda: até 3 carros disparam e chamam mortos pelo portão mais próximo | O Devorador | Carros com alarme explodem, gerador acende as ruas, marquises dão +alcance |
+  | Complexo Industrial | Alta | nível 5 | Sobrecarga das máquinas: prensas e vapor aceleram, piso elétrico liga mais, luzes piscam | O Operário Mutante | Esteiras arrastam todos, prensas e vapor ferem a horda |
+  | Floresta Sombria | Muito alta | nível 10 | Névoa tóxica: visão curta e dano crescente fora das ruínas e da cabana; esporos mais fortes | O Guardião da Floresta | Zumbis brotam da vegetação, árvores caem e bloqueiam trilhas |
+  | Base Militar | Extrema | nível 15 | Ataque de reforços: esquadrões entram por uma entrada diferente a cada vez | O General Infectado | Torres automáticas, portões, gerador e plataformas de tiro |
+
+  Cada arena também deixa os inimigos mais fortes, rápidos e numerosos conforme a dificuldade.
+- **Nível de perfil**: toda partida rende XP de perfil (pontos ÷ 10 + 20 por onda), salvo no navegador. Ele libera as arenas; recordes antigos contam na primeira vez.
 - **Sangue e queimaduras**: as manchas de sangue e as marcas de explosão ficam pintadas no chão até o fim da partida.
 - **Recordes**: um por arena e modo (solo e co-op), salvos no navegador.
 - **Telas**:

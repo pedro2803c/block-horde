@@ -6,7 +6,7 @@ import { BARREL_MODEL } from './scenery.js';
 import { ACTIVES, ULTIMATES, PASSIVES, BRANCHES, MAX_LEVEL, NODE_REQ, ULT_REQ, levelCost, xpNeed, loadLoadouts, ABILITY_KEYS } from './abilities.js';
 import { Input } from './Input.js';
 import { UI } from './UI.js';
-import { WEAPONS, WEAPON_ORDER, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS } from './data.js';
+import { WEAPONS, WEAPON_ORDER, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS, profileNeed, matchXp } from './data.js';
 import { enemyLook, drawEnemy } from './monsters.js';
 import { ITEMS, GUN_MODELS, MELEE, GEAR, drawItem, rollTable } from './items.js';
 
@@ -24,6 +24,7 @@ const BLOOD = [0x8a0a0a, 0xa31212, 0x6a0606];
 const PLAYER_COLORS = [0x3aa0ff, 0xff8a2a];
 const SETTINGS_KEY = 'blockhorde_settings_v1';
 const RECORDS_KEY = 'blockhorde_records_v1';
+const PROFILE_KEY = 'blockhorde_profile_v1';
 
 // Controles: solo = WASD + mouse; co-op = metade do teclado para cada jogador
 const CONTROLS = {
@@ -35,9 +36,12 @@ const CONTROLS = {
 // avisos dos eventos climáticos de cada arena
 const EVENT_INFO = {
   rain: { title: 'TEMPESTADE ÁCIDA!', kind: 'wave', sfx: 'wave', rate: 0.85 },
+  hordealarm: { title: 'ALARME DE HORDA! CARROS DISPARANDO', kind: 'bad', sfx: 'siren', rate: 1.2 },
+  overload: { title: 'SOBRECARGA DAS MÁQUINAS!', kind: 'bad', sfx: 'siren', rate: 0.7 },
+  toxicfog: { title: 'NÉVOA TÓXICA! PROCURE ABRIGO', kind: 'bad', sfx: 'wave', rate: 0.6 },
   blackout: { title: 'APAGÃO NA FÁBRICA!', kind: 'wave', sfx: 'siren', rate: 0.8 },
   fog: { title: 'NEBLINA DENSA!', kind: 'wave', sfx: 'wave', rate: 0.7 },
-  alarm: { title: 'ALARME DE INVASÃO!', kind: 'wave', sfx: 'siren', rate: 1 },
+  alarm: { title: 'ATAQUE DE REFORÇOS!', kind: 'bad', sfx: 'siren', rate: 1 },
 };
 
 export class Game {
@@ -138,6 +142,41 @@ export class Game {
     } catch {
       return {};
     }
+  }
+  // perfil persistente: o nível desbloqueia as arenas
+  profile() {
+    let pr = null;
+    try {
+      pr = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+    } catch {
+      pr = null;
+    }
+    if (!pr || typeof pr.xp !== 'number' || typeof pr.level !== 'number') {
+      // primeira vez: credita os recordes já feitos
+      let xp = 0;
+      for (const r of Object.values(this.records())) xp += matchXp(r.score || 0, r.wave || 0);
+      pr = this.addProfileXp({ xp: 0, level: 1 }, xp);
+      this.saveProfile(pr);
+    }
+    return pr;
+  }
+  addProfileXp(pr, n) {
+    pr.xp += n;
+    while (pr.xp >= profileNeed(pr.level)) {
+      pr.xp -= profileNeed(pr.level);
+      pr.level++;
+    }
+    return pr;
+  }
+  saveProfile(pr) {
+    try {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(pr));
+    } catch {
+      /* ignora */
+    }
+  }
+  arenaUnlocked(a) {
+    return this.profile().level >= (a.unlock || 1);
   }
   resize() {
     const w = window.innerWidth;
@@ -978,7 +1017,7 @@ export class Game {
       if (pr.hurtT > 0) pr.rattle = 1;
       if (id === 'press') {
         // ciclo de 3,5 s: sobe, avisa, desce e esmaga quem estiver embaixo
-        pr.t = ((pr.t || 0) + dt) % 3.5;
+        pr.t = ((pr.t || 0) + dt * (this.event === 'overload' ? 1.9 : 1)) % 3.5;
         const ph = pr.t;
         let k;
         if (ph < 2) k = 0;
@@ -1000,7 +1039,7 @@ export class Game {
         if (k < 0.15) pr.smashed = false;
       } else if (id === 'steam') {
         // ciclo de 4 s: chia 0,6 s antes e solta vapor por 1,5 s
-        pr.t = ((pr.t || 0) + dt) % 4;
+        pr.t = ((pr.t || 0) + dt * (this.event === 'overload' ? 1.7 : 1)) % 4;
         const ph = pr.t;
         const vent = ph > 0.9 && ph < 2.4;
         pr.hiss = ph > 0.6 && ph < 0.9;
@@ -1143,7 +1182,7 @@ export class Game {
     // piso elétrico: a fábrica liga sozinho em ciclos; o console força por 6 s
     if (this.elecForceT > 0) this.elecForceT = Math.max(0, this.elecForceT - dt);
     const was = this.elecOn;
-    this.elecOn = this.elecForceT > 0 || (theme === 'factory' && this.time % 13 < 3);
+    this.elecOn = this.elecForceT > 0 || (theme === 'factory' && (this.event === 'overload' ? this.time % 4 < 2.2 : this.time % 13 < 3));
     if (this.elecOn && !was && A.elecCells.length) this.audio.play('hit_armor', { volume: 0.25, rate: 2.6 });
     if (this.elecOn && A.elecCells.length && Math.random() < dt * 20) {
       const k = A.elecCells[Math.floor(Math.random() * A.elecCells.length)];
@@ -1160,15 +1199,7 @@ export class Game {
       }
     }
     if (this.alarmT > 0) this.alarmT = Math.max(0, this.alarmT - dt);
-    // alarme da base convoca reforços
-    if (this.event === 'alarm' && !this.demo) {
-      this.alarmSpawnT -= dt;
-      if (this.alarmSpawnT <= 0 && this.countAlive() < this.aliveCap()) {
-        this.alarmSpawnT = rand(2.2, 3.4);
-        const g = pick(A.gates);
-        this.spawnZombie(Math.random() < 0.5 ? 'runner' : 'walker', g.x + rand(-0.3, 0.3), g.z + rand(-0.3, 0.3));
-      }
-    }
+    if (!this.demo && this.event) this.updateEventGameplay(dt);
     // luzes e névoa acompanham o evento
     let sunT = this.baseLight.sunI;
     let hemiT = this.baseLight.hemi;
@@ -1205,6 +1236,24 @@ export class Game {
       fogN = 8;
       fogF = 30;
       fogHex = MIST[theme] || 0x8a949e;
+    } else if (this.event === 'toxicfog') {
+      sunT *= 0.6;
+      hemiT *= 0.78;
+      fogN = 4;
+      fogF = 22;
+      fogHex = 0x4a5a34;
+    } else if (this.event === 'hordealarm') {
+      sunT *= 0.8;
+      hemiT *= 0.9;
+      evI = 26 + Math.sin(this.time * 7) * 20;
+      evC = 0xff8a20;
+    } else if (this.event === 'overload') {
+      // luz piscando: a rede elétrica não aguenta
+      const fl = Math.sin(this.time * 23) * Math.sin(this.time * 7.3) > 0.55 ? 0.25 : 1;
+      sunT *= 0.6 * fl;
+      hemiT *= 0.7 * (fl < 1 ? 0.6 : 1);
+      evI = 22 + Math.sin(this.time * 11) * 14;
+      evC = 0xffa020;
     } else if (this.event === 'alarm') {
       sunT *= 0.78;
       hemiT *= 0.88;
@@ -1244,12 +1293,13 @@ export class Game {
       }
     }
     // névoa baixa em floresta/necrotério e durante o evento de neblina
-    if ((theme === 'forest' || theme === 'graveyard' || this.event === 'fog') && Math.random() < dt * 12) {
-      for (let n = 0; n < 2; n++) this.parts.spawn(cx + rand(-13, 13), rand(0.1, 0.9), cz + rand(-13, 13), rand(-0.4, 0.4), rand(-0.1, 0.25), rand(-0.4, 0.4), rand(0.16, 0.38), 0x9aa8a4, rand(2.4, 4.2), -0.05, 2);
+    const toxic = this.event === 'toxicfog';
+    if ((theme === 'forest' || theme === 'graveyard' || this.event === 'fog' || toxic) && Math.random() < dt * (toxic ? 30 : 12)) {
+      for (let n = 0; n < 2; n++) this.parts.spawn(cx + rand(-13, 13), rand(0.1, 0.9), cz + rand(-13, 13), rand(-0.4, 0.4), rand(-0.1, 0.25), rand(-0.4, 0.4), rand(0.16, 0.38), toxic ? pick([0x8aa04a, 0x9a6ac0]) : 0x9aa8a4, rand(2.4, 4.2), -0.05, 2);
     }
     // camadas de áudio do clima seguem o estado (sem reenviar todo quadro)
     const wRain = this.rainOn || storm;
-    const wFog = this.event === 'fog';
+    const wFog = this.event === 'fog' || this.event === 'toxicfog';
     if (wRain !== this._wRain) {
       this._wRain = wRain;
       this.audio.setWeatherAmbient('rain', wRain);
@@ -1259,21 +1309,107 @@ export class Game {
       this.audio.setWeatherAmbient('fog', wFog);
     }
   }
+  // direção cardinal de um portão (para anunciar de onde vêm os reforços)
+  gateSide(gt) {
+    const A = this.arena;
+    const dx = gt.x / A.W - 0.5;
+    const dz = gt.z / A.D - 0.5;
+    if (Math.abs(dx) > Math.abs(dz)) return dx < 0 ? 'OESTE' : 'LESTE';
+    return dz < 0 ? 'NORTE' : 'SUL';
+  }
+  inShelter(x, z) {
+    const sh = this.arena.def.shelters;
+    if (!sh) return false;
+    return sh.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 + 1 && z >= z0 && z <= z1 + 1);
+  }
+  // o que cada evento faz no jogo (o visual fica em updateEnvironment)
+  updateEventGameplay(dt) {
+    const A = this.arena;
+    const ev = this.event;
+    if (ev === 'alarm') {
+      // reforços em esquadrões: cada esquadrão entra por uma entrada diferente
+      this.alarmSpawnT -= dt;
+      if (this.alarmSpawnT <= 0 && this.countAlive() < this.aliveCap()) {
+        this.alarmSpawnT = rand(3.6, 4.8);
+        const gs = A.gates.filter((gt) => this.gateSide(gt) !== this.lastSide);
+        const gt = pick(gs.length ? gs : A.gates);
+        this.lastSide = this.gateSide(gt);
+        this.ui.alert(`Reforços chegando pelo ${this.lastSide}!`, 'danger', 'warning');
+        const squad = this.wave >= 6 ? ['armored', 'runner', 'walker', 'walker'] : ['runner', 'walker', 'walker'];
+        for (const t of squad) this.spawnZombie(t, gt.x + rand(-0.4, 0.4), gt.z + rand(-0.4, 0.4));
+      }
+    } else if (ev === 'hordealarm') {
+      // cada carro disparando chama mortos pelo portão mais próximo dele
+      this.alarmSpawnT -= dt;
+      if (this.alarmSpawnT <= 0 && this.countAlive() < this.aliveCap()) {
+        this.alarmSpawnT = rand(1.6, 2.6);
+        const cars = A.props.filter((pr) => !pr.dead && pr.alarmT > 0);
+        const src = cars.length ? pick(cars) : null;
+        let gt = pick(A.gates);
+        if (src) gt = A.gates.reduce((b, q) => (Math.hypot(q.x - src.x, q.z - src.z) < Math.hypot(b.x - src.x, b.z - src.z) ? q : b), A.gates[0]);
+        for (let k = 0; k < 2; k++) this.spawnZombie(Math.random() < 0.45 ? 'runner' : 'walker', gt.x + rand(-0.4, 0.4), gt.z + rand(-0.4, 0.4));
+      }
+      // as sirenes seguem tocando enquanto durar o evento
+      for (const pr of A.props) if (pr.evAlarm && !pr.dead && pr.alarmT < 1) pr.alarmT = 2;
+    } else if (ev === 'toxicfog') {
+      // dano progressivo para quem está fora de abrigo
+      this.toxT = (this.toxT || 0) + dt;
+      if (this.toxT >= 1) {
+        this.toxT = 0;
+        const el = this.eventDur - this.eventLeft;
+        const dmg = 1.5 + Math.min(4.5, el * 0.28);
+        for (const p of this.players) {
+          if (!p.alive) continue;
+          if (this.inShelter(p.pos.x, p.pos.z)) {
+            p.fogExp = 0;
+            continue;
+          }
+          p.fogExp = (p.fogExp || 0) + 1;
+          this.damagePlayer(p, dmg * (1 + Math.min(1, p.fogExp * 0.06)), p.pos.x, p.pos.z, 0, true);
+          if (p.fogExp === 3) this.ui.toast(p.id, 'A névoa corrói! Abrigue-se nas ruínas ou na cabana', 'warning');
+        }
+      }
+    } else if (ev === 'overload') {
+      // faíscas saltando das máquinas
+      for (const pr of A.props) {
+        if (pr.dead || !['machine', 'press', 'steam', 'econsole'].includes(pr.def.id)) continue;
+        if (Math.random() < dt * 3) this.parts.spawn(pr.x + rand(-0.4, 0.4), rand(0.8, 1.8), pr.z + rand(-0.4, 0.4), rand(-3, 3), rand(2, 4), rand(-3, 3), 0.05, pick([0xffd040, 0xffffff, 0xff8a20]), 0.4, 9, 2);
+      }
+    }
+  }
   startEvent() {
     const kind = (this.arenaDef || this.arena.def).weather || 'rain';
     this.event = kind;
     this.eventLeft = rand(16, 22);
+    this.eventDur = this.eventLeft;
     this.eventBoost = 1;
+    this.toxT = 0;
+    for (const p of this.players) p.fogExp = 0;
     const info = EVENT_INFO[kind] || EVENT_INFO.rain;
     this.ui.banner(info.title, info.kind);
     this.audio.play(info.sfx || 'wave', { volume: 0.8, priority: true, rate: info.rate || 1 });
-    if (kind === 'alarm') this.alarmSpawnT = 1.2;
+    if (kind === 'alarm') {
+      this.alarmSpawnT = 1.2;
+      this.lastSide = null;
+    }
+    if (kind === 'hordealarm') {
+      // dispara até 3 carros de uma vez
+      this.alarmSpawnT = 1;
+      const cars = this.arena.props.filter((pr) => !pr.dead && pr.def.id === 'acar');
+      for (let k = 0; k < 3 && cars.length; k++) {
+        const pr = cars.splice(Math.floor(Math.random() * cars.length), 1)[0];
+        pr.alarmT = 6;
+        pr.evAlarm = true;
+        this.audio.play('siren', { volume: 0.5, pos: pr, rate: 1.2 });
+      }
+    }
     this.audio.setWeatherAmbient('rain', kind === 'rain');
-    this.audio.setWeatherAmbient('fog', kind === 'fog');
+    this.audio.setWeatherAmbient('fog', kind === 'fog' || kind === 'toxicfog');
     this._wRain = kind === 'rain' || this.rainOn;
-    this._wFog = kind === 'fog';
+    this._wFog = kind === 'fog' || kind === 'toxicfog';
   }
   endEvent() {
+    for (const pr of this.arena.props) pr.evAlarm = false;
     this.event = null;
     this.eventLeft = 0;
     this.eventBoost = 0;
@@ -1885,7 +2021,7 @@ export class Game {
   // ------------------------------------------------------------------ ondas
   buildWave(w) {
     const coop = this.players.length > 1;
-    const n = Math.round((6 + w * 4) * (coop ? 1.35 : 1));
+    const n = Math.round((6 + w * 4) * (coop ? 1.35 : 1) * (this.arena.def.diff?.count || 1));
     const list = [];
     // sorteio por peso entre os tipos já liberados; o zumbi comum fica mais raro com o tempo
     const pool = ENEMY_ORDER.filter((t) => !ENEMIES[t].boss && ENEMIES[t].from <= w).map((t) => {
@@ -1920,9 +2056,9 @@ export class Game {
       type,
       def,
       pos: new THREE.Vector3(x, 0, z),
-      hp: def.hp * hpMul * (this.players.length > 1 && def.boss ? 1.4 : 1),
+      hp: def.hp * hpMul * (this.players.length > 1 && def.boss ? 1.4 : 1) * (this.arena.def.diff?.hp || 1),
       maxHp: 0,
-      speed: def.speed * Math.min(1.3, 1 + 0.015 * (w - 1)) * rand(0.9, 1.1),
+      speed: def.speed * Math.min(1.3, 1 + 0.015 * (w - 1)) * rand(0.9, 1.1) * (this.arena.def.diff?.speed || 1),
       scale: def.scale,
       radius: def.radius ?? 0.32 * def.scale,
       wallR: Math.min(0.32 * def.scale, 0.45),
@@ -1960,6 +2096,19 @@ export class Game {
     return zb;
   }
 
+  // arbusto ou árvore de onde a horda embosca: entre 6 e 14 m do jogador mais próximo
+  ambushSpot() {
+    const A = this.arena;
+    const cands = A.props.filter((pr) => !pr.dead && ['bush', 'giantpine', 'pine', 'twisted', 'deadtree'].includes(pr.def.id));
+    for (let tries = 0; tries < 8 && cands.length; tries++) {
+      const pr = pick(cands);
+      let dmin = 1e9;
+      for (const p of this.players) if (p.alive) dmin = Math.min(dmin, Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z));
+      if (dmin < 6 || dmin > 14) continue;
+      for (const [dx, dz] of [[0.9, 0], [-0.9, 0], [0, 0.9], [0, -0.9]]) if (!A.circleBlocked(pr.x + dx, pr.z + dz, 0.35)) return { x: pr.x + dx, z: pr.z + dz };
+    }
+    return null;
+  }
   aliveCap() {
     return this.settings.quality === 'low' ? 40 : 60;
   }
@@ -2020,6 +2169,14 @@ export class Game {
         const g = pick(gates.length ? gates : this.arena.gates);
         sx = g.x + rand(-0.3, 0.3);
         sz = g.z + rand(-0.3, 0.3);
+        // floresta: parte da horda brota da vegetação, nem perto nem longe demais dos jogadores
+        const bush = this.arena.def.theme === 'forest' && !ENEMIES[this.toSpawn[0]].boss && Math.random() < 0.35 ? this.ambushSpot() : null;
+        if (bush) {
+          sx = bush.x;
+          sz = bush.z;
+          for (let k = 0; k < 12; k++) this.parts.spawn(sx, 0.4, sz, rand(-2, 2), rand(1, 3), rand(-2, 2), rand(0.06, 0.12), pick([0x2a5a24, 0x3a7a2a, 0x1a3a18]), 0.6, 9, 0);
+          this.audio.play('groan1', { volume: 0.45, pos: bush, rate: rand(0.8, 1) });
+        }
       }
       this.spawnZombie(this.toSpawn.shift(), sx, sz);
     }
@@ -2954,7 +3111,8 @@ export class Game {
   }
 
   addCloud(x, z, sp) {
-    this.clouds.push({ x, z, r: sp.radius, life: sp.life, max: sp.life, dps: sp.dps, tick: 0 });
+    const tf = this.event === 'toxicfog' ? 1.35 : 1;
+    this.clouds.push({ x, z, r: sp.radius * tf, life: sp.life * tf, max: sp.life * tf, dps: sp.dps * tf, tick: 0 });
     this.arena.splat(x, z, sp.radius * 0.8, '#5a2a7a', 0.6);
     for (let k = 0; k < 14; k++) this.parts.spawn(x + rand(-0.5, 0.5), 0.3, z + rand(-0.5, 0.5), rand(-2.5, 2.5), rand(1, 3), rand(-2.5, 2.5), rand(0.15, 0.3), pick([0xb060ff, 0x8a3ad0]), 0.8, 2, 2);
     this.audio.play('splash', { pos: { x, z }, volume: 0.6, rate: 0.6 });
@@ -3112,6 +3270,7 @@ export class Game {
     this.state = 'gameover';
     this.audio.setMusic(null);
     this.audio.play('gameover', { volume: 0.9, priority: true });
+    const pf = this.profile(); // antes de gravar o recorde, para não creditar esta partida duas vezes
     const key = `${this.arenaDef.id}_${this.mode}`;
     const rec = this.records();
     const prev = rec[key];
@@ -3125,7 +3284,12 @@ export class Game {
       }
     }
     this.canvas.style.cursor = 'default';
-    this.ui.showScreen('gameover', { isRecord, prev });
+    const before = pf.level;
+    const gained = matchXp(this.stats.score, this.wave);
+    this.addProfileXp(pf, gained);
+    this.saveProfile(pf);
+    const unlocked = ARENAS.filter((a) => (a.unlock || 1) > before && (a.unlock || 1) <= pf.level).map((a) => a.name);
+    this.ui.showScreen('gameover', { isRecord, prev, xp: { gained, before, level: pf.level, cur: pf.xp, need: profileNeed(pf.level), unlocked } });
   }
 
   // ------------------------------------------------------------------ câmera e desenho

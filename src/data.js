@@ -222,10 +222,17 @@ export const SURVIVORS = [
 ];
 
 // Arenas reconstruídas. Cada caractere é um bloco de 1 m; símbolos em SCENERY/SCENERY2.
+// perfil persistente: // XP do perfil para passar do nível l para l+1
+export const profileNeed = (l) => 300 + 150 * (l - 1);
+// XP de perfil ganho numa partida
+export const matchXp = (score, wave) => Math.round(score / 10 + wave * 20);
+
 export const ARENAS = [
   {
     id: 'praca', name: 'Cidade Abandonada', desc: 'Zona de quarentena: ruas rachadas, prédios tomados e carros abandonados.', floor: 'concrete',
-    theme: 'city', ambient: 'city', weather: 'rain', boss: 'devourer', lampI: 14, lampsOff: true,
+    theme: 'city', ambient: 'city', weather: 'hordealarm', boss: 'devourer', unlock: 1,
+    diff: { label: 'Média', tier: 1, hp: 1, speed: 1, count: 1 }, eventName: 'Alarme de horda',
+    tip: 'Atire de longe nos carros, use as marquises (+alcance) e ligue o gerador para iluminar as ruas.', lampI: 14, lampsOff: true,
     light: { sky: 0x2e3a34, fog: 0x2e3a34, sun: 0xffe8c0, sunI: 2.2, hemi: 1.4 },
     map: makeMap(46, 32, '#', [[13, 0, 5, 'h'], [13, 31, 5, 'h'], [0, 12, 4, 'v'], [45, 12, 4, 'v']], (m) => {
       m.rect(1, 1, 44, 30, 'f');
@@ -261,11 +268,16 @@ export const ARENAS = [
       for (const [x, y] of [[21, 10], [25, 21], [13, 16], [32, 16]]) m.put(x, y, 'z');
       m.put(22, 17, '8');
       for (const [x, y] of [[2, 16], [43, 16], [16, 2], [29, 29]]) m.put(x, y, '"');
+      // acesso elevado: marquises e escadas de incêndio colados aos prédios
+      m.rect(11, 3, 12, 4, 'N'); m.rect(31, 3, 32, 4, 'N');
+      m.rect(12, 25, 13, 26, 'N'); m.rect(32, 25, 33, 26, 'N');
     }),
   },
   {
     id: 'armazem', name: 'Complexo Industrial', desc: 'Fábrica dos Mortos: esteiras, prensas, vapor e piso elétrico.', floor: 'industrial',
-    theme: 'factory', ambient: 'factory', weather: 'blackout', boss: 'mechworker', lampI: 12,
+    theme: 'factory', ambient: 'factory', weather: 'overload', boss: 'mechworker', unlock: 5,
+    diff: { label: 'Alta', tier: 2, hp: 1.15, speed: 1.05, count: 1.1 }, eventName: 'Sobrecarga das máquinas',
+    tip: 'Atraia a horda para prensas, vapor e piso elétrico. Cuidado com as esteiras.', lampI: 12,
     light: { sky: 0x221a13, fog: 0x2e2219, sun: 0xffb060, sunI: 1.85, hemi: 1.15 },
     map: makeMap(46, 32, '#', [[18, 0, 5, 'h'], [18, 31, 5, 'h'], [0, 13, 4, 'v'], [45, 13, 4, 'v']], (m) => {
       m.rect(1, 1, 44, 30, '=');
@@ -305,7 +317,10 @@ export const ARENAS = [
   },
   {
     id: 'vale', name: 'Floresta Sombria', desc: 'Território infectado: neblina, cogumelos luminosos e lagoa tóxica.', floor: 'wild',
-    theme: 'forest', ambient: 'forest', weather: 'fog', boss: 'guardian', lampI: 8,
+    theme: 'forest', ambient: 'forest', weather: 'toxicfog', boss: 'guardian', unlock: 10,
+    diff: { label: 'Muito alta', tier: 3, hp: 1.28, speed: 1.08, count: 1.2 }, eventName: 'Névoa tóxica',
+    shelters: [[6, 5, 9, 8], [35, 5, 38, 7]],
+    tip: 'Na névoa tóxica, abrigue-se nas ruínas ou na cabana. A vegetação esconde emboscadas.', lampI: 8,
     light: { sky: 0x18231f, fog: 0x243530, sun: 0x9ab0e0, sunI: 0.95, hemi: 0.75 },
     map: makeMap(46, 32, '#', [[21, 0, 4, 'h'], [21, 31, 4, 'h'], [0, 15, 4, 'v'], [45, 15, 4, 'v']], (m) => {
       m.rect(1, 1, 44, 30, 'g');
@@ -341,7 +356,9 @@ export const ARENAS = [
   },
   {
     id: 'distrito', name: 'Base Militar', desc: 'Última Resistência: muros, portões, holofotes e blindados.', floor: 'concrete',
-    theme: 'military', ambient: 'military', weather: 'alarm', boss: 'general', lampI: 18,
+    theme: 'military', ambient: 'military', weather: 'alarm', boss: 'general', unlock: 15,
+    diff: { label: 'Extrema', tier: 4, hp: 1.42, speed: 1.12, count: 1.3 }, eventName: 'Ataque de reforços',
+    tip: 'Ligue o gerador, feche os portões e suba nas plataformas. Os reforços trocam de entrada.', lampI: 18,
     light: { sky: 0x141a18, fog: 0x161c1a, sun: 0xc8d8ff, sunI: 1.6, hemi: 1.0 },
     map: makeMap(46, 32, '#', [[20, 0, 4, 'h'], [20, 31, 4, 'h'], [0, 13, 4, 'v'], [45, 13, 4, 'v']], (m) => {
       // muros internos: três setores, com portões e vãos largos
@@ -376,7 +393,9 @@ export const ARENAS = [
   },
   {
     id: 'cemiterio', name: 'Necrópole', desc: 'Cemitério Velho elevado a necrópole: capela, criptas e covas que vomitam mortos.', floor: 'graveyard',
-    theme: 'graveyard', ambient: 'graveyard', weather: 'fog', boss: 'boss', lampI: 6,
+    theme: 'graveyard', ambient: 'graveyard', weather: 'fog', boss: 'boss', unlock: 1,
+    diff: { label: 'Alta', tier: 2, hp: 1.12, speed: 1.04, count: 1.1 }, eventName: 'Neblina densa',
+    tip: 'As covas vomitam mortos: não fique parado perto delas.', lampI: 6,
     light: { sky: 0x10141f, fog: 0x10141f, sun: 0x9ab0e0, sunI: 1.3, hemi: 1.0 },
     map: makeMap(46, 32, '#', [[21, 0, 4, 'h'], [21, 31, 4, 'h'], [0, 15, 4, 'v'], [45, 15, 4, 'v']], (m) => {
       // caminhos de terra e manchas de musgo

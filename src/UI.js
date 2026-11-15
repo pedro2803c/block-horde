@@ -1,4 +1,4 @@
-import { WEAPONS, WEAPON_ORDER, SLOT_KEYS, UNLOCKS, SURVIVORS, ARENAS, TIPS, ENEMIES, ENEMY_ORDER } from './data.js';
+import { WEAPONS, WEAPON_ORDER, SLOT_KEYS, UNLOCKS, SURVIVORS, ARENAS, TIPS, ENEMIES, ENEMY_ORDER, profileNeed } from './data.js';
 import { ITEMS, ITEM_ORDER, ITEM_CATS, MELEE } from './items.js';
 import { SCENERY, SCENERY_ORDER, SCENERY_CATS, SCENERY_BEH } from './scenery.js';
 import { CROSSHAIRS, CROSSHAIR_ORDER, WEAPON_CROSSHAIR, CROSS_COLORS, crosshairSvg } from './crosshairs.js';
@@ -23,7 +23,7 @@ function h(tag, attrs = {}, ...kids) {
 const fmt = (n) => Math.floor(n).toLocaleString('pt-BR');
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const tip = () => TIPS[Math.floor(Math.random() * TIPS.length)];
-const EVENT_LABEL = { rain: 'CHUVA', blackout: 'APAGÃO', fog: 'NEBLINA', alarm: 'ALARME' };
+const EVENT_LABEL = { rain: 'CHUVA', blackout: 'APAGÃO', fog: 'NEBLINA', alarm: 'REFORÇOS', hordealarm: 'ALARME', overload: 'SOBRECARGA', toxicfog: 'NÉVOA TÓXICA' };
 
 // ---- componentes do design system ----
 // botão: btn('primary lg', 'play', 'Jogar', onclick)
@@ -231,23 +231,34 @@ export class UI {
     const rec = this.g.records();
     const pv = this.getPreview();
     const back = () => this.showScreen('pick', { mode, picks: picks.slice(0, -1) });
-    let selected = sel;
+    const pf = this.g.profile();
+    const open = ARENAS.map((a) => this.g.arenaUnlocked(a));
+    let selected = open[sel] ? sel : Math.max(0, open.indexOf(true));
+    const play = (k) => {
+      if (open[k]) this.g.startMatch(ARENAS[k], picks, mode);
+    };
     const cards = ARENAS.map((a, k) => {
       const r = rec[`${a.id}_${mode}`];
       const thumb = h('canvas', { class: 'thumb', width: 368, height: 200, 'aria-hidden': 'true' });
       if (pv) pv.arenaThumb(a, thumb);
+      const lock = !open[k];
       return h('button', {
-        class: 'arena-card' + (k === selected ? ' selected' : ''),
+        class: 'arena-card' + (k === selected ? ' selected' : '') + (lock ? ' locked' : ''),
         'aria-pressed': k === selected ? 'true' : 'false',
+        'aria-disabled': lock ? 'true' : undefined,
         'data-focus': k === selected ? '' : undefined,
-        onclick: () => select(k),
-        ondblclick: () => this.g.startMatch(ARENAS[k], picks, mode),
+        onclick: () => (lock ? this.alert(`${a.name} libera no nível ${a.unlock} do perfil (você está no ${pf.level}).`, 'danger', 'lock') : select(k)),
+        ondblclick: () => play(k),
       },
-      thumb,
+      h('span', { class: 'thumb-wrap' }, thumb, lock ? h('span', { class: 'lock-veil' }, icon('lock'), `Nível ${a.unlock}`) : null),
       h('span', { class: 'check' }, icon('check')),
       h('span', { class: 'a-name' }, icon('map'), a.name),
+      a.diff ? h('span', { class: 'a-tags' },
+        h('span', { class: `diff d${a.diff.tier}` }, icon('skull'), a.diff.label),
+        a.eventName ? h('span', { class: 'ev' }, icon('warning'), a.eventName) : null) : null,
       h('small', {}, a.desc),
-      h('span', { class: 'rec' }, icon('trophy'), r ? `Recorde: ${fmt(r.score)} · onda ${r.wave}` : 'Sem recorde ainda'));
+      a.tip ? h('small', { class: 'tip' }, a.tip) : null,
+      h('span', { class: 'rec' }, icon(lock ? 'lock' : 'trophy'), lock ? `Bloqueada: nível ${a.unlock}` : r ? `Recorde: ${fmt(r.score)} · onda ${r.wave}` : 'Sem recorde ainda'));
     });
     const select = (k) => {
       selected = k;
@@ -256,12 +267,16 @@ export class UI {
         c.setAttribute('aria-pressed', i === k ? 'true' : 'false');
       });
     };
+    const need = profileNeed(pf.level);
     return this.win('arena', 'Escolha a arena', back,
+      h('div', { class: 'profile-line' }, icon('star'), h('b', {}, `Nível ${pf.level}`),
+        h('span', { class: 'pbar' }, h('i', { style: `width:${Math.round((pf.xp / need) * 100)}%` })),
+        h('small', {}, `${fmt(pf.xp)} / ${fmt(need)} XP · cada partida rende XP de perfil e libera novas arenas`)),
       h('div', { class: 'arena-grid' }, cards),
       h('div', { class: 'row' },
         btn('back', 'back', 'Voltar', back),
         h('span', { class: 'grow' }),
-        btn('primary lg', 'play', 'Jogar', () => this.g.startMatch(ARENAS[selected], picks, mode))));
+        btn('primary lg', 'play', 'Jogar', () => play(selected))));
   }
 
   scr_records() {
@@ -683,12 +698,19 @@ export class UI {
         h('div', {}, h('h3', { class: 'section slashed', style: 'margin-top:0' }, 'Desbloqueios'), this.unlockList())));
   }
 
-  scr_gameover({ isRecord, prev }) {
+  scr_gameover({ isRecord, prev, xp }) {
     const g = this.g;
+    const xpLine = xp ? h('div', { class: 'profile-line' }, icon('star'),
+      h('b', {}, xp.level > xp.before ? `Nível ${xp.before} → ${xp.level}!` : `Nível ${xp.level}`),
+      h('span', { class: 'pbar' }, h('i', { style: `width:${Math.round((xp.cur / xp.need) * 100)}%` })),
+      h('small', {}, `+${fmt(xp.gained)} XP de perfil · ${fmt(xp.cur)} / ${fmt(xp.need)}`)) : null;
+    const unl = xp && xp.unlocked.length ? h('p', { class: 'record' }, icon('lock'), `Arena liberada: ${xp.unlocked.join(', ')}!`) : null;
     return this.win('gameover', h('h2', { class: 'title slashed bad' }, 'A horda venceu'), null,
       isRecord
         ? h('p', { class: 'record' }, icon('trophy'), prev ? `Novo recorde! (antes: ${fmt(prev.score)})` : 'Primeiro recorde nesta arena!')
         : h('p', { class: 'muted' }, `Recorde: ${fmt(prev.score)} na onda ${prev.wave}`),
+      xpLine,
+      unl,
       this.statChips(),
       h('div', { class: 'chips' },
         chip('clock', 'Tempo', fmtTime(g.stats.time), 'blue'),
