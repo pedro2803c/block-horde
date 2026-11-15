@@ -334,7 +334,9 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 .pp-weapon b .ic { width: 0.95em; height: 0.95em; }
 .pp.dead { filter: grayscale(0.9); opacity: 0.7; }
 .pp.hurt { animation: hurt 0.35s; }
+.pp.hurt2 { animation: hurt2 0.35s; }
 @keyframes hurt { 0% { box-shadow: 0 0 0 2px var(--action), 0 0 24px rgba(229, 57, 53, 0.9); } 100% { box-shadow: 0 3px 0 rgba(0, 0, 0, 0.55); } }
+@keyframes hurt2 { 0% { box-shadow: 0 0 0 2px var(--action), 0 0 24px rgba(229, 57, 53, 0.9); } 100% { box-shadow: 0 3px 0 rgba(0, 0, 0, 0.55); } }
 .slots { display: grid; grid-template-columns: repeat(11, 1fr); gap: 3px; }
 .slot { position: relative; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 5px; background: #12161d; border: 2px solid #2a303c; color: #4a5160; }
 .slot .wic { width: 100%; height: 70%; padding: 0 3px; }

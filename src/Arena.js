@@ -9,6 +9,10 @@ export const T_BUSH = 9; // arbusto: andável, mas atrasa
 export const T_TOXIC = TERRAIN_CODE.toxic;
 export const T_ELEC = TERRAIN_CODE.elec;
 export const T_PLATFORM = TERRAIN_CODE.platform;
+// vizinhança do caminho dos zumbis: 4 retos (custo 10) e 4 diagonais (14)
+const NB_DI = [1, -1, 0, 0, 1, 1, -1, -1];
+const NB_DJ = [0, 0, 1, -1, 1, -1, 1, -1];
+const NB_C = [10, 10, 10, 10, 14, 14, 14, 14];
 // esteiras: código do piso -> direção do empuxo [dx, dz]
 export const BELT_SPEED = 2.2;
 
@@ -385,7 +389,17 @@ export class Arena {
           const dx = pos.x - cx;
           const dz = pos.z - cz;
           const d2 = dx * dx + dz * dz;
-          if (d2 >= r * r || d2 < 1e-10) continue;
+          if (d2 >= r * r) continue;
+          if (d2 < 1e-10) {
+            // centro na borda/canto da célula: empurra para longe do centro dela
+            const ex = pos.x - (i + 0.5);
+            const ez = pos.z - (j + 0.5);
+            const el = Math.hypot(ex, ez) || 1;
+            pos.x += (ex / el) * (r + 0.002);
+            pos.z += (ez / el) * (r + 0.002);
+            moved = true;
+            continue;
+          }
           const d = Math.sqrt(d2);
           pos.x += (dx / d) * (r - d + 0.002);
           pos.z += (dz / d) * (r - d + 0.002);
@@ -414,9 +428,31 @@ export class Arena {
 
   // distância livre ao longo de um raio até um bloco alto (tiros)
   rayFree(ox, oz, dx, dz, maxT) {
-    const step = 0.12;
-    for (let t = 0; t < maxT; t += step) if (this.tallAt(ox + dx * t, oz + dz * t)) return Math.max(0, t - step);
-    return maxT;
+    const W = this.W;
+    const D = this.D;
+    let i = Math.floor(ox);
+    let j = Math.floor(oz);
+    if (i < 0 || j < 0 || i >= W || j >= D || this.tall[i + j * W] === 1) return 0;
+    const si = dx > 0 ? 1 : -1;
+    const sj = dz > 0 ? 1 : -1;
+    const tdx = dx ? Math.abs(1 / dx) : Infinity;
+    const tdz = dz ? Math.abs(1 / dz) : Infinity;
+    let tx = dx ? (dx > 0 ? i + 1 - ox : ox - i) * tdx : Infinity;
+    let tz = dz ? (dz > 0 ? j + 1 - oz : oz - j) * tdz : Infinity;
+    for (;;) {
+      let t;
+      if (tx < tz) {
+        t = tx;
+        tx += tdx;
+        i += si;
+      } else {
+        t = tz;
+        tz += tdz;
+        j += sj;
+      }
+      if (t >= maxT) return maxT;
+      if (i < 0 || j < 0 || i >= W || j >= D || this.tall[i + j * W] === 1) return Math.max(0, t - 0.02);
+    }
   }
   los(ax, az, bx, bz) {
     const d = Math.hypot(bx - ax, bz - az);
@@ -441,34 +477,33 @@ export class Arena {
     const D = this.D;
     const dist = this.dist;
     dist.fill(0x3fffffff);
-    const heap = this.heap || (this.heap = []);
-    heap.length = 0;
+    const heap = this.heap && this.heap.length >= W * D * 8 ? this.heap : (this.heap = new Float64Array(W * D * 8));
+    let hn = 0;
     const push = (k, d) => {
-      heap.push(d * 4096 + k);
-      let i = heap.length - 1;
+      let i = hn++;
+      const v = d * 4096 + k;
       while (i > 0) {
         const p = (i - 1) >> 1;
-        if (heap[p] <= heap[i]) break;
-        [heap[p], heap[i]] = [heap[i], heap[p]];
+        if (heap[p] <= v) break;
+        heap[i] = heap[p];
         i = p;
       }
+      heap[i] = v;
     };
     const pop = () => {
       const top = heap[0];
-      const last = heap.pop();
-      if (heap.length) {
-        heap[0] = last;
+      const last = heap[--hn];
+      if (hn) {
         let i = 0;
         for (;;) {
           const l = i * 2 + 1;
-          const r = l + 1;
-          let m = i;
-          if (l < heap.length && heap[l] < heap[m]) m = l;
-          if (r < heap.length && heap[r] < heap[m]) m = r;
-          if (m === i) break;
-          [heap[m], heap[i]] = [heap[i], heap[m]];
+          if (l >= hn) break;
+          const m = l + 1 < hn && heap[l + 1] < heap[l] ? l + 1 : l;
+          if (heap[m] >= last) break;
+          heap[i] = heap[m];
           i = m;
         }
+        heap[i] = last;
       }
       return top;
     };
@@ -479,15 +514,17 @@ export class Arena {
       dist[i + j * W] = 0;
       push(i + j * W, 0);
     }
-    const NB = [[1, 0, 10], [-1, 0, 10], [0, 1, 10], [0, -1, 10], [1, 1, 14], [1, -1, 14], [-1, 1, 14], [-1, -1, 14]];
-    while (heap.length) {
+    while (hn) {
       const v = pop();
       const k = v % 4096;
       const d = (v - k) / 4096;
       if (d > dist[k]) continue;
       const i = k % W;
       const j = (k - i) / W;
-      for (const [di, dj, c] of NB) {
+      for (let q = 0; q < 8; q++) {
+        const di = NB_DI[q];
+        const dj = NB_DJ[q];
+        const c = NB_C[q];
         const ni = i + di;
         const nj = j + dj;
         if (ni < 0 || nj < 0 || ni >= W || nj >= D) continue;

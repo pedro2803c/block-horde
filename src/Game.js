@@ -27,6 +27,13 @@ const RECORDS_KEY = 'blockhorde_records_v1';
 const PROFILE_KEY = 'blockhorde_profile_v1';
 
 // Controles: solo = WASD + mouse; co-op = metade do teclado para cada jogador
+// remove do vetor, no lugar, os itens que não passam no teste (sem criar outro vetor a cada quadro)
+const compact = (arr, keep) => {
+  let n = 0;
+  for (let i = 0; i < arr.length; i++) if (keep(arr[i])) arr[n++] = arr[i];
+  arr.length = n;
+};
+
 const CONTROLS = {
   solo: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], mouse: true },
   p1: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'] },
@@ -304,7 +311,11 @@ export class Game {
     this.loadouts = loadLoadouts();
     this.players = survivors.map((s, k) => this.makePlayer(s, k, survivors.length > 1));
     const center = { x: arena.W / 2, z: arena.D / 2 + 4 };
-    this.players.forEach((p, k) => p.pos.set(center.x + (k ? 1.2 : -1.2) * (survivors.length > 1), 0, center.z));
+    this.players.forEach((p, k) => {
+      // nasce num ponto livre (o centro de algumas arenas tem consoles e muros)
+      const s = this.freeSpot(center.x + (k ? 1.2 : -1.2) * (survivors.length > 1), center.z, p.radius + 0.05);
+      p.pos.set(s.x, 0, s.z);
+    });
     this.camTarget.set(center.x, 0, center.z);
     if (demo) for (let k = 0; k < 26; k++) {
       this.spawnZombie(pick(['walker', 'walker', ...ENEMY_ORDER.filter((t) => t !== 'boss')]), rand(4, arena.W - 4), rand(4, arena.D - 4));
@@ -518,7 +529,9 @@ export class Game {
       this.flashes.push({ x: mx, z: mz, life: 0.08 });
     } else if (w.kind === 'place') {
       if (!this.place(p, w.place, ang)) {
+        // sem espaço para colocar: devolve a munição e não conta como disparo
         p.ammo[p.weapon]++;
+        this.stats.shots--;
         p.fireCd = 0.2;
       }
     }
@@ -1444,8 +1457,14 @@ export class Game {
     if (!A.inb(ni, nj) || A.blocked(ni, nj) || A.propAt(ni, nj)) return;
     const cx = ni + 0.5;
     const cz = nj + 0.5;
-    if (this.players.some((q) => q.alive && Math.hypot(q.pos.x - cx, q.pos.z - cz) < 0.5 + q.radius)) return;
-    if (this.zombies.some((z) => z.alive && !z.def.fly && Math.hypot(z.pos.x - cx, z.pos.z - cz) < 0.5 + z.radius)) return;
+    // a célula de destino é um quadrado: testa círculo x quadrado (o teste por distância deixava cantos livres)
+    const hits = (e, r) => {
+      const qx = Math.max(ni, Math.min(ni + 1, e.pos.x));
+      const qz = Math.max(nj, Math.min(nj + 1, e.pos.z));
+      return (e.pos.x - qx) ** 2 + (e.pos.z - qz) ** 2 < (r + 0.02) ** 2;
+    };
+    if (this.players.some((q) => q.alive && hits(q, q.radius))) return;
+    if (this.zombies.some((z) => z.alive && !z.def.fly && hits(z, z.radius))) return;
     A.moveProp(pr, ni, nj);
     this.flowT = 0;
     this.audio.play('crate', { volume: 0.6, pos: pr, rate: 0.55 });
@@ -1684,7 +1703,7 @@ export class Game {
         }
       }
     }
-    this.fields = this.fields.filter((f) => f.t < f.life);
+    compact(this.fields, (f) => f.t < f.life);
     // torres: miram no inimigo mais próximo à vista
     for (const tu of this.turrets) {
       tu.t += dt;
@@ -1716,7 +1735,7 @@ export class Game {
         for (let k = 0; k < 12; k++) this.parts.spawn(tu.x, 0.6, tu.z, rand(-3, 3), rand(1, 4), rand(-3, 3), rand(0.08, 0.16), pick([0x8a8e96, 0x3a3e46]), 0.9, 14, 0);
       }
     }
-    this.turrets = this.turrets.filter((t) => !t.dead);
+    compact(this.turrets, (t) => !t.dead);
     // drones: orbitam o dono e mergulham no inimigo mais próximo
     for (const d of this.drones) {
       d.t += dt;
@@ -1761,7 +1780,7 @@ export class Game {
         for (let n = 0; n < 10; n++) this.parts.spawn(d.x, d.y, d.z, rand(-2, 2), rand(0, 2), rand(-2, 2), 0.08, pick([0x2a2a30, 0xff3040, 0x3a80ff]), 0.8, 14, 0);
       }
     }
-    this.drones = this.drones.filter((d) => !d.dead);
+    compact(this.drones, (d) => !d.dead);
     // bombardeio: aviso de 2 s e 12 explosões
     for (const b of this.bombards) {
       b.t -= dt;
@@ -1777,7 +1796,7 @@ export class Game {
         }
       }
     }
-    this.bombards = this.bombards.filter((b) => !b.done);
+    compact(this.bombards, (b) => !b.done);
     // escudo tático destrói projéteis inimigos que chegam perto
     for (const p of this.players) {
       if (!p.alive || p.shieldT <= 0) continue;
@@ -1788,7 +1807,7 @@ export class Game {
         }
     }
     for (const b of this.bolts) b.life -= dt;
-    this.bolts = this.bolts.filter((b) => b.life > 0);
+    compact(this.bolts, (b) => b.life > 0);
   }
 
   // efeitos por jogador a cada quadro (recargas, regeneração, cura, investida)
@@ -2077,6 +2096,11 @@ export class Game {
       lungeCd: rand(1, 2),
       summonCd: rand(2, 4),
       sporeCd: rand(1.5, 3),
+      blinkCd: rand(2, 4),
+      stunT: 0,
+      shockT: 0,
+      buffT: 0,
+      deadT: 0,
       strafe: rand(0, 6.28),
       minions: [],
       flyY: 1.4,
@@ -2121,6 +2145,19 @@ export class Game {
     for (const [dx, dz] of [[0.8, 0], [-0.8, 0], [0, 0.8], [0, -0.8], [0.8, 0.8], [-0.8, 0.8], [0.8, -0.8], [-0.8, -0.8], [1.4, 0], [-1.4, 0], [0, 1.4], [0, -1.4]]) {
       if (!this.arena.circleBlocked(x + dx, z + dz, r)) return { x: x + dx, z: z + dz };
     }
+    return this.freeSpot(x, z, r);
+  }
+  // ponto livre mais próximo, procurando em anéis de até 8 m
+  freeSpot(x, z, r) {
+    const A = this.arena;
+    if (!A.circleBlocked(x, z, r)) return { x, z };
+    for (let d = 0.5; d <= 8; d += 0.5)
+      for (let k = 0, n = Math.ceil(d * 8); k < n; k++) {
+        const a = (k / n) * Math.PI * 2;
+        const px = x + Math.sin(a) * d;
+        const pz = z + Math.cos(a) * d;
+        if (!A.circleBlocked(px, pz, r)) return { x: px, z: pz };
+      }
     return { x, z };
   }
 
@@ -2432,7 +2469,7 @@ export class Game {
         }
       }
     }
-    this.strikes = this.strikes.filter((s) => !s.done);
+    compact(this.strikes, (s) => !s.done);
   }
 
   // inimigo dentro do feixe de alguma lanterna?
@@ -2529,8 +2566,8 @@ export class Game {
     for (const z of this.zombies) if (z.alive) this.updateZombie(z, dt);
     this.separate();
     for (const z of this.corpses) z.deadT += dt;
-    this.zombies = this.zombies.filter((z) => z.alive || z.deadT < 4);
-    this.corpses = this.corpses.filter((z) => z.deadT < 4);
+    compact(this.zombies, (z) => z.alive || z.deadT < 4);
+    compact(this.corpses, (z) => z.deadT < 4);
     this.updateProjectiles(dt);
     this.updateClouds(dt);
     this.updatePlaceables(dt);
@@ -2710,7 +2747,7 @@ export class Game {
             z.spitCd = def.spit.cd * rand(0.8, 1.2);
             z.attackT = 0.35;
             const T = Math.max(0.5, td / 9);
-            this.projectiles.push({ kind: 'acid', x: z.pos.x, y: 1.2, z: z.pos.z, vx: dx / T, vy: 4.5, vz: dz / T, t: 0, dmg: def.spit.dmg });
+            this.projectiles.push({ kind: 'acid', x: z.pos.x, y: 1.2, z: z.pos.z, vx: dx / T, vy: 4.5, vz: dz / T, t: 0, dmg: def.spit.dmg, color: def.spit.color, splat: def.spit.splat });
             this.audio.play('spit', { pos: z.pos, volume: 0.7 });
           }
         }
@@ -2888,7 +2925,7 @@ export class Game {
       z.pos.z = Math.max(1, Math.min(A.D - 1, z.pos.z + mvz * dt));
     } else A.move(z.pos, mvx * dt, mvz * dt, z.wallR);
     // esteira também arrasta os inimigos
-    if (!def.fly && z.stunT <= 0) {
+    if (!def.fly && !(z.stunT > 0)) {
       const belt = A.beltAt(z.pos.x, z.pos.z);
       if (belt) A.move(z.pos, belt[0] * BELT_SPEED * dt, belt[1] * BELT_SPEED * dt, z.wallR);
     }
@@ -2909,10 +2946,15 @@ export class Game {
         const dz = b.pos.z - a.pos.z;
         const min = a.radius + b.radius;
         const d2 = dx * dx + dz * dz;
-        if (d2 >= min * min || d2 < 1e-6) continue;
+        if (d2 >= min * min) continue;
+        if (!a.def.fly !== !b.def.fly) continue; // morcego passa por cima de quem anda
+        if (d2 < 1e-6) {
+          // nasceram no mesmo ponto: separa numa direção qualquer
+          this.nudge(b, rand(-0.05, 0.05), rand(-0.05, 0.05));
+          continue;
+        }
         const d = Math.sqrt(d2);
         const push = (min - d) * 0.5;
-        if (!a.def.fly !== !b.def.fly) continue; // morcego passa por cima de quem anda
         const wa = a.def.boss ? 0.15 : b.def.boss ? 1.85 : 1;
         this.nudge(a, (-dx / d) * push * wa, (-dz / d) * push * wa);
         this.nudge(b, (dx / d) * push * (2 - wa), (dz / d) * push * (2 - wa));
@@ -2999,6 +3041,23 @@ export class Game {
             z.minions.push(m);
             for (let j = 0; j < 10; j++) this.parts.spawn(x, 0.3, zz, rand(-1.5, 1.5), rand(2, 4), rand(-1.5, 1.5), rand(0.1, 0.2), pick([0xc070ff, 0xe0a0ff]), 0.7, 3, 2);
           }
+        }
+      }
+    }
+    if (def.blink) {
+      // Espectro: some e reaparece mais perto do alvo, num ponto livre
+      z.blinkCd -= dt;
+      if (z.state === 'move' && z.blinkCd <= 0 && td < def.blink.range && td > 3) {
+        const step = Math.min(def.blink.dist, td - 1.6);
+        const nx = z.pos.x + (dx / td) * step;
+        const nz = z.pos.z + (dz / td) * step;
+        z.blinkCd = def.blink.cd * rand(0.8, 1.2);
+        if (A.inb(Math.floor(nx), Math.floor(nz)) && !A.circleBlocked(nx, nz, 0.3)) {
+          for (let k = 0; k < 12; k++) this.parts.spawn(z.pos.x + rand(-0.3, 0.3), rand(0.6, 1.8), z.pos.z + rand(-0.3, 0.3), rand(-1.5, 1.5), rand(0, 1.5), rand(-1.5, 1.5), rand(0.06, 0.12), pick([0x70e8ff, 0xc0f4ff]), 0.5, -1, 2);
+          z.pos.x = nx;
+          z.pos.z = nz;
+          for (let k = 0; k < 12; k++) this.parts.spawn(nx + rand(-0.3, 0.3), rand(0.6, 1.8), nz + rand(-0.3, 0.3), rand(-1.5, 1.5), rand(0, 1.5), rand(-1.5, 1.5), rand(0.06, 0.12), pick([0x70e8ff, 0xc0f4ff]), 0.5, -1, 2);
+          this.audio.play('swing', { pos: z.pos, volume: 0.5, rate: 0.6 });
         }
       }
     }
@@ -3128,7 +3187,7 @@ export class Game {
       }
       if (Math.random() < dt * 8) this.parts.spawn(c.x + rand(-c.r, c.r) * 0.7, 0.2, c.z + rand(-c.r, c.r) * 0.7, rand(-0.3, 0.3), rand(0.6, 1.4), rand(-0.3, 0.3), rand(0.08, 0.16), 0xc080ff, 1, -0.5, 2);
     }
-    this.clouds = this.clouds.filter((c) => c.life > 0);
+    compact(this.clouds, (c) => c.life > 0);
   }
 
   updateProjectiles(dt) {
@@ -3216,13 +3275,13 @@ export class Game {
         if (A.inb(Math.floor(pr.x), Math.floor(pr.z)) && A.cover[ck] && pr.y < 0.95) hit = true;
         if (hit || pr.y <= 0.05 || A.tallAt(pr.x, pr.z)) {
           pr.dead = true;
-          A.splat(pr.x, pr.z, 0.45, '#6aba2a', 0.7);
-          for (let k = 0; k < 6; k++) this.parts.spawn(pr.x, 0.2, pr.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.08, 0x8aff4a, 0.5, 14, 2);
+          A.splat(pr.x, pr.z, 0.45, pr.splat || '#6aba2a', 0.7);
+          for (let k = 0; k < 6; k++) this.parts.spawn(pr.x, 0.2, pr.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.08, pr.color || 0x8aff4a, 0.5, 14, 2);
           this.audio.play('splash', { pos: pr, volume: 0.5 });
         }
       }
     }
-    this.projectiles = this.projectiles.filter((p) => !p.dead);
+    compact(this.projectiles, (p) => !p.dead);
   }
 
   updatePlaceables(dt) {
@@ -3239,7 +3298,7 @@ export class Game {
           }
       }
     }
-    this.placeables = this.placeables.filter((b) => !b.dead);
+    compact(this.placeables, (b) => !b.dead);
   }
 
   updatePickups(dt) {
@@ -3262,7 +3321,7 @@ export class Game {
         }
       }
     }
-    this.pickups = this.pickups.filter((c) => !c.taken && c.t < c.life); // itens esquecidos somem
+    compact(this.pickups, (c) => !c.taken && c.t < c.life); // itens esquecidos somem
   }
 
   gameOver() {
@@ -3435,7 +3494,7 @@ export class Game {
         B.box(pr.x, pr.y, pr.z, 0.7, 0.6, 0.7, 0x5e504a, pr.t * 5);
         G.box(pr.x, pr.y, pr.z, 0.5, 0.64, 0.12, 0xff5a1a, pr.t * 5);
       } else if (pr.kind === 'spore') G.box(pr.x, pr.y, pr.z, 0.3, 0.3, 0.3, 0xb060ff, pr.t * 4);
-      else G.box(pr.x, pr.y, pr.z, 0.18, 0.18, 0.18, 0x8aff4a, pr.t * 6);
+      else G.box(pr.x, pr.y, pr.z, 0.18, 0.18, 0.18, pr.color || 0x8aff4a, pr.t * 6);
     }
     this.arena.drawProps(B, G, this.time);
     // piso elétrico energizado, chuva e progresso das interações
@@ -3510,12 +3569,12 @@ export class Game {
       G.box((t.x1 + t.x2) / 2, 1.0, (t.z1 + t.z2) / 2, tw, tw, len, t.color || 0xffe08a, Math.atan2(dx, dz));
       t.life -= dt;
     }
-    this.tracers = this.tracers.filter((t) => t.life > 0);
+    compact(this.tracers, (t) => t.life > 0);
     for (const f of this.flashes) {
       G.box(f.x, 1.0, f.z, 0.3, 0.3, 0.3, 0xffd060, Math.random() * 3);
       f.life -= dt;
     }
-    this.flashes = this.flashes.filter((f) => f.life > 0);
+    compact(this.flashes, (f) => f.life > 0);
     this.parts.draw(B, G);
     B.end();
     G.end();

@@ -29,6 +29,36 @@ const EVENT_LABEL = { rain: 'CHUVA', blackout: 'APAGÃO', fog: 'NEBLINA', alarm:
 // botão: btn('primary lg', 'play', 'Jogar', onclick)
 const btn = (cls, ic, label, onclick, extra = {}) => h('button', { class: cls, onclick, ...extra }, ic ? icon(ic) : null, label);
 const iconBtn = (cls, ic, label, onclick) => h('button', { class: 'icon-btn ' + cls, onclick, title: label, 'aria-label': label }, icon(ic));
+// escritas no DOM com cache: o HUD roda todo quadro, mas só altera o que mudou
+const setT = (el, v) => {
+  v = String(v);
+  if (el._t !== v) {
+    el._t = v;
+    el.textContent = v;
+  }
+};
+const setW = (el, pct) => {
+  const v = Math.round(Math.max(0, Math.min(100, pct)) * 2) / 2;
+  if (el._w !== v) {
+    el._w = v;
+    el.style.width = v + '%';
+  }
+};
+const setV = (el, prop, v) => {
+  const c = el._v || (el._v = {});
+  if (c[prop] !== v) {
+    c[prop] = v;
+    el.style.setProperty(prop, v);
+  }
+};
+const tog = (el, cls, on) => {
+  const c = el._c || (el._c = {});
+  on = !!on;
+  if (c[cls] !== on) {
+    c[cls] = on;
+    el.classList.toggle(cls, on);
+  }
+};
 const chip = (ic, label, value, cls = '') => h('div', { class: 'chip ' + cls }, icon(ic), h('div', {}, h('small', {}, label), h('b', {}, value)));
 function bar(kind) {
   const fill = h('div', { class: 'fill' });
@@ -360,7 +390,7 @@ export class UI {
       h('input', { type: 'checkbox', checked: s.showFps, role: 'switch', 'aria-label': 'Mostrar FPS', onchange: (e) => {
         s.showFps = e.target.checked;
         g.saveSettings();
-        this.fpsEl.classList.toggle('hidden', !s.showFps);
+        tog(this.fpsEl, 'hidden', !s.showFps);
       } }),
       h('span', { class: 'track' }));
     return this.win('settings', 'Configurações', () => this.showScreen(back),
@@ -482,17 +512,16 @@ export class UI {
       if (x.tag) x.el.append(x.tag);
       x.cls = '';
     }
-    x.el.style.setProperty('--xc', s.crossColor && s.crossColor !== 'default' ? s.crossColor : c.color);
-    x.el.style.setProperty('--k', `${Math.round(base * (s.crossSize ?? 1) * (c.size || 1))}px`);
-    x.el.style.setProperty('--op', s.crossOpacity ?? 0.95);
+    setV(x.el, '--xc', s.crossColor && s.crossColor !== 'default' ? s.crossColor : c.color);
+    setV(x.el, '--k', `${Math.round(base * (s.crossSize ?? 1) * (c.size || 1))}px`);
+    setV(x.el, '--op', String(s.crossOpacity ?? 0.95));
   }
   setXhState(x, st) {
-    const el = x.el.style;
-    el.setProperty('--s', st.s.toFixed(1));
-    el.setProperty('--t', st.t.toFixed(1));
-    el.setProperty('--u', st.u.toFixed(2));
-    el.setProperty('--hx', st.hx.toFixed(1));
-    el.setProperty('--hy', st.hy.toFixed(1));
+    setV(x.el, '--s', st.s.toFixed(1));
+    setV(x.el, '--t', st.t.toFixed(1));
+    setV(x.el, '--u', st.u.toFixed(2));
+    setV(x.el, '--hx', st.hx.toFixed(1));
+    setV(x.el, '--hy', st.hy.toFixed(1));
     const cls = `xh x-${x.id}${st.over ? ' over' : ''}${st.locked ? ' locked' : ''}${st.kill ? ' kill' : st.hit ? ' hit' : ''}${st.stable ? ' stable' : ''}`;
     if (cls !== x.cls) {
       x.cls = cls;
@@ -809,38 +838,42 @@ export class UI {
 
   updateHud(dt) {
     const g = this.g;
-    this.hScore.textContent = fmt(g.stats.score);
-    this.hWave.textContent = g.wave || '—';
-    const alive = g.zombies.reduce((n, z) => n + (z.alive ? 1 : 0), 0);
+    setT(this.hScore, fmt(g.stats.score));
+    setT(this.hWave, g.wave || '—');
     if (g.waveState === 'active') {
-      this.hLeftLabel.textContent = 'Restam';
-      this.hLeft.textContent = g.toSpawn.length + alive;
+      let alive = 0;
+      for (const z of g.zombies) if (z.alive) alive++;
+      setT(this.hLeftLabel, 'Restam');
+      setT(this.hLeft, g.toSpawn.length + alive);
     } else {
-      this.hLeftLabel.textContent = 'Próxima';
-      this.hLeft.textContent = `${Math.ceil(g.waveT)}s`;
+      setT(this.hLeftLabel, 'Próxima');
+      setT(this.hLeft, `${Math.ceil(g.waveT)}s`);
     }
-    if (g.event) {
-      this.hEvent.classList.remove('hidden');
-      this.hEventText.textContent = `${EVENT_LABEL[g.event] || 'CLIMA'} ${Math.ceil(g.eventLeft)}s`;
-    } else this.hEvent.classList.add('hidden');
-    this.hMult.textContent = 'x' + g.mult;
+    tog(this.hEvent, 'hidden', !g.event);
+    if (g.event) setT(this.hEventText, `${EVENT_LABEL[g.event] || 'CLIMA'} ${Math.ceil(g.eventLeft)}s`);
+    setT(this.hMult, 'x' + g.mult);
     const m = Math.max(0, Math.min(1, g.meter));
-    this.hMeter.fill.style.width = `${m * 100}%`;
-    this.hMeter.val.textContent = `${Math.round(m * 100)}%`;
+    setW(this.hMeter.fill, m * 100);
+    setT(this.hMeter.val, `${Math.round(m * 100)}%`);
     const next = UNLOCKS.find((u) => u.level > g.maxMult);
     if (next !== this.lastNext) {
       this.lastNext = next;
       this.hNextIcon.replaceChildren(next ? (next.weapon ? weaponIcon(next.weapon) : next.wicon ? weaponIcon(next.wicon) : icon('star')) : icon('check'));
       this.hNextText.textContent = next ? `Próx. x${next.level}: ${next.text}` : 'Arsenal completo!';
     }
-    if (g.boss && g.boss.alive) {
-      this.hBoss.classList.remove('hidden');
-      this.hBossName.textContent = g.boss.def.name;
-      this.hBossBar.fill.style.width = `${Math.max(0, g.boss.hp / g.boss.maxHp) * 100}%`;
-      this.hBossBar.val.textContent = `${fmt(Math.max(0, g.boss.hp))} / ${fmt(g.boss.maxHp)}`;
-    } else this.hBoss.classList.add('hidden');
+    const boss = g.boss && g.boss.alive;
+    tog(this.hBoss, 'hidden', !boss);
+    if (boss) {
+      setT(this.hBossName, g.boss.def.name);
+      setW(this.hBossBar.fill, Math.max(0, g.boss.hp / g.boss.maxHp) * 100);
+      setT(this.hBossBar.val, `${fmt(Math.max(0, g.boss.hp))} / ${fmt(g.boss.maxHp)}`);
+    }
     g.players.forEach((p, k) => this.updatePlayer(p, k));
-    this.drawRadar();
+    this.radarT = (this.radarT || 0) - dt;
+    if (this.radarT <= 0) {
+      this.radarT = 0.05;
+      this.drawRadar();
+    }
     // mira do mouse (solo)
     this.updateCrosshairs(dt);
   }
@@ -852,7 +885,7 @@ export class UI {
     this.xhs.forEach((x, k) => {
       const p = g.players[k];
       const show = p && p.alive && g.state === 'playing';
-      x.el.classList.toggle('hidden', !show);
+      tog(x.el, 'hidden', !show);
       if (!show) {
         x.target = null;
         x.lockT = 0;
@@ -916,19 +949,19 @@ export class UI {
         kill: p.killT > 0,
         stable: moving < 0.05 && kick < 0.08,
       });
-      x.el.style.transform = `translate(${sx}px, ${sy}px)`;
+      setV(x.el, 'transform', `translate(${Math.round(sx)}px, ${Math.round(sy)}px)`);
     });
   }
 
   updatePlayer(p, k) {
     const g = this.g;
     const el = this.pEls[k];
-    el.root.classList.toggle('dead', !p.alive);
-    el.down.textContent = p.alive ? '' : g.players.length > 1 ? 'Caído · volta na próxima onda' : 'Caído';
-    el.hp.fill.style.width = `${(p.hp / p.maxHp) * 100}%`;
-    el.hp.val.textContent = `${Math.ceil(p.hp)} / ${p.maxHp}`;
+    tog(el.root, 'dead', !p.alive);
+    setT(el.down, p.alive ? '' : g.players.length > 1 ? 'Caído · volta na próxima onda' : 'Caído');
+    setW(el.hp.fill, (p.hp / p.maxHp) * 100);
+    setT(el.hp.val, `${Math.ceil(p.hp)} / ${p.maxHp}`);
     const low = p.alive && p.hp < 30;
-    el.hp.el.classList.toggle('low', low);
+    tog(el.hp.el, 'low', low);
     if (low && !el.lowWarned) this.alert(g.players.length > 1 ? `Vida baixa: ${p.look.name}!` : 'Vida baixa!', 'danger', 'warning');
     el.lowWarned = p.hp < 45 ? el.lowWarned || low : false;
     // nível, XP e pontos
@@ -939,12 +972,12 @@ export class UI {
       el.pts.textContent = `+${p.pts} pt${p.pts > 1 ? 's' : ''} · Tab`;
       el.pts.classList.toggle('hidden', !p.pts);
     }
-    el.xp.firstChild.style.width = `${Math.min(100, (p.xp / xpNeed(p.lv)) * 100)}%`;
+    setW(el.xp.firstChild, (p.xp / xpNeed(p.lv)) * 100);
     // habilidades: recarga (varredura), segundos restantes e efeito ativo
     if (el.ab)
       el.ab.forEach((a, i) => {
         const left = p.cds[i];
-        a.cd.style.setProperty('--cd', left > 0 ? (left / p.cdMax[i]).toFixed(3) : 0);
+        setV(a.cd, '--cd', left > 0 ? (left / p.cdMax[i]).toFixed(2) : '0');
         const id = p.slots[i];
         const on = (id === 'shield' && p.shieldT > 0) || (id === 'cloak' && p.cloakT > 0) || (id === 'fury' && p.furyT > 0) || (id === 'kit' && p.healT > 0) || (id === 'dash' && p.dashT > 0);
         const locked = i === 3 && !p.ultOn;
@@ -964,10 +997,10 @@ export class UI {
         }
       });
     // colete
-    el.armorLine.classList.toggle('hidden', !(p.armor > 0));
+    tog(el.armorLine, 'hidden', !(p.armor > 0));
     if (p.armor > 0) {
-      el.armor.fill.style.width = `${(p.armor / p.maxArmor) * 100}%`;
-      el.armor.val.textContent = `${Math.ceil(p.armor)} / ${p.maxArmor}`;
+      setW(el.armor.fill, (p.armor / p.maxArmor) * 100);
+      setT(el.armor.val, `${Math.ceil(p.armor)} / ${p.maxArmor}`);
     }
     // efeitos ativos e equipamento (só redesenha quando muda)
     const buffs = [];
@@ -1134,9 +1167,10 @@ export class UI {
   playerHurt(id) {
     const el = this.pEls[id]?.root;
     if (!el) return;
-    el.classList.remove('hurt');
-    void el.offsetWidth;
-    el.classList.add('hurt');
+    // alterna entre duas animações iguais: reinicia sem forçar recálculo de layout
+    const b = el.classList.contains('hurt');
+    el.classList.toggle('hurt', !b);
+    el.classList.toggle('hurt2', b);
   }
   toast(id, text, ic = 'medkit', kind = '') {
     const el = this.pEls[id]?.toast;
@@ -1148,7 +1182,7 @@ export class UI {
   }
   fps(dt) {
     if (!this.g.settings.showFps) return;
-    this.fpsEl.classList.remove('hidden');
+    tog(this.fpsEl, 'hidden', false);
     this.fpsAcc += dt;
     this.fpsN++;
     if (this.fpsAcc > 0.5) {

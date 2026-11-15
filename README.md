@@ -182,6 +182,36 @@ Bugs encontrados e corrigidos nesses testes:
 - O inchado e as explosões próprias tiravam vida demais.
 - A câmera ficava próxima demais em telas estreitas.
 
+### Rodada de estresse (arenas novas)
+
+Um bot jogou sozinho em todas as arenas: andou, fugiu, atirou, trocou de arma, usou habilidades e foi até os consoles. A cada quadro, o teste conferiu posições inválidas, vida e erros.
+
+- 10 minutos por arena (até a onda 13), com todos os chefões, mais co-op e partidas com morte e reinício. Nenhum erro e nenhum vazamento de memória (geometrias e texturas estáveis).
+- Carga máxima: 61 inimigos de todos os tipos e 2 jogadores, com cerca de 7 ms por quadro (lógica, montagem e desenho).
+- Lógica do jogo: de 1,65 ms para cerca de 0,2 ms por quadro numa partida normal.
+- Todas as armas, telas do menu, pausa, árvore de habilidades e troca de qualidade no meio da partida.
+
+Bugs encontrados e corrigidos nessa rodada:
+
+- **Piso elétrico**: não atordoava zumbis novos, porque o atordoamento virava NaN.
+- **Esteiras**: só arrastavam zumbis que já tinham sido atordoados antes.
+- **Espectro**: o teletransporte da descrição não existia; agora ele some e reaparece mais perto.
+- **Base Militar**: o jogador nascia na quina do console da torre, preso pela metade. O nascimento agora procura um ponto livre, e a colisão empurra para fora quem fica exatamente na borda de um bloco.
+- **Barris e caixas empurrados**: podiam parar por cima de zumbis ou jogadores, porque o teste de espaço tratava a célula como círculo.
+- **Ferrões da Vespa**: saíam verdes como ácido, e não amarelos.
+- **Barril, barricada ou mina sem espaço**: a tentativa contava como disparo nas estatísticas.
+- **XP de perfil**: na primeira partida, o recorde recém-salvo era creditado duas vezes.
+
+Otimizações:
+
+- **HUD**: só toca no DOM quando um valor muda.
+- **Radar**: redesenha a 20 Hz.
+- **Dano**: a animação de dano não força mais recálculo de layout.
+- **Linha de tiro**: percorre a grade célula a célula (DDA) em vez de amostrar a cada 12 cm.
+- **Caminho dos zumbis**: fila de prioridade em vetor tipado.
+- **Voxels**: matrizes escritas direto, cores em cache e envio à GPU só da parte usada.
+- **Listas por quadro**: compactadas no lugar, sem gerar lixo para o coletor.
+
 ## Limitações conhecidas
 
 - O balanceamento foi ajustado com o bot, não com jogadores humanos. As ondas acima de 20 não foram testadas.

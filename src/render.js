@@ -7,6 +7,18 @@ const _q = new THREE.Quaternion();
 const _s = new THREE.Vector3();
 const _e = new THREE.Euler();
 const _c = new THREE.Color();
+// cor hex -> RGB linear, calculada uma vez por cor (setHex converte sRGB a cada chamada)
+const _rgb = new Map();
+const linear = (hex) => {
+  let v = _rgb.get(hex);
+  if (!v) {
+    if (_rgb.size > 4096) _rgb.clear(); // cores calculadas em tempo real não crescem sem limite
+    _c.setHex(hex);
+    v = [_c.r, _c.g, _c.b];
+    _rgb.set(hex, v);
+  }
+  return v;
+};
 
 // Lote de caixas: todos os personagens, partículas, projéteis e objetos dinâmicos
 // são desenhados como cubos de um único InstancedMesh (uma chamada de desenho).
@@ -23,7 +35,16 @@ export class BoxBatch {
     this.mesh.count = 0;
     this.max = max;
     this.n = 0;
+    this.ma = this.mesh.instanceMatrix.array;
+    this.ca = this.mesh.instanceColor.array;
     scene.add(this.mesh);
+  }
+  col(n, color) {
+    const v = linear(color);
+    const o = n * 3;
+    this.ca[o] = v[0];
+    this.ca[o + 1] = v[1];
+    this.ca[o + 2] = v[2];
   }
   begin() {
     this.n = 0;
@@ -31,11 +52,16 @@ export class BoxBatch {
   // caixa simples alinhada (com rotação Y opcional)
   box(x, y, z, sx, sy, sz, color, ry = 0) {
     if (this.n >= this.max) return;
-    _e.set(0, ry, 0);
-    _q.setFromEuler(_e);
-    _m.compose(_p.set(x, y, z), _q, _s.set(sx, sy, sz));
-    this.mesh.setMatrixAt(this.n, _m);
-    this.mesh.setColorAt(this.n, _c.setHex(color));
+    // matriz escrita direto: rotação em Y + escala + posição
+    const c = ry ? Math.cos(ry) : 1;
+    const s = ry ? Math.sin(ry) : 0;
+    const a = this.ma;
+    const o = this.n * 16;
+    a[o] = c * sx; a[o + 1] = 0; a[o + 2] = -s * sx; a[o + 3] = 0;
+    a[o + 4] = 0; a[o + 5] = sy; a[o + 6] = 0; a[o + 7] = 0;
+    a[o + 8] = s * sz; a[o + 9] = 0; a[o + 10] = c * sz; a[o + 11] = 0;
+    a[o + 12] = x; a[o + 13] = y; a[o + 14] = z; a[o + 15] = 1;
+    this.col(this.n, color);
     this.n++;
   }
   // caixa a partir de uma matriz-base (personagem) + transformação local
@@ -50,21 +76,28 @@ export class BoxBatch {
     _m.multiply(_l);
     _l.makeScale(sx, sy, sz);
     _m.multiply(_l);
-    this.mesh.setMatrixAt(this.n, _m);
-    this.mesh.setColorAt(this.n, _c.setHex(color));
+    _m.toArray(this.ma, this.n * 16);
+    this.col(this.n, color);
     this.n++;
   }
   // caixa com matriz pronta (já com posição, rotação e escala)
   mat(m, color) {
     if (this.n >= this.max) return;
-    this.mesh.setMatrixAt(this.n, m);
-    this.mesh.setColorAt(this.n, _c.setHex(color));
+    m.toArray(this.ma, this.n * 16);
+    this.col(this.n, color);
     this.n++;
   }
   end() {
     this.mesh.count = this.n;
-    this.mesh.instanceMatrix.needsUpdate = true;
-    this.mesh.instanceColor.needsUpdate = true;
+    // só envia à GPU a parte usada dos buffers
+    const im = this.mesh.instanceMatrix;
+    const ic = this.mesh.instanceColor;
+    im.clearUpdateRanges();
+    im.addUpdateRange(0, this.n * 16);
+    im.needsUpdate = true;
+    ic.clearUpdateRanges();
+    ic.addUpdateRange(0, this.n * 3);
+    ic.needsUpdate = true;
   }
 }
 
