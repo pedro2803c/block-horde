@@ -1,0 +1,7 @@
+node_modules/
+dist/
+publish/
+.vercel/
+*.log
+src_backup*/
+.DS_Store

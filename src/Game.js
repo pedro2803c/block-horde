@@ -1,0 +1,3401 @@
+import * as THREE from 'three';
+import { AudioSystem, SOUND_NAMES } from './core/Audio.js';
+import { BoxBatch, drawCharacter, Particles } from './render.js';
+import { Arena, T_LAVA, T_WATER, T_BUSH, T_TOXIC, T_ELEC, T_PLATFORM, BELT_SPEED } from './Arena.js';
+import { BARREL_MODEL } from './scenery.js';
+import { ACTIVES, ULTIMATES, PASSIVES, BRANCHES, MAX_LEVEL, NODE_REQ, ULT_REQ, levelCost, xpNeed, loadLoadouts, ABILITY_KEYS } from './abilities.js';
+import { Input } from './Input.js';
+import { UI } from './UI.js';
+import { WEAPONS, WEAPON_ORDER, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS } from './data.js';
+import { enemyLook, drawEnemy } from './monsters.js';
+import { ITEMS, GUN_MODELS, MELEE, GEAR, drawItem, rollTable } from './items.js';
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+const GUN_LEN = { pistol: 0.24, uzi: 0.32, shotgun: 0.56, rifle: 0.62, sniper: 0.88, rocket: 0.72 };
+const ENERGY_T = 10; // bebida energética
+const SCOUT_T = 15; // binóculos
+const LIGHT_T = 45; // bateria da lanterna
+const MAX_ARMOR = 50;
+const MEDKIT_HEAL = 0.6;
+const BLOOD = [0x8a0a0a, 0xa31212, 0x6a0606];
+const PLAYER_COLORS = [0x3aa0ff, 0xff8a2a];
+const SETTINGS_KEY = 'blockhorde_settings_v1';
+const RECORDS_KEY = 'blockhorde_records_v1';
+
+// Controles: solo = WASD + mouse; co-op = metade do teclado para cada jogador
+const CONTROLS = {
+  solo: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], mouse: true },
+  p1: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'] },
+  p2: { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['Enter', 'NumpadEnter', 'Numpad0', 'KeyL'], next: ['ShiftRight', 'Period'], prev: ['Comma'], melee: ['KeyK', 'Slash', 'NumpadDecimal', 'Numpad1'] },
+};
+
+// avisos dos eventos climáticos de cada arena
+const EVENT_INFO = {
+  rain: { title: 'TEMPESTADE ÁCIDA!', kind: 'wave', sfx: 'wave', rate: 0.85 },
+  blackout: { title: 'APAGÃO NA FÁBRICA!', kind: 'wave', sfx: 'siren', rate: 0.8 },
+  fog: { title: 'NEBLINA DENSA!', kind: 'wave', sfx: 'wave', rate: 0.7 },
+  alarm: { title: 'ALARME DE INVASÃO!', kind: 'wave', sfx: 'siren', rate: 1 },
+};
+
+export class Game {
+  constructor(canvas, uiRoot) {
+    this.canvas = canvas;
+    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95 };
+    try {
+      Object.assign(this.settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'));
+    } catch {
+      /* sem armazenamento */
+    }
+    this.state = 'boot';
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.2;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.camera = new THREE.PerspectiveCamera(40, 1, 0.5, 200);
+    this.applyQuality();
+    window.addEventListener('resize', () => this.resize());
+    this.resize();
+    this.input = new Input(canvas);
+    this.audio = new AudioSystem();
+    this.audio.listener.yaw = Math.PI; // direita da tela = +x
+    this.applyVolumes();
+    this.ui = new UI(this, uiRoot);
+    this.raycaster = new THREE.Raycaster();
+    this.aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
+    this.mouseWorld = new THREE.Vector3();
+    this.camTarget = new THREE.Vector3(23, 0, 16);
+    this.camDist = 20;
+    this.shakeAmt = 0;
+    this.scopeK = 0; // 0..1: quanto a luneta do sniper está ativa
+    this.menuT = 0;
+    window.addEventListener('pointerdown', () => this.audio.unlock(), { capture: true });
+    window.addEventListener('keydown', (e) => {
+      this.audio.unlock();
+      this.onKey(e);
+    }, { capture: true });
+    this.testMode = new URLSearchParams(location.search).has('test'); // depuração automatizada
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && this.state === 'playing' && !this.testMode) this.pause();
+    });
+    window.__bh = this;
+    if (this.testMode) window.__bhTest = { Arena, ARENAS, ENEMIES, SURVIVORS };
+  }
+
+  async boot() {
+    this.ui.loading(0, 'Preparando...');
+    const total = SOUND_NAMES.length + 2;
+    let done = 0;
+    for (const name of SOUND_NAMES) {
+      await this.audio.renderSound(name);
+      done++;
+      if (done % 4 === 0) {
+        this.ui.loading(done / total, `Sintetizando sons (${done}/${SOUND_NAMES.length})`);
+        await new Promise((r) => setTimeout(r, 0));
+      }
+    }
+    this.ui.loading((done + 1) / total, 'Montando a arena do menu');
+    await new Promise((r) => setTimeout(r, 16));
+    this.setupMatch(ARENAS[0], [], true);
+    this.ui.loading(1, 'Pronto!');
+    await new Promise((r) => setTimeout(r, 200));
+    this.toMenu();
+    this.last = performance.now();
+    this.renderer.setAnimationLoop((t) => this.frame(t));
+  }
+
+  // ------------------------------------------------------------------ configurações
+  applyQuality() {
+    const q = this.settings.quality;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q === 'low' ? 0.8 : q === 'high' ? 2 : 1.25));
+    this.renderer.shadowMap.enabled = q !== 'low';
+    if (this.sun) {
+      const shadows = q !== 'low';
+      this.sun.castShadow = shadows;
+      if (this.B) this.B.mesh.castShadow = shadows;
+      if (this.arena?.instanced) this.arena.instanced.castShadow = shadows;
+      this.scene?.traverse((o) => o.material && (o.material.needsUpdate = true));
+    }
+    this.resize();
+  }
+  applyVolumes() {
+    const s = this.settings;
+    this.audio.setVolumes(s.master, s.music, s.sfx);
+  }
+  saveSettings() {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings));
+    } catch {
+      /* ignora */
+    }
+  }
+  records() {
+    try {
+      return JSON.parse(localStorage.getItem(RECORDS_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  }
+  resize() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    this.renderer.setSize(w, h, false);
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+  }
+
+  // ------------------------------------------------------------------ partida
+  setupMatch(arenaDef, survivors, demo = false) {
+    this.disposeMatch();
+    const scene = (this.scene = new THREE.Scene());
+    const L = arenaDef.light;
+    scene.background = new THREE.Color(L.sky);
+    scene.fog = new THREE.Fog(L.fog, 40, 90);
+    this.hemi = new THREE.HemisphereLight(0xdfe8ff, 0x3a3020, L.hemi);
+    scene.add(this.hemi);
+    const sun = (this.sun = new THREE.DirectionalLight(L.sun, L.sunI));
+    sun.castShadow = this.settings.quality !== 'low';
+    sun.shadow.mapSize.set(2048, 2048);
+    const arena = (this.arena = new Arena(arenaDef));
+    const sc = sun.shadow.camera;
+    sc.left = -arena.W * 0.65;
+    sc.right = arena.W * 0.65;
+    sc.top = arena.D * 0.75;
+    sc.bottom = -arena.D * 0.75;
+    sc.near = 1;
+    sc.far = 120;
+    sun.shadow.bias = -0.0008;
+    sun.shadow.normalBias = 0.03;
+    sun.position.set(arena.W / 2 - 18, 40, arena.D / 2 - 14);
+    sun.target.position.set(arena.W / 2, 0, arena.D / 2);
+    scene.add(sun, sun.target);
+    this.boomLights = [0, 1].map(() => {
+      const l = new THREE.PointLight(0xff8a30, 0, 14, 1.6);
+      scene.add(l);
+      return l;
+    });
+    this.boomIdx = 0;
+    // lanternas (uma por jogador): criadas apagadas para não recompilar os materiais depois
+    this.spots = [0, 1].map(() => {
+      const l = new THREE.SpotLight(0xfff0c0, 0, 17, 0.48, 0.5, 1.1);
+      scene.add(l, l.target);
+      return l;
+    });
+    arena.build(scene, this.settings.quality);
+    this.B = new BoxBatch(scene, 16000, { shadows: this.settings.quality !== 'low' });
+    this.G = new BoxBatch(scene, 4500, { shadows: false, emissive: true });
+    this.parts = new Particles(this.settings.quality === 'low' ? 1200 : 2600);
+    this.zombies = [];
+    this.corpses = [];
+    this.projectiles = [];
+    this.clouds = [];
+    this.placeables = [];
+    this.pickups = [];
+    this.strikes = [];
+    this.scoutT = 0;
+    // habilidades: torres, drones, campos (elétrico/sobrevivência), bombardeios e raios
+    this.turrets = [];
+    this.drones = [];
+    this.fields = [];
+    this.bombards = [];
+    this.bolts = [];
+    // barris explosivos desenhados no mapa viram barris normais do jogo
+    for (const b of arena.mapBarrels) {
+      this.placeables.push({ kind: 'barrel', i: b.i, j: b.j, x: b.x, z: b.z, hp: 14, maxHp: 260, armT: 0, dead: false, owner: null, map: true });
+      arena.dyn[arena.idx(b.i, b.j)] = 2;
+    }
+    this.tracers = [];
+    this.flashes = [];
+    this.timers = [];
+    this.time = 0;
+    // ---- ambiente vivo da arena (mecânicas, clima e áudio) ----
+    this.gateProps = arena.props.filter((p) => p.def.id === 'mgate');
+    for (const gp of this.gateProps) {
+      gp.closed = false;
+      gp.broken = false;
+      gp.hp = gp.maxHp = 240;
+      gp.holdT = 0;
+      arena.setPropBlock(gp, false);
+    }
+    this.gatesClosed = false;
+    this.power = !['military'].includes(arenaDef.theme); // base militar precisa do gerador
+    this.genOn = false;
+    for (const pr of arena.props) if (pr.def.id === 'generator') pr.on = false;
+    this.elecOn = false;
+    this.elecForceT = 0;
+    this.rain = Array.from({ length: 170 }, () => ({ x: rand(0, arena.W), y: rand(0, 16), z: rand(0, arena.D), vx: 1.4, vy: 13, vz: 0.6 }));
+    this.rainOn = arenaDef.theme === 'city';
+    this.eventLight = new THREE.PointLight(0xff3020, 0, 30, 1.4);
+    this.eventLight.position.set(arena.W / 2, 8, arena.D / 2);
+    scene.add(this.eventLight);
+    this.baseLight = { sunI: L.sunI, hemi: L.hemi, fogNear: 40, fogFar: 90 };
+    this.baseLight.fogC = new THREE.Color(L.fog);
+    this.baseLight.bgC = new THREE.Color(L.sky);
+    this.eventT = 32;
+    this.event = null;
+    this.eventLeft = 0;
+    this.eventBoost = 0;
+    this.lightK = 1;
+    this.alarmT = 0;
+    this.lightningT = 0;
+    this.alarmSpawnT = 0;
+    this.audio.setAmbient(arenaDef.ambient || 'city');
+    this.audio.setWeatherAmbient('rain', this.rainOn);
+    this.audio.setWeatherAmbient('fog', false);
+    this._wRain = this.rainOn;
+    this._wFog = false;
+    this.demo = demo;
+    this.wave = 0;
+    this.waveState = 'intermission';
+    this.waveT = 3;
+    this.toSpawn = [];
+    this.spawnT = 0;
+    this.crateT = 8;
+    this.flowT = 0;
+    this.mult = 1;
+    this.meter = 0;
+    this.maxMult = 1;
+    this.upg = {};
+    this.unlocked = new Set(['pistol']);
+    this.stats = { score: 0, kills: 0, shots: 0, time: 0 };
+    this.boss = null;
+    this.loadouts = loadLoadouts();
+    this.players = survivors.map((s, k) => this.makePlayer(s, k, survivors.length > 1));
+    const center = { x: arena.W / 2, z: arena.D / 2 + 4 };
+    this.players.forEach((p, k) => p.pos.set(center.x + (k ? 1.2 : -1.2) * (survivors.length > 1), 0, center.z));
+    this.camTarget.set(center.x, 0, center.z);
+    if (demo) for (let k = 0; k < 26; k++) {
+      this.spawnZombie(pick(['walker', 'walker', ...ENEMY_ORDER.filter((t) => t !== 'boss')]), rand(4, arena.W - 4), rand(4, arena.D - 4));
+    }
+  }
+
+  disposeMatch() {
+    if (!this.scene) return;
+    this.arena.dispose(this.scene);
+    for (const b of [this.B, this.G]) {
+      this.scene.remove(b.mesh);
+      b.mesh.geometry.dispose();
+      b.mesh.material.dispose();
+      b.mesh.dispose();
+    }
+    this.sun.shadow.map?.dispose();
+    this.scene = null;
+  }
+
+  makePlayer(look, k, coop) {
+    const p = {
+      id: k,
+      look: { ...look, eyes: 0x1a1a1a },
+      color: PLAYER_COLORS[k],
+      ctl: CONTROLS[coop ? (k ? 'p2' : 'p1') : 'solo'],
+      pos: new THREE.Vector3(),
+      vel: new THREE.Vector3(),
+      facing: Math.PI,
+      aim: Math.PI,
+      hp: 100,
+      maxHp: 100,
+      alive: true,
+      weapon: 'pistol',
+      ammo: { pistol: Infinity },
+      fireCd: 0,
+      recoil: 0,
+      hurtT: 0,
+      walk: 0,
+      firingT: 0,
+      deadT: 0,
+      kills: 0,
+      radius: 0.33,
+      // equipamento e efeitos (perdidos ao cair)
+      armor: 0,
+      maxArmor: MAX_ARMOR,
+      helmet: false,
+      pack: false,
+      energyT: 0,
+      lightT: 0,
+      meleeCd: 0,
+      meleeT: 0,
+      meleeDur: 1,
+      meleeKind: 'knife',
+      // habilidades: nível/XP/pontos, passivas compradas e 3 ativas + 1 ultimate equipadas
+      lv: 1,
+      xp: 0,
+      pts: 0,
+      pas: {},
+      ultOn: false,
+      slots: [...this.loadouts[k].actives, this.loadouts[k].ult],
+      build: this.loadouts[k].build || null,
+      cds: [0, 0, 0, 0],
+      cdMax: [1, 1, 1, 1],
+      akeys: ABILITY_KEYS[coop ? (k ? 'p2' : 'p1') : 'solo'],
+      shieldT: 0,
+      cloakT: 0,
+      furyT: 0,
+      dashT: 0,
+      healT: 0,
+      // efeitos de terreno e mecânicas de arena
+      rootT: 0,
+      slowT: 0,
+      slowMul: 1,
+      shockCd: 0,
+      toxicT: 0,
+      lavaT: 0,
+      fireT: 0,
+      onPlat: false,
+    };
+    return p;
+  }
+
+  startMatch(arenaDef, survivors, mode) {
+    this.mode = mode;
+    this.arenaDef = arenaDef;
+    this.survivorPicks = survivors;
+    this.setupMatch(arenaDef, survivors);
+    this.state = 'playing';
+    this.ui.hud(true);
+    this.ui.showScreen(null);
+    this.audio.setMusic('ambient');
+    this.ui.banner('PREPARE-SE!', 'info');
+    this.canvas.style.cursor = mode === 'solo' ? 'none' : 'default';
+  }
+  restart() {
+    this.startMatch(this.arenaDef, this.survivorPicks, this.mode);
+  }
+  toMenu() {
+    this.state = 'menu';
+    this.ui.hud(false);
+    this.ui.showScreen('menu');
+    this.audio.setMusic('menu');
+    this.canvas.style.cursor = 'default';
+    if (!this.demo) this.setupMatch(ARENAS[Math.floor(Math.random() * ARENAS.length)], [], true);
+  }
+  pause() {
+    if (this.state !== 'playing') return;
+    this.state = 'paused';
+    this.ui.showScreen('pause');
+    this.canvas.style.cursor = 'default';
+  }
+  openTree(k = 0) {
+    if (this.state !== 'playing' && this.state !== 'paused') return;
+    this.state = 'paused';
+    this.ui.showScreen('tree', { k });
+    this.canvas.style.cursor = 'default';
+  }
+  resume() {
+    if (this.state !== 'paused') return;
+    this.state = 'playing';
+    this.ui.showScreen(null);
+    this.canvas.style.cursor = this.mode === 'solo' ? 'none' : 'default';
+  }
+  onKey(e) {
+    // Tab abre/fecha a árvore de habilidades (pausa o jogo)
+    if (e.code === 'Tab' && !e.repeat && (this.state === 'playing' || (this.state === 'paused' && this.ui.screen === 'tree'))) {
+      e.preventDefault();
+      if (this.state === 'playing') this.openTree();
+      else this.resume();
+      return;
+    }
+    if (e.code === 'Escape' || e.code === 'KeyP') {
+      if (this.state === 'playing') this.pause();
+      else if (this.state === 'paused') this.resume();
+    }
+  }
+
+  // ------------------------------------------------------------------ armas
+  wstat(id) {
+    const w = { ...WEAPONS[id] };
+    const u = this.upg;
+    if (id === 'pistol' && u.pistolFast) w.rate = 0.15;
+    if (id === 'uzi' && u.uziDmg) w.dmg *= 1.4;
+    if (id === 'shotgun' && u.shotgunPellets) w.pellets = 11;
+    if (id === 'rifle' && u.rifleRail) w.pierce = 8;
+    if (u.bigBoom && w.radius) w.radius *= 1.4;
+    return w;
+  }
+  cycleWeapon(p, dir) {
+    const owned = WEAPON_ORDER.filter((id) => this.unlocked.has(id));
+    let i = owned.indexOf(p.weapon);
+    for (let k = 0; k < owned.length; k++) {
+      i = (i + dir + owned.length) % owned.length;
+      const id = owned[i];
+      if (id === 'pistol' || (p.ammo[id] || 0) > 0) {
+        p.weapon = id;
+        this.audio.play('reload_out', { volume: 0.4, rate: 1.3 });
+        return;
+      }
+    }
+  }
+
+  fire(p) {
+    const w = this.wstat(p.weapon);
+    // plataforma elevada: rifles e sniper ganham alcance e dano
+    if (p.onPlat && (w.kind === 'gun' || w.kind === 'rocket')) {
+      w.range *= 1.4;
+      w.dmg *= 1.2;
+    }
+    if (p.weapon !== 'pistol' && !(p.ammo[p.weapon] > 0)) {
+      this.audio.play('empty', { volume: 0.5 });
+      p.fireCd = 0.25;
+      this.cycleWeapon(p, -1);
+      return;
+    }
+    let ang = p.aim;
+    // assistência de mira para quem joga só no teclado
+    if (!p.ctl.mouse || this.input.mouseIdle) {
+      const best = this.aimTarget(p);
+      if (best) ang = Math.atan2(best.pos.x - p.pos.x, best.pos.z - p.pos.z);
+    }
+    // mira: as marcações abrem a cada disparo
+    p.cxKick = Math.min(1.2, (p.cxKick || 0) + (w.heavy ? 1 : w.pellets > 1 ? 0.8 : w.kind === 'gun' ? 0.3 : 0.5));
+    p.facing = ang;
+    p.fireCd = w.rate * (p.energyT > 0 ? 0.7 : 1) * (p.furyT > 0 ? 0.75 : 1);
+    p.firingT = 0.6;
+    p.recoil = 1;
+    if (p.weapon !== 'pistol') p.ammo[p.weapon]--;
+    this.stats.shots++;
+    const dx = Math.sin(ang);
+    const dz = Math.cos(ang);
+    const mx = p.pos.x + dx * 0.75 - Math.cos(ang) * 0.3;
+    const mz = p.pos.z + dz * 0.75 + Math.sin(ang) * 0.3;
+    this.audio.play(w.sound, { volume: 0.55, pos: p.pos, rate: rand(0.95, 1.05) });
+    if (w.kind === 'gun') {
+      this.flashes.push({ x: mx, z: mz, life: 0.05 });
+      // Precisão reduz a dispersão; Multitiro dá chance de um projétil extra
+      const spread = w.spread * (1 - this.pv(p, 'precision') / 100);
+      const extra = Math.random() < this.pv(p, 'multishot') / 100 ? 1 : 0;
+      for (let k = 0; k < w.pellets + extra; k++) this.hitscan(p, mx, mz, ang + gauss() * spread + (k >= w.pellets ? rand(-0.06, 0.06) : 0), w);
+      this.noiseShake(w.heavy ? 0.35 : w.pellets > 1 ? 0.25 : 0.06);
+    } else if (w.kind === 'throw') {
+      const dyn = w.proj === 'dynamite';
+      this.projectiles.push({ kind: w.proj || 'grenade', x: mx, y: 1.1, z: mz, vx: dx * (dyn ? 9.5 : 11), vy: dyn ? 5.5 : 5, vz: dz * (dyn ? 9.5 : 11), t: 0, fuse: w.fuse || 1.4, w, owner: p });
+      if (dyn) this.audio.play('fuse', { volume: 0.5, pos: p.pos });
+    } else if (w.kind === 'rocket') {
+      // com o alvo travado pela mira, o foguete persegue o inimigo
+      const homing = p.lockTarget?.alive ? p.lockTarget : null;
+      this.projectiles.push({ kind: 'rocket', x: mx, y: 1.0, z: mz, vx: dx * w.speed, vy: 0, vz: dz * w.speed, t: 0, w, owner: p, homing });
+      if (homing) this.audio.play('beep', { volume: 0.5, rate: 1.5 });
+      this.flashes.push({ x: mx, z: mz, life: 0.08 });
+    } else if (w.kind === 'place') {
+      if (!this.place(p, w.place, ang)) {
+        p.ammo[p.weapon]++;
+        p.fireCd = 0.2;
+      }
+    }
+    if (p.weapon !== 'pistol' && p.ammo[p.weapon] <= 0) this.cycleWeapon(p, -1);
+  }
+
+  // inimigo que a assistência de mira escolhe (teclado): o mais próximo num cone estreito à frente
+  aimTarget(p) {
+    let best = null;
+    let bd = 15;
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      const dx = z.pos.x - p.pos.x;
+      const dz = z.pos.z - p.pos.z;
+      const d = Math.hypot(dx, dz);
+      if (d > bd) continue;
+      if (Math.abs(angDiff(p.aim, Math.atan2(dx, dz))) < 0.3 && this.arena.los(p.pos.x, p.pos.z, z.pos.x, z.pos.z)) {
+        bd = d;
+        best = z;
+      }
+    }
+    return best;
+  }
+
+  hitscan(p, mx, mz, ang, w) {
+    const dx = Math.sin(ang);
+    const dz = Math.cos(ang);
+    // o raio sai do corpo (acerta quem está colado); o traçante sai do cano
+    const ox = p.pos.x;
+    const oz = p.pos.z;
+    const wallT = this.arena.rayFree(ox, oz, dx, dz, w.range);
+    const hits = [];
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      const t = rayCircle(ox, oz, dx, dz, z.pos.x, z.pos.z, z.radius + 0.08);
+      if (t >= 0 && t < wallT) hits.push({ z, t });
+    }
+    for (const b of this.placeables) {
+      if (b.kind !== 'barrel' || b.dead) continue;
+      const t = rayCircle(ox, oz, dx, dz, b.x, b.z, 0.4);
+      if (t >= 0 && t < wallT) hits.push({ b, t });
+    }
+    // caixas de madeira abrem com tiro
+    for (const c of this.pickups) {
+      if (c.type !== 'supply' || c.taken) continue;
+      const t = rayCircle(ox, oz, dx, dz, c.x, c.z, 0.42);
+      if (t >= 0 && t < wallT) hits.push({ c, t });
+    }
+    // objetos do cenário que levam tiro (caixas, postes, placas, barris, cones)
+    for (const pr of this.arena.props) {
+      if (pr.dead || !(pr.def.shoot || (pr.def.knock && !pr.knocked))) continue;
+      const t = rayCircle(ox, oz, dx, dz, pr.x, pr.z, pr.def.shoot || 0.25);
+      if (t >= 0 && t < wallT) hits.push({ pr, t });
+    }
+    hits.sort((a, b) => a.t - b.t);
+    let endT = wallT;
+    let pierced = 0;
+    for (const h of hits) {
+      if (h.b) {
+        if (!h.b.owner) h.b.owner = p;
+        this.damageBarrel(h.b, w.dmg);
+        endT = h.t;
+        break;
+      }
+      if (h.pr) {
+        if (h.pr.dead) continue;
+        if (h.pr.def.knock) {
+          this.knockProp(h.pr, dx, dz, 5); // cone cai e o tiro segue
+          continue;
+        }
+        this.damageProp(h.pr, w.dmg, p, dx, dz);
+        endT = h.t;
+        break;
+      }
+      if (h.c) {
+        if (h.c.taken) continue;
+        this.openSupply(h.c, p);
+        endT = h.t;
+        break;
+      }
+      let dmg = w.dmg;
+      if (w.pellets > 1) dmg *= Math.max(0.4, 1 - h.t / w.range);
+      this.damageZombie(h.z, dmg, dx, dz, p, w.knock ?? (w.pellets > 1 ? 2.2 : 0.8));
+      endT = h.t;
+      if (++pierced > (w.pierce || 0)) break;
+    }
+    if (endT === wallT && wallT < w.range) {
+      for (let k = 0; k < 3; k++) this.parts.spawn(ox + dx * endT, 1, oz + dz * endT, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.06, 0xffd27a, 0.25, 10, 2);
+      // parede destrutível (bloco de madeira)
+      const wallProp = this.arena.propAt(Math.floor(ox + dx * (wallT + 0.2)), Math.floor(oz + dz * (wallT + 0.2)));
+      if (wallProp && wallProp.def.coll === 'tall') this.damageProp(wallProp, w.dmg, p, dx, dz);
+    }
+    if (endT > 0.8) this.tracers.push({ x1: mx, z1: mz, x2: ox + dx * endT, z2: oz + dz * endT, life: w.heavy ? 0.14 : 0.06, w: w.heavy ? 0.08 : 0.035, color: w.heavy ? 0xc8ffd0 : 0xffe08a });
+  }
+
+  place(p, kind, ang) {
+    const A = this.arena;
+    const tx = p.pos.x + Math.sin(ang) * 1.2;
+    const tz = p.pos.z + Math.cos(ang) * 1.2;
+    const i = Math.floor(tx);
+    const j = Math.floor(tz);
+    if (!A.inb(i, j) || A.block[A.idx(i, j)] || A.dyn[A.idx(i, j)]) return false;
+    if (this.placeables.some((b) => !b.dead && b.i === i && b.j === j)) return false;
+    const x = i + 0.5;
+    const z = j + 0.5;
+    if (kind !== 'mine') {
+      for (const e of [...this.players.filter((q) => q.alive), ...this.zombies.filter((q) => q.alive)])
+        if (Math.abs(e.pos.x - x) < 0.5 + e.radius && Math.abs(e.pos.z - z) < 0.5 + e.radius) return false;
+      A.dyn[A.idx(i, j)] = kind === 'barricade' ? 1 : 2;
+      this.flowT = 0;
+    }
+    this.placeables.push({ kind, i, j, x, z, hp: kind === 'barricade' ? 260 : 14, maxHp: 260, armT: 0.7, dead: false, owner: p });
+    return true;
+  }
+
+  // corpo a corpo: faca (padrão) ou machado (liberado no x15 ou achado em caixa)
+  melee(p) {
+    const m = MELEE[this.upg.axe ? 'axe' : 'knife'];
+    const fast = p.energyT > 0 ? 0.7 : 1;
+    p.meleeCd = m.rate * fast;
+    p.meleeDur = m.anim * fast;
+    p.meleeT = p.meleeDur;
+    p.meleeKind = m.id;
+    p.firingT = Math.max(p.firingT, 0.4);
+    let ang = p.aim;
+    // sem mouse: vira para o inimigo mais próximo à frente
+    if (!p.ctl.mouse || this.input.mouseIdle) {
+      let bd = m.range + 1.6;
+      for (const z of this.zombies) {
+        if (!z.alive) continue;
+        const d = Math.hypot(z.pos.x - p.pos.x, z.pos.z - p.pos.z);
+        const a = Math.atan2(z.pos.x - p.pos.x, z.pos.z - p.pos.z);
+        if (d < bd && Math.abs(angDiff(p.aim, a)) < 1.3) {
+          bd = d;
+          ang = a;
+        }
+      }
+    }
+    p.facing = ang;
+    p.aim = ang;
+    this.audio.play('swing', { volume: 0.5, pos: p.pos, rate: m.id === 'axe' ? 0.75 : 1.3 });
+    this.later(p.meleeDur * 0.42, () => this.meleeHit(p, m, ang));
+  }
+  meleeHit(p, m, ang) {
+    if (!p.alive || this.state !== 'playing') return;
+    const list = [];
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      const dx = z.pos.x - p.pos.x;
+      const dz = z.pos.z - p.pos.z;
+      const d = Math.hypot(dx, dz);
+      if (d > m.range + z.radius) continue;
+      if (Math.abs(angDiff(ang, Math.atan2(dx, dz))) > m.arc / 2 && d > z.radius + 0.35) continue;
+      list.push({ z, d });
+    }
+    list.sort((a, b) => a.d - b.d);
+    const n = Math.min(m.max, list.length);
+    for (let k = 0; k < n; k++) {
+      const { z, d } = list[k];
+      this.damageZombie(z, m.dmg, (z.pos.x - p.pos.x) / (d || 1), (z.pos.z - p.pos.z) / (d || 1), p, m.knock);
+    }
+    // lâmina quebra objetos do cenário à frente
+    for (const pr of this.arena.props) {
+      if (pr.dead || !pr.def.hp || pr.def.boomOnly) continue;
+      const d = Math.hypot(pr.x - p.pos.x, pr.z - p.pos.z);
+      if (d < m.range + 0.5 && Math.abs(angDiff(ang, Math.atan2(pr.x - p.pos.x, pr.z - p.pos.z))) < m.arc / 2 + 0.3) this.damageProp(pr, m.dmg, p, (pr.x - p.pos.x) / (d || 1), (pr.z - p.pos.z) / (d || 1));
+    }
+    // lâmina também abre caixas de madeira
+    for (const c of this.pickups) {
+      if (c.type !== 'supply' || c.taken) continue;
+      const d = Math.hypot(c.x - p.pos.x, c.z - p.pos.z);
+      if (d < m.range + 0.4 && Math.abs(angDiff(ang, Math.atan2(c.x - p.pos.x, c.z - p.pos.z))) < m.arc / 2 + 0.3) this.openSupply(c, p);
+    }
+    const fx = p.pos.x + Math.sin(ang) * m.range * 0.7;
+    const fz = p.pos.z + Math.cos(ang) * m.range * 0.7;
+    for (let k = 0; k < (m.id === 'axe' ? 8 : 4); k++) this.parts.spawn(fx, 0.9, fz, Math.sin(ang + rand(-0.8, 0.8)) * rand(2, 4), rand(0.5, 2), Math.cos(ang + rand(-0.8, 0.8)) * rand(2, 4), 0.05, 0xf0f4ff, 0.18, 0, 2);
+    if (n) {
+      this.audio.play('melee_hit', { volume: 0.7, pos: p.pos, rate: m.id === 'axe' ? 0.8 : 1.2 });
+      this.noiseShake(m.shake);
+    }
+  }
+
+  // ------------------------------------------------------------------ dano
+  damageZombie(z, dmg, dx, dz, src, knock = 0.8) {
+    if (!z.alive) return;
+    // passivas de quem causou o dano: Dano aumentado, Fúria total e Crítico
+    if (src && src.ctl) {
+      dmg *= this.dmgMul(src);
+      if (Math.random() < this.pv(src, 'crit') / 100) {
+        dmg *= 2;
+        for (let k = 0; k < 5; k++) this.parts.spawn(z.pos.x, 1.4 * z.scale, z.pos.z, rand(-2, 2), rand(2, 4), rand(-2, 2), 0.08, pick([0xffe040, 0xffffff]), 0.4, 6, 2);
+      }
+    }
+    const hy = z.def.fly ? (z.flyY || 1.4) + 0.2 : 0.9 * z.scale;
+    // blindagem do Operário Mutante: tiros e lâminas perdem parte do dano
+    if (z.def.plating && src) dmg *= z.def.plating;
+    // escudo do Blindado: tiro que chega pela frente perde quase todo o dano
+    if (z.def.shield && dx * Math.sin(z.facing) + dz * Math.cos(z.facing) < -0.45) {
+      dmg *= z.def.shield;
+      knock *= 0.2;
+      for (let k = 0; k < 3; k++) this.parts.spawn(z.pos.x - dx * 0.6, 0.9, z.pos.z - dz * 0.6, -dx * rand(1, 3) + rand(-2, 2), rand(1, 3), -dz * rand(1, 3) + rand(-2, 2), 0.06, 0xffd27a, 0.25, 10, 2);
+      this.audio.play('hit_armor', { volume: 0.35, pos: z.pos, rate: rand(0.9, 1.2) });
+    } else this.audio.play('hit_flesh', { volume: 0.35, pos: z.pos, rate: rand(0.9, 1.15) });
+    z.hp -= dmg;
+    z.hurtT = 0.08;
+    if (src && src.ctl) src.hitT = 0.14; // marcador de acerto na mira
+    z.kx += dx * knock * (z.def.boss ? 0.1 : 1);
+    z.kz += dz * knock * (z.def.boss ? 0.1 : 1);
+    const n = Math.min(8, 2 + Math.floor(dmg / 8));
+    const blood = z.def.blood || BLOOD;
+    const bk = z.def.blood ? 0 : 1;
+    for (let k = 0; k < n; k++) this.parts.spawn(z.pos.x, hy, z.pos.z, dx * rand(1, 4) + rand(-1.5, 1.5), rand(1, 4), dz * rand(1, 4) + rand(-1.5, 1.5), rand(0.07, 0.14), pick(blood), 1.2, 16, bk);
+    if (z.hp <= 0) this.killZombie(z, dx, dz, src);
+  }
+
+  killZombie(z, dx, dz, src) {
+    z.alive = false;
+    z.deadT = 0;
+    z.fallDir = Math.atan2(dx, dz);
+    this.corpses.push(z);
+    if (this.corpses.length > 45) this.corpses.shift();
+    const A = this.arena;
+    const blood = z.def.blood || BLOOD;
+    const hy = z.def.fly ? z.flyY || 1.4 : 0.8 * z.scale;
+    if (z.def.blood) A.splat(z.pos.x + dx * 0.5, z.pos.z + dz * 0.5, 0.45 * z.scale + rand(0, 0.3), '#' + blood[0].toString(16).padStart(6, '0'));
+    else A.splat(z.pos.x + dx * 0.5, z.pos.z + dz * 0.5, 0.45 * z.scale + rand(0, 0.3));
+    for (let k = 0; k < 14; k++) this.parts.spawn(z.pos.x, hy, z.pos.z, dx * rand(1, 5) + rand(-2.5, 2.5), rand(2, 6), dz * rand(1, 5) + rand(-2.5, 2.5), rand(0.08, 0.18), pick(blood), 1.5, 18, z.def.blood ? 0 : 1);
+    for (let k = 0; k < 4; k++) this.parts.spawn(z.pos.x, 1 * z.scale, z.pos.z, rand(-3, 3), rand(3, 6), rand(-3, 3), rand(0.12, 0.2), pick([z.look.skin, z.look.shirt]), rand(1.5, 2.5), 18, 0);
+    this.audio.play(z.def.boss ? 'boss_roar' : 'zombie_die', { volume: z.def.boss ? 1 : 0.5, pos: z.pos, rate: rand(0.85, 1.15), priority: z.def.boss });
+    if (src && src.ctl) src.killT = 0.25; // marcador vermelho de abate na mira
+    // XP: quem matou ganha tudo; o parceiro ganha metade
+    if (src && src.ctl) for (const q of this.players) this.gainXp(q, q === src ? z.def.score : Math.round(z.def.score / 2));
+    if (!this.demo) {
+      this.stats.kills++;
+      if (src && src.kills !== undefined) src.kills++;
+      this.stats.score += z.def.score * this.mult;
+      this.addMeter(z.def.boss ? 3 : 1);
+    }
+    if (z.def.explode) {
+      const e = z.def.explode;
+      this.later(0.08, () => this.explosion(z.pos.x, z.pos.z, e.radius, e.dmg, null));
+    }
+    if (z.def.spore) this.addCloud(z.pos.x, z.pos.z, z.def.spore);
+    if (z.def.summon) for (let k = 0; k < 16; k++) this.parts.spawn(z.pos.x, 1, z.pos.z, rand(-3, 3), rand(1, 4), rand(-3, 3), rand(0.1, 0.2), pick([0xc070ff, 0x8a3ad0]), 0.8, 2, 2);
+    if (z.def.boss) {
+      this.boss = null;
+      this.audio.setMusic('combat');
+      this.ui.banner(`${z.def.name.toUpperCase()} DERROTADO!`, 'gold');
+      this.noiseShake(1);
+      // o Colosso deixa uma caixa de madeira e um kit médico
+      for (const type of ['supply', 'medkit']) {
+        for (let n = 0; n < 8; n++) {
+          if (this.spawnPickup(type, z.pos.x + rand(-1.5, 1.5), z.pos.z + rand(-1.5, 1.5))) break;
+        }
+      }
+    }
+  }
+
+  // special: explosões, ácido, nuvens, pedras, pancada, investida e botes (o capacete reduz)
+  damagePlayer(p, dmg, fx, fz, knock = 0, special = false) {
+    if (!p.alive || this.debugGod) return;
+    // Escudo tático e Investida bloqueiam tudo
+    if (p.shieldT > 0 || p.dashT > 0) {
+      for (let k = 0; k < 4; k++) this.parts.spawn(p.pos.x + rand(-0.5, 0.5), rand(0.6, 1.4), p.pos.z + rand(-0.5, 0.5), rand(-2, 2), rand(0, 2), rand(-2, 2), 0.07, 0x4fd0ff, 0.35, 0, 2);
+      return;
+    }
+    // Blindagem, Fúria total e Campo de sobrevivência reduzem o dano
+    dmg *= (1 - this.pv(p, 'armor') / 100) * (p.furyT > 0 ? 0.5 : 1) * (this.inHaven(p) ? 0.4 : 1);
+    if (special && p.helmet) dmg *= 0.6;
+    let absorbed = 0;
+    if (p.armor > 0) {
+      absorbed = Math.min(p.armor, dmg);
+      p.armor -= absorbed;
+      dmg -= absorbed;
+      for (let k = 0; k < 3; k++) this.parts.spawn(p.pos.x, 1, p.pos.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.07, 0x9aa4b4, 0.4, 14, 0);
+      if (p.armor <= 0) {
+        p.armor = 0;
+        this.ui.toast(p.id, 'Colete destruído!', 'vest', 'bad');
+      }
+    }
+    p.hp -= dmg;
+    p.hurtT = 0.15;
+    if (knock) {
+      const d = Math.hypot(p.pos.x - fx, p.pos.z - fz) || 1;
+      p.vel.x += ((p.pos.x - fx) / d) * knock;
+      p.vel.z += ((p.pos.z - fz) / d) * knock;
+    }
+    if (dmg > 0) {
+      for (let k = 0; k < 5; k++) this.parts.spawn(p.pos.x, 1, p.pos.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, pick(BLOOD), 1, 16, 1);
+      this.audio.play('hurt', { volume: 0.7, priority: true });
+    } else this.audio.play('hit_armor', { volume: 0.55, priority: true });
+    this.noiseShake(0.2);
+    this.ui.playerHurt(p.id);
+    if (p.hp <= 0) {
+      p.hp = 0;
+      p.alive = false;
+      p.deadT = 0;
+      // quem cai perde o equipamento e os efeitos
+      p.armor = 0;
+      p.helmet = false;
+      p.pack = false;
+      p.energyT = 0;
+      p.lightT = 0;
+      p.meleeT = 0;
+      this.arena.splat(p.pos.x, p.pos.z, 0.8);
+      this.audio.play('zombie_die', { rate: 1.5, volume: 0.7, priority: true });
+      if (this.players.some((q) => q.alive)) this.ui.banner(`${p.look.name} CAIU! Volta na próxima onda.`, 'bad');
+      else this.later(1.8, () => this.gameOver());
+    }
+  }
+
+  damageBarrel(b, dmg) {
+    if (b.dead) return;
+    b.hp -= dmg;
+    if (b.hp <= 0) {
+      b.dead = true;
+      this.later(0.1, () => this.explosion(b.x, b.z, 4 * (this.upg.bigBoom ? 1.4 : 1), 170, b.owner));
+      this.removePlaceable(b);
+    }
+  }
+
+  // ------------------------------------------------------------------ cenário destrutível e interativo
+  damageProp(pr, dmg, by, dx = 0, dz = 0, boom = false) {
+    if (pr.dead || !pr.def.hp) return;
+    if (pr.def.boomOnly && !boom) {
+      for (let k = 0; k < 2; k++) this.parts.spawn(pr.x - dx * 0.4, 0.5, pr.z - dz * 0.4, rand(-1.5, 1.5), rand(1, 2), rand(-1.5, 1.5), 0.06, 0xc8b48a, 0.4, 14, 0);
+      return;
+    }
+    pr.hp -= dmg;
+    pr.hurtT = 0.08;
+    // carro abandonado: o primeiro tiro dispara o alarme
+    if (pr.def.id === 'acar' && !(pr.alarmT > 0)) this.triggerCarAlarm(pr);
+    const col = pr.parts[0][6];
+    for (let k = 0; k < 3; k++) this.parts.spawn(pr.x - dx * 0.4, rand(0.3, 1.2), pr.z - dz * 0.4, -dx * rand(1, 3) + rand(-1.5, 1.5), rand(1, 3), -dz * rand(1, 3) + rand(-1.5, 1.5), rand(0.05, 0.1), col, 0.6, 16, 0);
+    if (pr.hp <= 0) this.destroyProp(pr, by);
+  }
+  destroyProp(pr, by) {
+    if (pr.dead) return;
+    const A = this.arena;
+    A.clearProp(pr);
+    if (pr.def.coll !== 'none') this.flowT = 0;
+    // efeitos próprios de cada cenário
+    if (pr.def.id === 'glowshroom') this.addCloud(pr.x, pr.z, { radius: 2.6, dps: 10, life: 5 });
+    if (pr.def.id === 'acar') this.later(0.12, () => this.explosion(pr.x, pr.z, 3.6, 150, by));
+    // destroços com as cores do próprio modelo
+    for (let k = 0; k < 18; k++) {
+      const q = pr.parts[Math.floor(Math.random() * pr.parts.length)];
+      this.parts.spawn(pr.x + rand(-0.4, 0.4), rand(0.2, Math.min(2.4, q[1] + 0.3)), pr.z + rand(-0.4, 0.4), rand(-4, 4), rand(2, 5), rand(-4, 4), rand(0.08, 0.22), q[6], rand(0.8, 1.5), 18, 0);
+    }
+    const metal = ['lamp', 'traffic', 'billboard', 'barrel'].includes(pr.def.id);
+    this.audio.play(metal ? 'hit_armor' : 'crate', { volume: 0.8, pos: pr, rate: metal ? 0.6 : 0.85 });
+    if (pr.def.light) {
+      // vidro da lâmpada estoura
+      for (let k = 0; k < 10; k++) this.parts.spawn(pr.x + Math.cos(pr.rot) * 0.6, 2.8, pr.z - Math.sin(pr.rot) * 0.6, rand(-2, 2), rand(0, 2), rand(-2, 2), 0.06, 0xffe8a0, 0.6, 14, 2);
+      this.audio.play('hit_wall', { volume: 0.8, pos: pr, rate: 1.4 });
+    }
+    if (pr.def.drop && Math.random() < pr.def.drop) this.spawnPickup(this.rollField(), pr.x, pr.z, { x: pr.x, z: pr.z });
+    if (!this.demo && by) this.stats.score += 10;
+  }
+  // cone: cai e desliza na direção do empurrão
+  knockProp(pr, dx, dz, speed) {
+    if (pr.dead) return;
+    if (!pr.knocked) {
+      pr.knocked = true;
+      pr.kr = Math.atan2(dx, dz);
+      this.audio.play('bounce', { volume: 0.5, pos: pr, rate: 0.6 });
+    }
+    pr.kvx = (pr.kvx || 0) + dx * speed;
+    pr.kvz = (pr.kvz || 0) + dz * speed;
+  }
+  updateScenery(dt) {
+    const A = this.arena;
+    A.updateProps(dt);
+    for (const pr of A.props) {
+      if (pr.dead || !pr.def.knock) continue;
+      // quem esbarra derruba
+      if (!pr.knocked) {
+        for (const e of this.players) if (e.alive && Math.hypot(e.pos.x - pr.x, e.pos.z - pr.z) < 0.5) this.knockProp(pr, e.vel.x / 5, e.vel.z / 5, 3);
+        if (!pr.knocked) for (const z of this.zombies) if (z.alive && !z.def.fly && Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z) < 0.45 + z.radius * 0.5) {
+          const d = Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z) || 1;
+          this.knockProp(pr, (pr.x - z.pos.x) / d, (pr.z - z.pos.z) / d, 2.5);
+          break;
+        }
+      }
+      if (pr.kvx || pr.kvz) {
+        const nx = pr.x + pr.kx + pr.kvx * dt;
+        const nz = pr.z + pr.kz + pr.kvz * dt;
+        if (!A.circleBlocked(nx, nz, 0.2)) {
+          pr.kx += pr.kvx * dt;
+          pr.kz += pr.kvz * dt;
+        } else {
+          pr.kvx *= -0.3;
+          pr.kvz *= -0.3;
+        }
+        const f = Math.exp(-dt * 4);
+        pr.kvx *= f;
+        pr.kvz *= f;
+        if (Math.hypot(pr.kvx, pr.kvz) < 0.05) pr.kvx = pr.kvz = 0;
+      }
+    }
+    // brasas sobre a lava
+    if (A.lavaCells.length && Math.random() < dt * 14) {
+      const k = A.lavaCells[Math.floor(Math.random() * A.lavaCells.length)];
+      this.parts.spawn((k % A.W) + Math.random(), 0.1, Math.floor(k / A.W) + Math.random(), rand(-0.3, 0.3), rand(1, 2.5), rand(-0.3, 0.3), rand(0.06, 0.12), pick([0xff7a1a, 0xffb030, 0xff4010]), rand(0.6, 1.2), -0.5, 2);
+    }
+    this.updateArenaSystems(dt);
+  }
+
+  // ------------------------------------------------------------------ mecânicas próprias de cada arena
+  // prensas, vapor, gerador, consoles, sino, carros, cogumelos e árvores retorcidas
+  nearPlayer(pr, r = 1.25) {
+    let best = null;
+    let bd = r;
+    for (const p of this.players) {
+      if (!p.alive) continue;
+      const d = Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z);
+      if (d < bd) {
+        bd = d;
+        best = p;
+      }
+    }
+    return best;
+  }
+  // manter a posição perto do console/gerador até completar
+  holdUse(pr, p, dt, need, label, done) {
+    pr.holdNeed = need;
+    pr.holdT = (pr.holdT || 0) + dt;
+    if (!pr.hintT || this.time - pr.hintT > 2.6) {
+      pr.hintT = this.time;
+      this.ui.toast(p.id, label, 'gear');
+    }
+    if (Math.random() < dt * 12) this.parts.spawn(pr.x + rand(-0.2, 0.2), 0.9, pr.z + rand(-0.2, 0.2), 0, rand(0.6, 1.6), 0, 0.05, 0xffd860, 0.4, -0.4, 2);
+    if (pr.holdT >= need) {
+      pr.holdT = 0;
+      done(p);
+    }
+  }
+  triggerCarAlarm(pr) {
+    pr.alarmT = 6;
+    this.audio.play('siren', { volume: 0.65, pos: pr, rate: 1.2 });
+    this.ui.banner('ALARME DO CARRO! A HORDA OUVIU', 'bad');
+    const gates = this.arena.gates;
+    for (let k = 0; k < 2; k++) {
+      const g = pick(gates);
+      this.spawnZombie(k ? 'walker' : 'runner', g.x + rand(-0.3, 0.3), g.z + rand(-0.3, 0.3));
+    }
+  }
+  toggleGates() {
+    if (!this.power) {
+      this.ui.alert('Sem energia: ligue o gerador primeiro.', 'danger', 'warning');
+      return;
+    }
+    // não fecha com alguém em cima do portão
+    if (!this.gatesClosed) for (const gp of this.gateProps) {
+      if (gp.broken) continue;
+      for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - gp.x, p.pos.z - gp.z) < 0.8) {
+        this.ui.alert('Saia de cima do portão antes de fechá-lo.', 'danger', 'warning');
+        return;
+      }
+      for (const z of this.zombies) if (z.alive && Math.hypot(z.pos.x - gp.x, z.pos.z - gp.z) < 0.8) {
+        this.ui.alert('Um zumbi está no portão: feche quando o caminho estiver livre.', 'danger', 'warning');
+        return;
+      }
+    }
+    this.gatesClosed = !this.gatesClosed;
+    let n = 0;
+    for (const gp of this.gateProps) {
+      if (gp.broken) continue;
+      gp.closed = this.gatesClosed;
+      if (gp.closed) gp.hp = gp.maxHp = 240;
+      this.arena.setPropBlock(gp, gp.closed);
+      n++;
+    }
+    this.audio.play('hit_armor', { volume: 0.8, rate: 0.55 });
+    this.audio.play('stomp', { volume: 0.35, rate: 1.6 });
+    this.ui.banner(this.gatesClosed ? `PORTÕES FECHADOS (${n})` : 'PORTÕES ABERTOS', this.gatesClosed ? 'info' : 'good');
+  }
+  breakGate(gp) {
+    gp.closed = false;
+    gp.broken = true;
+    gp.hp = 0;
+    this.gatesClosed = this.gateProps.some((g) => g.closed && !g.broken);
+    this.arena.setPropBlock(gp, false);
+    this.audio.play('hit_armor', { volume: 1, rate: 0.4, pos: gp });
+    this.audio.play('stomp', { volume: 0.6, rate: 0.8, pos: gp });
+    for (let k = 0; k < 14; k++) this.parts.spawn(gp.x + rand(-0.5, 0.5), rand(0.3, 2), gp.z + rand(-0.5, 0.5), rand(-3, 3), rand(1, 4), rand(-3, 3), rand(0.07, 0.14), pick([0xe8b020, 0x3a3e44, 0xd8d0c0]), 0.9, 16, 0);
+    this.ui.banner('PORTÃO ARROMBADO!', 'bad');
+  }
+  updateArenaSystems(dt) {
+    const A = this.arena;
+    const theme = A.def.theme;
+    for (const pr of A.props) {
+      if (pr.dead) continue;
+      const id = pr.def.id;
+      if (pr.alarmT > 0) pr.alarmT = Math.max(0, pr.alarmT - dt);
+      if (pr.hurtT > 0) pr.rattle = 1;
+      if (id === 'press') {
+        // ciclo de 3,5 s: sobe, avisa, desce e esmaga quem estiver embaixo
+        pr.t = ((pr.t || 0) + dt) % 3.5;
+        const ph = pr.t;
+        let k;
+        if (ph < 2) k = 0;
+        else if (ph < 2.35) k = (ph - 2) / 0.35;
+        else if (ph < 2.75) k = 1;
+        else k = 1 - (ph - 2.75) / 0.75;
+        pr.ramY = 2 - k * 1.62;
+        pr.warn = ph > 1.55 && ph < 2;
+        if (k > 0.6 && !pr.smashed) {
+          pr.smashed = true;
+          this.audio.play('stomp', { volume: 0.6, pos: pr, rate: 1.5 });
+          for (let n = 0; n < 10; n++) this.parts.spawn(pr.x + rand(-0.4, 0.4), 0.1, pr.z + rand(-0.4, 0.4), rand(-2, 2), rand(1, 3), rand(-2, 2), rand(0.06, 0.13), 0x8a8e96, 0.5, 8, 0);
+          for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) < 0.72) {
+            this.damagePlayer(p, 34, pr.x, pr.z, 5);
+            this.ui.playerHurt(p.id);
+          }
+          for (const z of this.zombies) if (z.alive && !z.def.fly && Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z) < 0.78) this.damageZombie(z, 110, 0, 0, null, 0);
+        }
+        if (k < 0.15) pr.smashed = false;
+      } else if (id === 'steam') {
+        // ciclo de 4 s: chia 0,6 s antes e solta vapor por 1,5 s
+        pr.t = ((pr.t || 0) + dt) % 4;
+        const ph = pr.t;
+        const vent = ph > 0.9 && ph < 2.4;
+        pr.hiss = ph > 0.6 && ph < 0.9;
+        if (ph > 0.6 && ph < 0.65) this.audio.play('steam', { volume: 0.45, pos: pr, rate: rand(0.9, 1.1) });
+        if (vent) {
+          for (let n = 0; n < 3; n++) this.parts.spawn(pr.x + rand(-0.3, 0.3), 0.2, pr.z + rand(-0.3, 0.3), rand(-0.6, 0.6), rand(2, 4), rand(-0.6, 0.6), rand(0.1, 0.22), 0xc8d4dc, 0.9, -1.4, 2);
+          pr.burnT = (pr.burnT || 0) + dt;
+          if (pr.burnT >= 0.3) {
+            pr.burnT = 0;
+            for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) < 1.35) {
+              this.damagePlayer(p, 7, pr.x, pr.z, 3, true);
+              const d = Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) || 1;
+              p.vel.x += ((p.pos.x - pr.x) / d) * 3;
+              p.vel.z += ((p.pos.z - pr.z) / d) * 3;
+            }
+            for (const z of this.zombies) if (z.alive && !z.def.fly && Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z) < 1.4) this.damageZombie(z, 9, 0, 0, null, 1.2);
+          }
+        } else pr.burnT = 0;
+      } else if (id === 'generator') {
+        const p = this.nearPlayer(pr, 1.3);
+        if (p && !this.genOn) this.holdUse(pr, p, dt, 2, 'Ligando o gerador...', (who) => this.startGenerator(pr, who));
+        else if (pr.holdT) pr.holdT = Math.max(0, pr.holdT - dt * 2);
+        if (this.genOn) pr.on = true;
+      } else if (id === 'gconsole') {
+        const p = this.nearPlayer(pr, 1.3);
+        if (p) this.holdUse(pr, p, dt, 1.5, 'Operando os portões...', () => this.toggleGates());
+        else if (pr.holdT) pr.holdT = Math.max(0, pr.holdT - dt * 2);
+      } else if (id === 'tconsole') {
+        const p = this.nearPlayer(pr, 1.3);
+        if (p) this.holdUse(pr, p, dt, 1.5, 'Ativando a torre...', (who) => this.useTowerConsole(pr, who));
+        else if (pr.holdT) pr.holdT = Math.max(0, pr.holdT - dt * 2);
+      } else if (id === 'econsole') {
+        const p = this.nearPlayer(pr, 1.3);
+        if (p) this.holdUse(pr, p, dt, 1.5, 'Sobrecarregando o piso...', (who) => this.useElecConsole(pr, who));
+        else if (pr.holdT) pr.holdT = Math.max(0, pr.holdT - dt * 2);
+      } else if (id === 'bell') {
+        const p = this.nearPlayer(pr, 1.4);
+        if (p) this.holdUse(pr, p, dt, 1.5, 'Tocando o sino...', (who) => this.ringBell(pr, who));
+        else if (pr.holdT) pr.holdT = Math.max(0, pr.holdT - dt * 2);
+      } else if (id === 'acar') {
+        if (pr.alarmT > 0) pr.alarmT = Math.max(0, pr.alarmT - dt);
+      } else if (id === 'firebarrel') {
+        for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) < 0.72) {
+          p.fireT = (p.fireT || 0) + dt;
+          if (p.fireT > 0.45) {
+            p.fireT = 0;
+            this.damagePlayer(p, 5, pr.x, pr.z, 0, true);
+          }
+        }
+      } else if (id === 'glowshroom') {
+        for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) < 0.45) this.damageProp(pr, 999, p);
+      } else if (id === 'twisted') {
+        // pode tombar sozinha durante a partida e virar barreira
+        if (!pr.fallen) {
+          pr.fallCd = (pr.fallCd ?? rand(18, 42)) - dt;
+          if (pr.fallCd <= 0) this.fellTree(pr);
+        } else if (pr.fallA < Math.PI / 2) {
+          pr.fallA = Math.min(Math.PI / 2, pr.fallA + dt * 2.6);
+        }
+      }
+    }
+    // árvores caídas: dano no impacto (uma vez), poeira e som
+    for (const pr of A.props) if (pr.def.id === 'twisted' && pr.fallHit) {
+      pr.fallHit = false;
+      const dx = Math.cos(pr.rot) * 1.6;
+      const dz = -Math.sin(pr.rot) * 1.6;
+      this.audio.play('crate', { volume: 0.9, pos: pr, rate: 0.5 });
+      this.noiseShake(0.35);
+      for (let n = 0; n < 16; n++) this.parts.spawn(pr.x + dx, 0.2, pr.z + dz, rand(-2.5, 2.5), rand(1, 4), rand(-2.5, 2.5), rand(0.08, 0.2), pick([0x3a2e2a, 0x6a4a2a, 0x2a3a1a]), 0.8, 14, 0);
+      for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - (pr.x + dx), p.pos.z - (pr.z + dz)) < 1.7) {
+        this.damagePlayer(p, 26, pr.x, pr.z, 4);
+        this.ui.playerHurt(p.id);
+      }
+      for (const z of this.zombies) if (z.alive && !z.def.fly && Math.hypot(z.pos.x - (pr.x + dx), z.pos.z - (pr.z + dz)) < 1.8) this.damageZombie(z, 80, 0, 0, null, 0);
+    }
+  }
+  startGenerator(pr, p) {
+    this.genOn = true;
+    this.power = true;
+    pr.on = true;
+    this.audio.play('generator', { volume: 0.9, pos: pr });
+    this.ui.banner('ENERGIA RESTABELECIDA', 'good');
+    if (this.arenaDef.theme === 'city') {
+      for (const q of this.arena.props) if (q.def.id === 'lamp' || q.def.id === 'beacon') this.arena.setPropLight(q, true);
+    } else if (this.arenaDef.theme === 'military') {
+      for (const q of this.arena.props) if (q.def.id === 'lighttower') this.arena.setPropLight(q, true);
+    }
+    for (let k = 0; k < 14; k++) this.parts.spawn(pr.x + rand(-0.5, 0.5), rand(0.4, 1.2), pr.z + rand(-0.5, 0.5), rand(-2, 2), rand(1, 3), rand(-2, 2), rand(0.06, 0.12), pick([0xffd040, 0xfff0a0]), 0.6, 10, 2);
+    void p;
+  }
+  useTowerConsole(pr, p) {
+    if (!this.power) {
+      this.ui.alert('Ligue o gerador para alimentar a torre.', 'danger', 'warning');
+      return;
+    }
+    const spot = this.freeSpotNear(pr.x, pr.z - 1.2, 0.4);
+    this.turrets.push({ x: spot.x, z: spot.z, t: 0, life: 25, cd: 0.5, ang: p ? p.aim : 0, owner: p, flash: 0 });
+    this.audio.play('generator', { volume: 0.6, pos: pr, rate: 1.4 });
+    this.ui.banner('TORRE AUTOMÁTICA ATIVA (25 s)', 'good');
+    pr.spentT = 1;
+    this.later(1, () => (pr.spentT = 0));
+  }
+  useElecConsole(pr, p) {
+    this.elecForceT = 6;
+    this.elecOn = true;
+    this.audio.play('generator', { volume: 0.45, pos: pr, rate: 2.2 });
+    this.audio.play('hit_armor', { volume: 0.5, pos: pr, rate: 2.4 });
+    this.ui.banner('PISO ELÉTRICO SOBRECARREGADO', 'info');
+    pr.spentT = 1;
+    this.later(1, () => (pr.spentT = 0));
+    void p;
+  }
+  ringBell(pr) {
+    pr.swingT = 1;
+    this.audio.play('bell', { volume: 1, pos: pr });
+    this.noiseShake(0.25);
+    for (const z of this.zombies) if (z.alive && Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z) < 10) {
+      z.stunT = Math.max(z.stunT || 0, 1.8);
+      z.state = 'move';
+      z.stateT = 0;
+    }
+    for (let k = 0; k < 26; k++) {
+      const a = (k / 26) * Math.PI * 2;
+      this.parts.spawn(pr.x + Math.sin(a) * 0.6, 1.9, pr.z + Math.cos(a) * 0.6, Math.sin(a) * 5, rand(1, 3), Math.cos(a) * 5, rand(0.06, 0.12), 0xffd060, 0.6, 2, 2);
+    }
+    for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) < 10) this.ui.toast(p.id, 'O sino atordoou os mortos!', 'warning', 'good');
+  }
+  fellTree(pr) {
+    pr.fallen = true;
+    pr.fallA = 0.05;
+    pr.fallHit = true;
+    this.audio.play('groan4', { volume: 0.7, pos: pr, rate: 0.6 });
+    this.ui.alert('Uma árvore retorcida desabou!', 'info', 'warning');
+  }
+
+  // ------------------------------------------------------------------ ambiente: piso elétrico, clima e luzes
+  updateEnvironment(dt) {
+    const A = this.arena;
+    const theme = A.def.theme;
+    // piso elétrico: a fábrica liga sozinho em ciclos; o console força por 6 s
+    if (this.elecForceT > 0) this.elecForceT = Math.max(0, this.elecForceT - dt);
+    const was = this.elecOn;
+    this.elecOn = this.elecForceT > 0 || (theme === 'factory' && this.time % 13 < 3);
+    if (this.elecOn && !was && A.elecCells.length) this.audio.play('hit_armor', { volume: 0.25, rate: 2.6 });
+    if (this.elecOn && A.elecCells.length && Math.random() < dt * 20) {
+      const k = A.elecCells[Math.floor(Math.random() * A.elecCells.length)];
+      this.parts.spawn(k % A.W + rand(0.2, 0.8), 0.1, Math.floor(k / A.W) + rand(0.2, 0.8), rand(-1, 1), rand(1, 2.5), rand(-1, 1), 0.05, pick([0x9adcff, 0xffffff, 0x3aa0ff]), 0.3, 2, 2);
+    }
+    // ciclo de clima (a primeira frente chega ~32 s depois do início)
+    if (!this.demo) {
+      if (this.event) {
+        this.eventLeft -= dt;
+        if (this.eventLeft <= 0) this.endEvent();
+      } else {
+        this.eventT -= dt;
+        if (this.eventT <= 0) this.startEvent();
+      }
+    }
+    if (this.alarmT > 0) this.alarmT = Math.max(0, this.alarmT - dt);
+    // alarme da base convoca reforços
+    if (this.event === 'alarm' && !this.demo) {
+      this.alarmSpawnT -= dt;
+      if (this.alarmSpawnT <= 0 && this.countAlive() < this.aliveCap()) {
+        this.alarmSpawnT = rand(2.2, 3.4);
+        const g = pick(A.gates);
+        this.spawnZombie(Math.random() < 0.5 ? 'runner' : 'walker', g.x + rand(-0.3, 0.3), g.z + rand(-0.3, 0.3));
+      }
+    }
+    // luzes e névoa acompanham o evento
+    let sunT = this.baseLight.sunI;
+    let hemiT = this.baseLight.hemi;
+    let fogN = this.baseLight.fogNear;
+    let fogF = this.baseLight.fogFar;
+    let evI = 0;
+    let evC = 0xff3020;
+    // cor da névoa e do fundo acompanham o evento (neblina lava, apagão escurece)
+    const MIST = { forest: 0x74877c, graveyard: 0x77809c, city: 0x8a949e, factory: 0x6a6a6a, military: 0x8a93a0 };
+    let fogHex = this.baseLight.fogC.getHex();
+    if (this.event === 'blackout') {
+      sunT *= 0.24;
+      hemiT *= 0.32;
+      fogN = 16;
+      fogF = 48;
+      fogHex = 0x0d0906;
+    } else if (this.event === 'rain') {
+      sunT *= 0.55;
+      hemiT *= 0.72;
+      fogN = 24;
+      fogF = 64;
+      fogHex = 0x2a3234;
+      const t = this.baseLight.sunI * 0.9;
+      if (this.lightningT > 0) {
+        this.lightningT -= dt;
+        sunT = t * 5;
+      } else if (Math.random() < dt * 0.22) {
+        this.lightningT = 0.12;
+        this.audio.play('explosion', { volume: 0.12, rate: 2.6, pan: rand(-0.8, 0.8) });
+      }
+    } else if (this.event === 'fog') {
+      sunT *= 0.72;
+      hemiT *= 0.86;
+      fogN = 8;
+      fogF = 30;
+      fogHex = MIST[theme] || 0x8a949e;
+    } else if (this.event === 'alarm') {
+      sunT *= 0.78;
+      hemiT *= 0.88;
+      evI = 34 + Math.sin(this.time * 9) * 26;
+      evC = 0xff3020;
+    }
+    const k = 1 - Math.exp(-dt * 1.7);
+    this.sun.intensity += (sunT - this.sun.intensity) * k;
+    this.hemi.intensity += (hemiT - this.hemi.intensity) * k;
+    this.scene.fog.near += (fogN - this.scene.fog.near) * k;
+    this.scene.fog.far += (fogF - this.scene.fog.far) * k;
+    const fogT = this.baseLight.fogC.clone().lerp(new THREE.Color(fogHex), this.event ? 0.85 : 0);
+    this.scene.fog.color.lerp(fogT, k);
+    this.scene.background.lerp(this.scene.fog.color, k);
+    this.eventLight.color.setHex(evC);
+    this.eventLight.intensity += (evI - this.eventLight.intensity) * k;
+    // chuva: garoa na cidade, tempestade durante o evento
+    const storm = this.event === 'rain';
+    const nDrops = theme === 'city' ? (storm ? 170 : 55) : storm ? 120 : 0;
+    const cx = this.camTarget.x;
+    const cz = this.camTarget.z;
+    for (let i = 0; i < this.rain.length; i++) {
+      const d = this.rain[i];
+      d.on = i < nDrops;
+      if (!d.on) continue;
+      d.y -= d.vy * dt;
+      d.x += d.vx * dt;
+      d.z += d.vz * dt;
+      if (d.y < 0.05 || Math.abs(d.x - cx) > 26 || Math.abs(d.z - cz) > 26) {
+        d.x = cx + rand(-22, 22);
+        d.z = cz + rand(-22, 22);
+        d.y = rand(7, 17);
+        d.vx = rand(0.8, 2.2);
+        d.vz = rand(-0.4, 1.2);
+        d.vy = rand(11, 17);
+        if (Math.random() < 0.5) this.parts.spawn(d.x, 0.05, d.z, rand(-1, 1), rand(0.6, 1.6), rand(-1, 1), 0.05, 0x9cc4e8, 0.25, 8, 2);
+      }
+    }
+    // névoa baixa em floresta/necrotério e durante o evento de neblina
+    if ((theme === 'forest' || theme === 'graveyard' || this.event === 'fog') && Math.random() < dt * 12) {
+      for (let n = 0; n < 2; n++) this.parts.spawn(cx + rand(-13, 13), rand(0.1, 0.9), cz + rand(-13, 13), rand(-0.4, 0.4), rand(-0.1, 0.25), rand(-0.4, 0.4), rand(0.16, 0.38), 0x9aa8a4, rand(2.4, 4.2), -0.05, 2);
+    }
+    // camadas de áudio do clima seguem o estado (sem reenviar todo quadro)
+    const wRain = this.rainOn || storm;
+    const wFog = this.event === 'fog';
+    if (wRain !== this._wRain) {
+      this._wRain = wRain;
+      this.audio.setWeatherAmbient('rain', wRain);
+    }
+    if (wFog !== this._wFog) {
+      this._wFog = wFog;
+      this.audio.setWeatherAmbient('fog', wFog);
+    }
+  }
+  startEvent() {
+    const kind = (this.arenaDef || this.arena.def).weather || 'rain';
+    this.event = kind;
+    this.eventLeft = rand(16, 22);
+    this.eventBoost = 1;
+    const info = EVENT_INFO[kind] || EVENT_INFO.rain;
+    this.ui.banner(info.title, info.kind);
+    this.audio.play(info.sfx || 'wave', { volume: 0.8, priority: true, rate: info.rate || 1 });
+    if (kind === 'alarm') this.alarmSpawnT = 1.2;
+    this.audio.setWeatherAmbient('rain', kind === 'rain');
+    this.audio.setWeatherAmbient('fog', kind === 'fog');
+    this._wRain = kind === 'rain' || this.rainOn;
+    this._wFog = kind === 'fog';
+  }
+  endEvent() {
+    this.event = null;
+    this.eventLeft = 0;
+    this.eventBoost = 0;
+    this.eventT = rand(42, 66);
+    this.ui.alert('O clima acalmou. Aproveite para se preparar.', 'info', 'checkCircle');
+    this.audio.setWeatherAmbient('rain', this.rainOn);
+    this.audio.setWeatherAmbient('fog', false);
+    this._wRain = this.rainOn;
+    this._wFog = false;
+  }
+
+  // empurrar o barril comum: andar contra ele por um instante o move uma célula
+  tryPush(p, mx, mz, dt) {
+    const A = this.arena;
+    let di = 0;
+    let dj = 0;
+    if (Math.abs(mx) > Math.abs(mz) * 1.5) di = Math.sign(mx);
+    else if (Math.abs(mz) > Math.abs(mx) * 1.5) dj = Math.sign(mz);
+    const pi = Math.floor(p.pos.x);
+    const pj = Math.floor(p.pos.z);
+    const pr = di || dj ? A.propAt(pi + di, pj + dj) : null;
+    const close = pr && Math.abs((pr.x - p.pos.x) * di + (pr.z - p.pos.z) * dj) < 0.5 + p.radius + 0.08;
+    if (!pr || !pr.def.push || !close) {
+      p.pushT = 0;
+      return;
+    }
+    p.pushT = (p.pushT || 0) + dt;
+    if (p.pushT < 0.25) return;
+    p.pushT = 0;
+    const ni = pr.i + di;
+    const nj = pr.j + dj;
+    if (!A.inb(ni, nj) || A.blocked(ni, nj) || A.propAt(ni, nj)) return;
+    const cx = ni + 0.5;
+    const cz = nj + 0.5;
+    if (this.players.some((q) => q.alive && Math.hypot(q.pos.x - cx, q.pos.z - cz) < 0.5 + q.radius)) return;
+    if (this.zombies.some((z) => z.alive && !z.def.fly && Math.hypot(z.pos.x - cx, z.pos.z - cz) < 0.5 + z.radius)) return;
+    A.moveProp(pr, ni, nj);
+    this.flowT = 0;
+    this.audio.play('crate', { volume: 0.6, pos: pr, rate: 0.55 });
+    for (let k = 0; k < 4; k++) this.parts.spawn(pr.x - di * 0.5, 0.1, pr.z - dj * 0.5, rand(-1, 1), rand(0.5, 1.5), rand(-1, 1), 0.12, 0x6a6a60, 0.5, 2, 0);
+  }
+
+  // ------------------------------------------------------------------ habilidades: passivas, XP e árvore
+  pv(p, id) {
+    const n = p.pas[id] || 0;
+    return n ? PASSIVES[id].v(n) : 0;
+  }
+  // multiplicador de dano do jogador (passiva + Fúria total)
+  dmgMul(p) {
+    return (1 + this.pv(p, 'damage') / 100) * (p.furyT > 0 ? 1.6 : 1);
+  }
+  gainXp(p, n) {
+    if (this.demo) return;
+    p.xp += n;
+    while (p.xp >= xpNeed(p.lv)) {
+      p.xp -= xpNeed(p.lv);
+      p.lv++;
+      p.pts++;
+      this.audio.play('levelup', { volume: 0.7, priority: true });
+      this.ui.toast(p.id, `Nível ${p.lv}! +1 ponto (Tab)`, 'tree');
+      for (let k = 0; k < 16; k++) this.parts.spawn(p.pos.x + rand(-0.4, 0.4), rand(0.2, 1.6), p.pos.z + rand(-0.4, 0.4), 0, rand(1.5, 3.5), 0, 0.09, pick([0xffe060, 0xffffff]), 0.8, -1, 2);
+    }
+  }
+  // estado de um nó da árvore: 'max' | 'locked' | 'poor' | 'ok'
+  nodeState(p, id) {
+    const lvl = p.pas[id] || 0;
+    if (lvl >= MAX_LEVEL) return 'max';
+    const br = BRANCHES.find((b) => b.nodes.includes(id));
+    const i = br.nodes.indexOf(id);
+    if (i > 0 && (p.pas[br.nodes[i - 1]] || 0) < NODE_REQ) return 'locked';
+    return p.pts >= levelCost(lvl + 1) ? 'ok' : 'poor';
+  }
+  buyPassive(p, id) {
+    if (this.nodeState(p, id) !== 'ok') return false;
+    const next = (p.pas[id] || 0) + 1;
+    p.pts -= levelCost(next);
+    p.pas[id] = next;
+    if (id === 'vitality') {
+      p.maxHp += 15;
+      p.hp = Math.min(p.maxHp, p.hp + 15);
+    }
+    this.audio.play('levelup', { volume: 0.5, rate: 1.3 });
+    return true;
+  }
+  ultState(p) {
+    if (p.ultOn) return 'on';
+    if (p.lv < ULT_REQ.level) return 'locked';
+    return p.pts >= ULT_REQ.cost ? 'ok' : 'poor';
+  }
+  buyUlt(p) {
+    if (this.ultState(p) !== 'ok') return false;
+    p.pts -= ULT_REQ.cost;
+    p.ultOn = true;
+    this.audio.play('achievement', { volume: 0.7 });
+    return true;
+  }
+
+  // ponto de mira no chão: mouse no solo; no teclado, o alvo da assistência ou 8 m à frente
+  aimPoint(p) {
+    if (p.ctl.mouse && !this.input.mouseIdle) return { x: this.mouseWorld.x, z: this.mouseWorld.z };
+    const t = this.aimTarget(p);
+    if (t) return { x: t.pos.x, z: t.pos.z };
+    return { x: p.pos.x + Math.sin(p.aim) * 8, z: p.pos.z + Math.cos(p.aim) * 8 };
+  }
+  inHaven(p) {
+    for (const f of this.fields) if (f.kind === 'haven' && Math.hypot(p.pos.x - f.x, p.pos.z - f.z) < f.r) return true;
+    return false;
+  }
+
+  // ------------------------------------------------------------------ habilidades: uso
+  useAbility(p, i) {
+    const id = p.slots[i];
+    const ult = i === 3;
+    const def = ult ? ULTIMATES[id] : ACTIVES[id];
+    if (!def) return;
+    if (ult && !p.ultOn) {
+      this.audio.play('empty', { volume: 0.5 });
+      this.ui.toast(p.id, `Ultimate bloqueada: libere na árvore (Tab, nível ${ULT_REQ.level})`, 'lock', 'bad');
+      return;
+    }
+    if (p.cds[i] > 0 || p.dashT > 0) {
+      this.audio.play('empty', { volume: 0.4 });
+      return;
+    }
+    if (this[`cast_${id}`](p, def) === false) return;
+    const cd = def.cd * (1 - this.pv(p, 'cooldown') / 100);
+    p.cds[i] = cd;
+    p.cdMax[i] = cd;
+  }
+  cast_dash(p) {
+    let dx = 0;
+    let dz = 0;
+    const c = p.ctl;
+    const inp = this.input;
+    if (inp.any(c.up)) dz -= 1;
+    if (inp.any(c.down)) dz += 1;
+    if (inp.any(c.left)) dx -= 1;
+    if (inp.any(c.right)) dx += 1;
+    const a = dx || dz ? Math.atan2(dx, dz) : p.aim;
+    p.dashT = 0.2;
+    p.dashDir = a;
+    p.dashHit = new Set();
+    p.dashRam = p.shieldT > 0; // interação: Investida + Escudo tático = Aríete
+    if (p.dashRam) this.ui.toast(p.id, 'Aríete! (Investida + Escudo)', 'hexShield');
+    this.audio.play('swing', { volume: 0.8, pos: p.pos, rate: 0.55 });
+  }
+  cast_shield(p, def) {
+    p.shieldT = def.dur;
+    this.audio.play('generator', { volume: 0.6, pos: p.pos, rate: 1.6 });
+  }
+  cast_sgrenade(p) {
+    // cai no ponto mirado (2,5 a 11 m): dá para jogar dentro do próprio Campo elétrico
+    const t = this.aimPoint(p);
+    const dist = Math.max(2.5, Math.min(11, Math.hypot(t.x - p.pos.x, t.z - p.pos.z)));
+    const a = Math.atan2(t.x - p.pos.x, t.z - p.pos.z);
+    p.aim = a;
+    const dx = Math.sin(a);
+    const dz = Math.cos(a);
+    const sp = dist / 0.75;
+    const w = { radius: 4.5 * (this.upg.bigBoom ? 1.4 : 1), dmg: 180 };
+    this.projectiles.push({ kind: 'sgrenade', x: p.pos.x + dx * 0.6, y: 1.1, z: p.pos.z + dz * 0.6, vx: dx * sp, vy: 5, vz: dz * sp, t: 0, fuse: 1.1, w, owner: p });
+    p.firingT = 0.5;
+    p.facing = p.aim;
+    this.audio.play('throw', { volume: 0.7, pos: p.pos, rate: 0.8 });
+  }
+  cast_turret(p, def) {
+    let x = p.pos.x + Math.sin(p.aim) * 1.2;
+    let z = p.pos.z + Math.cos(p.aim) * 1.2;
+    if (this.arena.circleBlocked(x, z, 0.3)) {
+      x = p.pos.x;
+      z = p.pos.z;
+    }
+    this.turrets.push({ x, z, t: 0, life: def.dur, cd: 0.5, ang: p.aim, owner: p, flash: 0 });
+    this.audio.play('crate', { volume: 0.8, pos: p.pos, rate: 1.3 });
+    for (let k = 0; k < 10; k++) this.parts.spawn(x, 0.2, z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.08, 0xc8ccd4, 0.5, 12, 0);
+  }
+  cast_kit(p, def) {
+    for (const q of this.players)
+      if (q.alive && Math.hypot(q.pos.x - p.pos.x, q.pos.z - p.pos.z) < 5) {
+        q.healT = def.dur;
+        if (q !== p) this.ui.toast(q.id, `${p.look.name} curou você`, 'medkit');
+      }
+    this.audio.play('heal', { volume: 0.8 });
+  }
+  cast_drone(p, def) {
+    this.drones.push({ owner: p, x: p.pos.x, z: p.pos.z, y: 2.2, t: 0, life: def.dur, cd: 0.6, target: null, flash: 0 });
+    this.audio.play('generator', { volume: 0.5, pos: p.pos, rate: 2 });
+  }
+  cast_cloak(p, def) {
+    p.cloakT = def.dur;
+    this.flowT = 0;
+    this.audio.play('swing', { volume: 0.6, pos: p.pos, rate: 0.4 });
+  }
+  cast_efield(p, def) {
+    this.fields.push({ kind: 'elec', owner: p, follow: p, x: p.pos.x, z: p.pos.z, r: 3.2, t: 0, life: def.dur, tick: 0 });
+    this.audio.play('generator', { volume: 0.7, pos: p.pos });
+  }
+  cast_bombard(p) {
+    const t = this.aimPoint(p);
+    this.bombards.push({ x: t.x, z: t.z, t: 2, max: 2, owner: p });
+    this.ui.alert('Bombardeio a caminho — saia do círculo!', 'danger', 'bomb');
+    this.audio.play('beep', { volume: 0.8 });
+  }
+  cast_fury(p, def) {
+    p.furyT = def.dur;
+    this.audio.play('roar', { volume: 0.8, pos: p.pos, rate: 1.3, priority: true });
+    this.noiseShake(0.4);
+  }
+  cast_haven(p, def) {
+    this.fields.push({ kind: 'haven', owner: p, x: p.pos.x, z: p.pos.z, r: 5, t: 0, life: def.dur, tick: 0 });
+    this.audio.play('achievement', { volume: 0.7 });
+  }
+
+  // granada especial: dentro de um Campo elétrico vira Explosão elétrica (interação)
+  specialBlast(pr) {
+    const elec = this.fields.find((f) => f.kind === 'elec' && Math.hypot(f.x - pr.x, f.z - pr.z) < f.r + 1);
+    if (!elec) {
+      this.explosion(pr.x, pr.z, pr.w.radius, pr.w.dmg, pr.owner);
+      for (let k = 0; k < 16; k++) this.parts.spawn(pr.x, 0.8, pr.z, rand(-7, 7), rand(2, 7), rand(-7, 7), rand(0.15, 0.3), pick([0x9adcff, 0xffffff]), 0.5, -1, 2);
+      return;
+    }
+    this.explosion(pr.x, pr.z, pr.w.radius * 1.5, pr.w.dmg * 1.3, pr.owner);
+    const list = this.zombies.filter((z) => z.alive && Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z) < 7.5).sort((a, b) => Math.hypot(a.pos.x - pr.x, a.pos.z - pr.z) - Math.hypot(b.pos.x - pr.x, b.pos.z - pr.z)).slice(0, 8);
+    let fx = pr.x;
+    let fz = pr.z;
+    for (const z of list) {
+      this.addBolt(fx, 1.2, fz, z.pos.x, 1.0, z.pos.z, 0.35);
+      fx = z.pos.x;
+      fz = z.pos.z;
+      z.stunT = 1.6;
+      this.damageZombie(z, 60, 0, 0, pr.owner, 0.5);
+    }
+    for (let k = 0; k < 30; k++) this.parts.spawn(pr.x, 1, pr.z, rand(-9, 9), rand(2, 8), rand(-9, 9), rand(0.1, 0.25), pick([0x7ab8ff, 0xffffff, 0x3ce0ff]), 0.6, -1, 2);
+    if (pr.owner) this.ui.toast(pr.owner.id, 'Explosão elétrica! (Granada + Campo)', 'bolt');
+    this.audio.play('generator', { volume: 1, pos: pr, rate: 2.2, priority: true });
+  }
+  addBolt(x1, y1, z1, x2, y2, z2, life = 0.2) {
+    const pts = [];
+    const n = 7;
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      const j = k && k < n ? 0.35 : 0;
+      pts.push([x1 + (x2 - x1) * t + rand(-j, j), y1 + (y2 - y1) * t + rand(-j, j), z1 + (z2 - z1) * t + rand(-j, j)]);
+    }
+    this.bolts.push({ pts, life, max: life });
+  }
+
+  // ------------------------------------------------------------------ habilidades: atualização
+  updateAbilities(dt) {
+    // campos (elétrico segue o dono; sobrevivência fica no lugar)
+    for (const f of this.fields) {
+      f.t += dt;
+      if (f.follow) {
+        if (!f.follow.alive) f.t = f.life;
+        f.x = f.follow.pos.x;
+        f.z = f.follow.pos.z;
+      }
+      if (f.kind === 'elec') {
+        f.tick -= dt;
+        if (f.tick <= 0) {
+          f.tick = 0.25;
+          let n = 0;
+          for (const z of this.zombies) {
+            if (!z.alive) continue;
+            const d = Math.hypot(z.pos.x - f.x, z.pos.z - f.z);
+            if (d > f.r + z.radius) continue;
+            z.shockT = 0.35;
+            this.damageZombie(z, 7, (z.pos.x - f.x) / (d || 1), (z.pos.z - f.z) / (d || 1), f.owner, 0.3);
+            if (n++ < 3) this.addBolt(f.x, 1.6, f.z, z.pos.x, 1.0, z.pos.z, 0.15);
+          }
+          if (Math.random() < 0.5) this.audio.play('beep', { volume: 0.12, pos: f, rate: rand(1.6, 2.4) });
+        }
+      }
+    }
+    this.fields = this.fields.filter((f) => f.t < f.life);
+    // torres: miram no inimigo mais próximo à vista
+    for (const tu of this.turrets) {
+      tu.t += dt;
+      tu.cd -= dt;
+      tu.flash = Math.max(0, tu.flash - dt);
+      let best = null;
+      let bd = 9;
+      for (const z of this.zombies) {
+        if (!z.alive) continue;
+        const d = Math.hypot(z.pos.x - tu.x, z.pos.z - tu.z);
+        if (d < bd && this.arena.los(tu.x, tu.z, z.pos.x, z.pos.z)) {
+          bd = d;
+          best = z;
+        }
+      }
+      if (best) {
+        const want = Math.atan2(best.pos.x - tu.x, best.pos.z - tu.z);
+        tu.ang += angDiff(tu.ang, want) * Math.min(1, dt * 10);
+        if (tu.cd <= 0 && Math.abs(angDiff(tu.ang, want)) < 0.3) {
+          tu.cd = 0.22;
+          tu.flash = 0.05;
+          this.damageZombie(best, 11, Math.sin(want), Math.cos(want), tu.owner, 0.5);
+          this.tracers.push({ x1: tu.x + Math.sin(tu.ang) * 0.5, z1: tu.z + Math.cos(tu.ang) * 0.5, x2: best.pos.x, z2: best.pos.z, life: 0.05 });
+          this.audio.play('shot_smg', { volume: 0.22, pos: tu, rate: 1.2 });
+        }
+      } else tu.ang += dt * 0.8;
+      if (tu.t >= tu.life) {
+        tu.dead = true;
+        for (let k = 0; k < 12; k++) this.parts.spawn(tu.x, 0.6, tu.z, rand(-3, 3), rand(1, 4), rand(-3, 3), rand(0.08, 0.16), pick([0x8a8e96, 0x3a3e46]), 0.9, 14, 0);
+      }
+    }
+    this.turrets = this.turrets.filter((t) => !t.dead);
+    // drones: orbitam o dono e mergulham no inimigo mais próximo
+    for (const d of this.drones) {
+      d.t += dt;
+      d.cd -= dt;
+      d.flash = Math.max(0, d.flash - dt);
+      const o = d.owner;
+      let tx = o.pos.x + Math.sin(d.t * 1.6) * 1.8;
+      let tz = o.pos.z + Math.cos(d.t * 1.6) * 1.8;
+      if (!d.target || !d.target.alive || Math.hypot(d.target.pos.x - d.x, d.target.pos.z - d.z) > 12) {
+        d.target = null;
+        let bd = 10;
+        for (const z of this.zombies) {
+          if (!z.alive) continue;
+          const dd = Math.hypot(z.pos.x - o.pos.x, z.pos.z - o.pos.z);
+          if (dd < bd) {
+            bd = dd;
+            d.target = z;
+          }
+        }
+      }
+      if (d.target) {
+        const a = Math.atan2(d.x - d.target.pos.x, d.z - d.target.pos.z);
+        tx = d.target.pos.x + Math.sin(a) * 2.2;
+        tz = d.target.pos.z + Math.cos(a) * 2.2;
+        if (d.cd <= 0) {
+          d.cd = 0.3;
+          d.flash = 0.05;
+          const dx = d.target.pos.x - d.x;
+          const dz = d.target.pos.z - d.z;
+          const l = Math.hypot(dx, dz) || 1;
+          this.damageZombie(d.target, 8, dx / l, dz / l, o, 0.3);
+          this.tracers.push({ x1: d.x, z1: d.z, x2: d.target.pos.x, z2: d.target.pos.z, life: 0.05, color: 0xff6070 });
+          this.audio.play('shot_smg', { volume: 0.15, pos: d, rate: 1.6 });
+        }
+      }
+      const k = Math.min(1, dt * 3.5);
+      d.x += (tx - d.x) * k;
+      d.z += (tz - d.z) * k;
+      d.y = 2.2 + Math.sin(d.t * 5) * 0.08;
+      if (d.t >= d.life) {
+        d.dead = true;
+        for (let n = 0; n < 10; n++) this.parts.spawn(d.x, d.y, d.z, rand(-2, 2), rand(0, 2), rand(-2, 2), 0.08, pick([0x2a2a30, 0xff3040, 0x3a80ff]), 0.8, 14, 0);
+      }
+    }
+    this.drones = this.drones.filter((d) => !d.dead);
+    // bombardeio: aviso de 2 s e 12 explosões
+    for (const b of this.bombards) {
+      b.t -= dt;
+      if (Math.random() < dt * 10) this.parts.spawn(b.x + rand(-0.3, 0.3), 0.2, b.z + rand(-0.3, 0.3), 0, rand(2, 4), 0, 0.14, 0xff4020, 0.8, -1, 2);
+      if (b.t <= 0) {
+        b.done = true;
+        for (let k = 0; k < 12; k++) {
+          const a = rand(0, Math.PI * 2);
+          const r = k ? Math.sqrt(Math.random()) * 5 : 0;
+          const ex = b.x + Math.sin(a) * r;
+          const ez = b.z + Math.cos(a) * r;
+          this.later(k * 0.12, () => this.explosion(ex, ez, 3.2, 160, b.owner));
+        }
+      }
+    }
+    this.bombards = this.bombards.filter((b) => !b.done);
+    // escudo tático destrói projéteis inimigos que chegam perto
+    for (const p of this.players) {
+      if (!p.alive || p.shieldT <= 0) continue;
+      for (const pr of this.projectiles)
+        if ((pr.kind === 'acid' || pr.kind === 'rock' || pr.kind === 'spore') && Math.hypot(pr.x - p.pos.x, pr.z - p.pos.z) < 1.6 && pr.y < 3) {
+          pr.dead = true;
+          for (let k = 0; k < 6; k++) this.parts.spawn(pr.x, pr.y, pr.z, rand(-2, 2), rand(0, 2), rand(-2, 2), 0.07, 0x4fd0ff, 0.4, 0, 2);
+        }
+    }
+    for (const b of this.bolts) b.life -= dt;
+    this.bolts = this.bolts.filter((b) => b.life > 0);
+  }
+
+  // efeitos por jogador a cada quadro (recargas, regeneração, cura, investida)
+  updatePlayerAbilities(p, dt) {
+    for (let i = 0; i < 4; i++) p.cds[i] = Math.max(0, p.cds[i] - dt);
+    p.shieldT = Math.max(0, p.shieldT - dt);
+    p.furyT = Math.max(0, p.furyT - dt);
+    if (p.cloakT > 0) {
+      p.cloakT = Math.max(0, p.cloakT - dt);
+      if (p.cloakT === 0) this.flowT = 0;
+    }
+    if (!p.alive) return;
+    let regen = this.pv(p, 'regen');
+    if (p.healT > 0) {
+      p.healT = Math.max(0, p.healT - dt);
+      regen += 9;
+      if (Math.random() < dt * 14) this.parts.spawn(p.pos.x + rand(-0.4, 0.4), rand(0.2, 1), p.pos.z + rand(-0.4, 0.4), 0, rand(1, 2.5), 0, 0.08, pick([0x60ff80, 0xc8ffd0]), 0.7, -1, 2);
+    }
+    if (this.inHaven(p)) regen += 6;
+    if (regen) p.hp = Math.min(p.maxHp, p.hp + regen * dt);
+    if (p.furyT > 0 && Math.random() < dt * 20) this.parts.spawn(p.pos.x + rand(-0.35, 0.35), rand(0.3, 1.6), p.pos.z + rand(-0.35, 0.35), 0, rand(1, 2), 0, rand(0.08, 0.14), pick([0xff5a1a, 0xffb030, 0xff2a10]), 0.45, -1, 2);
+    for (let i = 0; i < 4; i++) if (this.input.anyHit(p.akeys[i])) this.useAbility(p, i);
+  }
+  // investida: movimento forçado, atropela quem estiver no caminho
+  updateDash(p, dt) {
+    p.dashT = Math.max(0, p.dashT - dt);
+    const sp = 27.5;
+    const dx = Math.sin(p.dashDir);
+    const dz = Math.cos(p.dashDir);
+    p.vel.set(dx * sp, 0, dz * sp);
+    this.arena.move(p.pos, dx * sp * dt, dz * sp * dt, p.radius);
+    p.facing = p.dashDir;
+    for (let k = 0; k < 3; k++) this.parts.spawn(p.pos.x + rand(-0.25, 0.25), rand(0.2, 1.5), p.pos.z + rand(-0.25, 0.25), -dx * 2, 0, -dz * 2, rand(0.08, 0.16), pick([0x3ab0ff, 0x9adcff]), 0.35, 0, 2);
+    const ram = p.dashRam ? 2 : 1;
+    for (const z of this.zombies) {
+      if (!z.alive || p.dashHit.has(z) || z.def.fly) continue;
+      if (Math.hypot(z.pos.x - p.pos.x, z.pos.z - p.pos.z) < z.radius + 0.7) {
+        p.dashHit.add(z);
+        this.damageZombie(z, 30 * ram, dx, dz, p, 6 * ram);
+      }
+    }
+    if (p.dashT === 0) p.vel.multiplyScalar(0.2);
+  }
+
+  // ------------------------------------------------------------------ habilidades: desenho
+  // efeitos presos ao jogador: escudo hexagonal, aura de fúria
+  drawPlayerFx(B, G, p) {
+    const t = this.time;
+    if (p.shieldT > 0) {
+      const ending = p.shieldT < 0.8 && Math.sin(t * 30) > 0;
+      if (!ending)
+        for (let k = 0; k < 14; k++) {
+          const a = (k / 14) * Math.PI * 2 + t * 0.8;
+          const tier = k % 2;
+          G.box(p.pos.x + Math.sin(a) * 0.82, 0.55 + tier * 0.55, p.pos.z + Math.cos(a) * 0.82, 0.34, 0.34, 0.03, tier ? 0x4fd0ff : 0x2a9ad8, a);
+        }
+      G.box(p.pos.x, 1.62, p.pos.z, 0.7, 0.03, 0.7, 0x4fd0ff, t);
+    }
+    if (p.furyT > 0) ring(G, p.pos.x, p.pos.z, 0.75, 0xff5a1a, t * 2);
+  }
+  // pontos ao longo de um raio (só giro em Y no lote: o raio é feito de cubinhos)
+  drawBolt(G, pts, color) {
+    for (let k = 0; k < pts.length - 1; k++) {
+      const [x1, y1, z1] = pts[k];
+      const [x2, y2, z2] = pts[k + 1];
+      for (let s = 0; s < 3; s++) {
+        const f = s / 3;
+        G.box(x1 + (x2 - x1) * f, y1 + (y2 - y1) * f, z1 + (z2 - z1) * f, 0.07, 0.07, 0.07, color);
+      }
+    }
+  }
+  drawAbilities(B, G) {
+    const t = this.time;
+    for (const f of this.fields) {
+      const fade = Math.min(1, (f.life - f.t) / 0.5, f.t / 0.2);
+      if (f.kind === 'elec') {
+        ring(G, f.x, f.z, f.r * fade, 0x7ab8ff, t * 3);
+        ring(G, f.x, f.z, f.r * 0.6 * fade, 0x3ce0ff, -t * 4);
+        // domo: arcos de faíscas subindo do chão até o topo
+        for (let k = 0; k < 3; k++) {
+          const a = t * 5 + k * 2.1 + Math.random() * 0.4;
+          const pts = [];
+          for (let s = 0; s <= 5; s++) {
+            const q = s / 5;
+            const rr = f.r * Math.cos(q * Math.PI * 0.5) * fade;
+            pts.push([f.x + Math.sin(a + q * 0.6) * rr + rand(-0.12, 0.12), 0.1 + Math.sin(q * Math.PI * 0.5) * 2.2, f.z + Math.cos(a + q * 0.6) * rr + rand(-0.12, 0.12)]);
+          }
+          this.drawBolt(G, pts, k % 2 ? 0x9adcff : 0xffffff);
+        }
+      } else {
+        // campo de sobrevivência: anel, colunas de luz e cruz no centro
+        ring(G, f.x, f.z, f.r * fade, 0x4fa8ff, t);
+        ring(G, f.x, f.z, (f.r - 0.3) * fade, 0x60ff80, -t * 0.7);
+        for (let k = 0; k < 16; k++) {
+          const a = (k / 16) * Math.PI * 2 + t * 0.3;
+          const h = 1.2 + Math.sin(t * 3 + k) * 0.4;
+          G.box(f.x + Math.sin(a) * f.r * fade, h / 2, f.z + Math.cos(a) * f.r * fade, 0.06, h, 0.06, k % 2 ? 0x4fa8ff : 0x9ad0ff);
+        }
+        G.box(f.x, 0.04, f.z, 1.2, 0.02, 0.3, 0x60ff80);
+        G.box(f.x, 0.04, f.z, 0.3, 0.02, 1.2, 0x60ff80);
+      }
+    }
+    for (const tu of this.turrets) {
+      const c = Math.sin(tu.ang);
+      const s = Math.cos(tu.ang);
+      for (let k = 0; k < 3; k++) {
+        const a = (k / 3) * Math.PI * 2;
+        B.box(tu.x + Math.sin(a) * 0.25, 0.2, tu.z + Math.cos(a) * 0.25, 0.07, 0.4, 0.07, 0x3a3e46, a);
+      }
+      B.box(tu.x, 0.45, tu.z, 0.3, 0.12, 0.3, 0x4a4e56);
+      B.box(tu.x, 0.68, tu.z, 0.42, 0.3, 0.42, 0x6a707a, tu.ang);
+      B.box(tu.x + c * 0.36, 0.7, tu.z + s * 0.36, 0.08, 0.08, 0.4, 0x2a2c32, tu.ang);
+      G.box(tu.x - c * 0.05, 0.86, tu.z - s * 0.05, 0.12, 0.04, 0.12, tu.life - tu.t < 3 && Math.sin(t * 12) > 0 ? 0xff3030 : 0x30ff60);
+      if (tu.flash > 0) G.box(tu.x + c * 0.62, 0.7, tu.z + s * 0.62, 0.18, 0.18, 0.18, 0xffd060);
+    }
+    for (const d of this.drones) {
+      B.box(d.x, d.y, d.z, 0.38, 0.12, 0.38, 0x24262c, d.t);
+      B.box(d.x, d.y - 0.1, d.z, 0.12, 0.1, 0.12, 0x3a3e46);
+      for (let k = 0; k < 4; k++) {
+        const a = (k / 4) * Math.PI * 2 + Math.PI / 4 + d.t;
+        const ax = d.x + Math.sin(a) * 0.32;
+        const az = d.z + Math.cos(a) * 0.32;
+        B.box((d.x + ax) / 2, d.y, (d.z + az) / 2, 0.05, 0.04, 0.3, 0x24262c, a);
+        G.box(ax, d.y + 0.08, az, 0.26, 0.01, 0.04, 0xd0d4dc, d.t * 30 + k);
+      }
+      G.box(d.x + 0.12, d.y - 0.02, d.z, 0.06, 0.05, 0.06, Math.sin(t * 8) > 0 ? 0xff3040 : 0x401010);
+      G.box(d.x - 0.12, d.y - 0.02, d.z, 0.06, 0.05, 0.06, Math.sin(t * 8) > 0 ? 0x102040 : 0x3a80ff);
+      if (d.flash > 0) G.box(d.x, d.y - 0.15, d.z, 0.14, 0.14, 0.14, 0xffd060);
+    }
+    for (const b of this.bombards) {
+      const f = 1 - b.t / b.max;
+      ring(G, b.x, b.z, 5.5, 0xff2020, t * 2);
+      ring(G, b.x, b.z, 5.5 * (1 - f * 0.9), 0xff8020, -t * 3);
+      if (Math.sin(t * 18) > 0) G.box(b.x, 0.2, b.z, 0.25, 0.4, 0.25, 0xff3020);
+    }
+    for (const bo of this.bolts) if (bo.life > bo.max * 0.3 || Math.random() > 0.5) this.drawBolt(G, bo.pts, Math.random() > 0.5 ? 0xffffff : 0x9adcff);
+  }
+
+  removePlaceable(b) {
+    b.dead = true;
+    const A = this.arena;
+    if (b.kind !== 'mine') {
+      A.dyn[A.idx(b.i, b.j)] = 0;
+      this.flowT = 0;
+    }
+  }
+
+  explosion(x, z, radius, dmg, owner) {
+    const A = this.arena;
+    for (const zb of this.zombies) {
+      if (!zb.alive) continue;
+      const d = Math.hypot(zb.pos.x - x, zb.pos.z - z);
+      if (d > radius + zb.radius) continue;
+      const f = Math.max(0.3, 1 - d / (radius + 0.5));
+      const nx = (zb.pos.x - x) / (d || 1);
+      const nz = (zb.pos.z - z) / (d || 1);
+      this.damageZombie(zb, dmg * f, nx, nz, owner, 6 * f);
+    }
+    for (const p of this.players) {
+      if (!p.alive) continue;
+      const d = Math.hypot(p.pos.x - x, p.pos.z - z);
+      if (d < radius) this.damagePlayer(p, dmg * (1 - d / radius) * (owner ? 0.25 : 0.8), x, z, 8 * (1 - d / radius), true);
+    }
+    for (const b of this.placeables) {
+      if (b.dead) continue;
+      const d = Math.hypot(b.x - x, b.z - z);
+      if (d > radius) continue;
+      if (b.kind === 'barrel') this.damageBarrel(b, 99);
+      else if (b.kind === 'mine' && b.armT <= 0) {
+        this.removePlaceable(b);
+        this.later(0.12, () => this.explosion(b.x, b.z, 3.2, 140, b.owner));
+      } else if (b.kind === 'barricade') {
+        b.hp -= dmg * 0.4;
+        if (b.hp <= 0) this.removePlaceable(b);
+      }
+    }
+    for (const c of this.pickups) if (c.type === 'supply' && !c.taken && Math.hypot(c.x - x, c.z - z) < radius) this.openSupply(c, owner);
+    // cenário: cones voam, o resto leva dano (sacos de areia e pallets só se desgastam com explosões)
+    for (const pr of this.arena.props) {
+      if (pr.dead) continue;
+      const d = Math.hypot(pr.x - x, pr.z - z);
+      if (d > radius + 0.5) continue;
+      const nx = (pr.x - x) / (d || 1);
+      const nz = (pr.z - z) / (d || 1);
+      if (pr.def.knock) this.knockProp(pr, nx, nz, 9 * Math.max(0.3, 1 - d / radius));
+      else this.damageProp(pr, dmg * 0.6 * Math.max(0.3, 1 - d / (radius + 0.5)), owner, nx, nz, true);
+    }
+    for (let k = 0; k < 26; k++) this.parts.spawn(x + rand(-0.5, 0.5), rand(0.3, 1.2), z + rand(-0.5, 0.5), rand(-6, 6), rand(2, 9), rand(-6, 6), rand(0.2, 0.45), pick([0xffd040, 0xff8a20, 0xff5010]), rand(0.35, 0.8), -2, 2);
+    for (let k = 0; k < 12; k++) this.parts.spawn(x + rand(-1, 1), rand(0.5, 1.5), z + rand(-1, 1), rand(-1.5, 1.5), rand(1.5, 3), rand(-1.5, 1.5), rand(0.35, 0.6), pick([0x2a2a2a, 0x3a3634, 0x4a4440]), rand(0.8, 1.4), -1.5, 0);
+    for (let k = 0; k < 10; k++) this.parts.spawn(x, 0.4, z, rand(-8, 8), rand(4, 10), rand(-8, 8), rand(0.08, 0.15), 0x2a2420, rand(0.6, 1.2), 22, 0);
+    A.scorch(x, z, radius * 0.8);
+    const l = this.boomLights[this.boomIdx++ % 2];
+    l.position.set(x, 2, z);
+    l.intensity = 60;
+    this.audio.play('explosion', { volume: 0.9, pos: { x, z }, maxDist: 70, priority: true });
+    this.noiseShake(0.9);
+  }
+
+  noiseShake(a) {
+    this.shakeAmt = Math.min(1.2, this.shakeAmt + a);
+  }
+  later(t, fn) {
+    this.timers.push({ t, fn });
+  }
+
+  // ------------------------------------------------------------------ multiplicador e desbloqueios
+  addMeter(n) {
+    for (let k = 0; k < n; k++) {
+      this.meter += 0.34 / (1 + (this.mult - 1) * 0.16);
+      if (this.meter >= 1) {
+        this.meter = Math.max(0.15, this.meter - 1);
+        this.mult++;
+        this.ui.multPulse();
+        if (this.mult > this.maxMult) {
+          this.maxMult = this.mult;
+          for (const u of UNLOCKS) if (u.level === this.mult) this.unlock(u);
+        }
+      }
+    }
+  }
+  unlock(u) {
+    if (u.weapon) {
+      this.unlocked.add(u.weapon);
+      for (const p of this.players) p.ammo[u.weapon] = (p.ammo[u.weapon] || 0) + Math.round(WEAPONS[u.weapon].start * (1 + this.pv(p, 'ammo') / 100));
+    } else this.upg[u.upgrade] = true;
+    this.ui.unlockBanner(u.text);
+    this.audio.play('levelup', { volume: 0.8, priority: true });
+  }
+
+  // ------------------------------------------------------------------ ondas
+  buildWave(w) {
+    const coop = this.players.length > 1;
+    const n = Math.round((6 + w * 4) * (coop ? 1.35 : 1));
+    const list = [];
+    // sorteio por peso entre os tipos já liberados; o zumbi comum fica mais raro com o tempo
+    const pool = ENEMY_ORDER.filter((t) => !ENEMIES[t].boss && ENEMIES[t].from <= w).map((t) => {
+      const d = ENEMIES[t];
+      const grow = Math.min(2, 1 + (w - d.from) * 0.12);
+      return [t, t === 'walker' ? Math.max(3.5, d.weight - w * 0.45) : d.weight * grow];
+    });
+    const total = pool.reduce((a, [, wt]) => a + wt, 0);
+    for (let k = 0; k < n; k++) {
+      let r = Math.random() * total;
+      let t = 'walker';
+      for (const [id, wt] of pool) {
+        r -= wt;
+        if (r <= 0) {
+          t = id;
+          break;
+        }
+      }
+      list.push(t);
+    }
+    // o tipo novo aparece garantido na onda em que é liberado
+    for (const t of ENEMY_ORDER) if (ENEMIES[t].from === w && !ENEMIES[t].boss && !list.includes(t)) list.splice(Math.floor(list.length * 0.3), 0, t);
+    if (w % 5 === 0) list.splice(Math.floor(list.length * 0.6), 0, this.arena.def.boss || 'boss');
+    return list;
+  }
+
+  spawnZombie(type, x, z) {
+    const def = ENEMIES[type];
+    const w = Math.max(1, this.wave);
+    const hpMul = def.boss ? 1 + (w / 5 - 1) * 0.45 : 1 + 0.07 * (w - 1);
+    const zb = {
+      type,
+      def,
+      pos: new THREE.Vector3(x, 0, z),
+      hp: def.hp * hpMul * (this.players.length > 1 && def.boss ? 1.4 : 1),
+      maxHp: 0,
+      speed: def.speed * Math.min(1.3, 1 + 0.015 * (w - 1)) * rand(0.9, 1.1),
+      scale: def.scale,
+      radius: def.radius ?? 0.32 * def.scale,
+      wallR: Math.min(0.32 * def.scale, 0.45),
+      facing: rand(0, 6.28),
+      alive: true,
+      attackCd: rand(0.3, 1),
+      attackT: 0,
+      hurtT: 0,
+      walk: rand(0, 6),
+      kx: 0,
+      kz: 0,
+      spitCd: rand(1, 3),
+      chargeCd: 4,
+      slamCd: 3,
+      throwCd: rand(3, 5),
+      lungeCd: rand(1, 2),
+      summonCd: rand(2, 4),
+      sporeCd: rand(1.5, 3),
+      strafe: rand(0, 6.28),
+      minions: [],
+      flyY: 1.4,
+      state: 'move',
+      stateT: 0,
+      rise: def.boss || def.fly ? 0 : 1,
+      look: enemyLook(type),
+    };
+    zb.maxHp = zb.hp;
+    this.zombies.push(zb);
+    if (def.boss) {
+      this.boss = zb;
+      this.ui.banner(`${def.name.toUpperCase()} SURGIU!`, 'bad');
+      this.audio.play('boss_roar', { volume: 1, priority: true });
+      this.audio.setMusic('boss');
+    }
+    return zb;
+  }
+
+  aliveCap() {
+    return this.settings.quality === 'low' ? 40 : 60;
+  }
+  countAlive() {
+    let n = 0;
+    for (const z of this.zombies) if (z.alive) n++;
+    return n;
+  }
+  freeSpotNear(x, z, r) {
+    for (const [dx, dz] of [[0.8, 0], [-0.8, 0], [0, 0.8], [0, -0.8], [0.8, 0.8], [-0.8, 0.8], [0.8, -0.8], [-0.8, -0.8], [1.4, 0], [-1.4, 0], [0, 1.4], [0, -1.4]]) {
+      if (!this.arena.circleBlocked(x + dx, z + dz, r)) return { x: x + dx, z: z + dz };
+    }
+    return { x, z };
+  }
+
+  updateWaves(dt) {
+    if (this.waveState === 'intermission') {
+      this.waveT -= dt;
+      if (this.waveT <= 0) {
+        this.wave++;
+        this.waveState = 'active';
+        this.toSpawn = this.buildWave(this.wave);
+        this.waveTotal = this.toSpawn.length;
+        this.spawnT = 0.5;
+        this.ui.banner(`ONDA ${this.wave}`, 'wave');
+        this.audio.play('wave', { volume: 0.9, priority: true });
+        if (!this.boss) this.audio.setMusic('combat');
+        // quem caiu volta
+        const alive = this.players.find((p) => p.alive);
+        for (const p of this.players)
+          if (!p.alive && alive) {
+            p.alive = true;
+            p.hp = 50;
+            const spot = this.freeSpotNear(alive.pos.x, alive.pos.z, p.radius);
+            p.pos.set(spot.x, 0, spot.z);
+            this.ui.banner(`${p.look.name} VOLTOU!`, 'good');
+          }
+      }
+      return;
+    }
+    const cap = this.aliveCap();
+    this.spawnT -= dt;
+    const alive = this.countAlive();
+    if (this.toSpawn.length && this.spawnT <= 0 && alive < cap) {
+      this.spawnT = Math.max(0.18, 0.75 - this.wave * 0.035) * rand(0.6, 1.3);
+      const gates = this.arena.gates.filter((g) => this.players.every((p) => !p.alive || Math.hypot(p.pos.x - g.x, p.pos.z - g.z) > 7));
+      let sx;
+      let sz;
+      const graves = this.arena.graves;
+      if (graves.length && Math.random() < 0.3) {
+        // as covas da necrópole também vomitam mortos
+        const gv = pick(graves);
+        sx = gv.x + rand(-0.2, 0.2);
+        sz = gv.z + rand(-0.2, 0.2);
+        for (let k = 0; k < 10; k++) this.parts.spawn(gv.x, 0.2, gv.z, rand(-1.5, 1.5), rand(1, 3), rand(-1.5, 1.5), rand(0.08, 0.16), pick([0x5a4a3a, 0x2a2a24]), 0.7, 8, 0);
+        this.audio.play('groan1', { volume: 0.4, pos: { x: gv.x, z: gv.z }, rate: rand(0.7, 0.95) });
+      } else {
+        const g = pick(gates.length ? gates : this.arena.gates);
+        sx = g.x + rand(-0.3, 0.3);
+        sz = g.z + rand(-0.3, 0.3);
+      }
+      this.spawnZombie(this.toSpawn.shift(), sx, sz);
+    }
+    if (!this.toSpawn.length && alive === 0) {
+      this.waveState = 'intermission';
+      this.waveT = 5;
+      this.stats.score += this.wave * 100;
+      this.ui.banner(`ONDA ${this.wave} CONCLUÍDA  +${this.wave * 100}`, 'good');
+      this.audio.setMusic('ambient');
+      if (this.fieldCount() < 4) this.spawnPickup(this.rollField());
+    }
+  }
+
+  // ------------------------------------------------------------------ itens no mapa
+  fieldCount() {
+    let n = 0;
+    for (const c of this.pickups) if (!c.taken && !c.loot) n++;
+    return n;
+  }
+  hasOwnedAmmo() {
+    for (const id of this.unlocked) if (id !== 'pistol') return true;
+    return false;
+  }
+  // itens que aparecem sozinhos pelo mapa
+  rollField() {
+    const w = this.wave;
+    return rollTable([
+      ['ammo', this.hasOwnedAmmo() ? 30 : 10],
+      ['medkit', 22],
+      ['drink', 10],
+      ['supply', 12],
+      ['vest', 7],
+      ['helmet', 5],
+      ['backpack', 4],
+      ['binoculars', 5],
+      ['flashlight', this.arenaDef?.id === 'cemiterio' ? 12 : 4],
+      ['radio', w >= 3 ? 4 : 0],
+    ]);
+  }
+  // conteúdo das caixas de madeira (armas só dão munição se já foram liberadas)
+  rollSupply() {
+    const has = (id) => this.unlocked.has(id);
+    const axeOut = this.upg.axe || this.pickups.some((c) => c.type === 'axe' && !c.taken);
+    return rollTable([
+      ['medkit', 20],
+      ['ammo', this.hasOwnedAmmo() ? 22 : 6],
+      ['drink', 14],
+      ['vest', 8],
+      ['helmet', 6],
+      ['backpack', 5],
+      ['binoculars', 6],
+      ['flashlight', 6],
+      ['radio', 5],
+      ['grenade', has('grenade') ? 8 : 0],
+      ['dynamite', has('dynamite') ? 8 : 0],
+      ['shotgun', has('shotgun') ? 5 : 0],
+      ['rifle', has('rifle') ? 5 : 0],
+      ['sniper', has('sniper') ? 6 : 0],
+      ['axe', !axeOut && this.wave >= 4 ? 3 : 0],
+    ]);
+  }
+
+  spawnPickup(type, x, z, from) {
+    const A = this.arena;
+    if (!type) return false;
+    if (x === undefined) {
+      for (let tries = 0; tries < 60; tries++) {
+        const i = Math.floor(rand(2, A.W - 2));
+        const j = Math.floor(rand(2, A.D - 2));
+        if (A.blocked(i, j) || A.dist[A.idx(i, j)] > 1e8) continue;
+        const cx = i + 0.5;
+        const cz = j + 0.5;
+        if (this.players.some((p) => Math.hypot(p.pos.x - cx, p.pos.z - cz) < 5)) continue;
+        x = cx;
+        z = cz;
+        break;
+      }
+      if (x === undefined) return false;
+    }
+    if (!A.inb(Math.floor(x), Math.floor(z)) || A.circleBlocked(x, z, 0.3)) return false;
+    const c = { type, x, z, t: 0, life: type === 'supply' ? 60 : 45, taken: false, loot: !!from, popT: 0 };
+    if (from) {
+      // salta de dentro da caixa até o ponto de pouso
+      c.sx = from.x;
+      c.sz = from.z;
+      c.popT = 0.45;
+    }
+    this.pickups.push(c);
+    return c;
+  }
+
+  // ponto livre ao redor (para itens que saem da caixa)
+  lootSpot(x, z) {
+    const A = this.arena;
+    for (let tries = 0; tries < 12; tries++) {
+      const a = rand(0, Math.PI * 2);
+      const r = rand(0.9, 1.5);
+      const nx = x + Math.sin(a) * r;
+      const nz = z + Math.cos(a) * r;
+      if (A.inb(Math.floor(nx), Math.floor(nz)) && !A.circleBlocked(nx, nz, 0.3) && !this.pickups.some((c) => !c.taken && Math.hypot(c.x - nx, c.z - nz) < 0.6)) return { x: nx, z: nz };
+    }
+    return { x, z };
+  }
+
+  openSupply(c, by) {
+    if (c.taken) return;
+    c.taken = true;
+    this.audio.play('crate', { volume: 0.9, pos: c, rate: 0.8 });
+    for (let k = 0; k < 18; k++) this.parts.spawn(c.x + rand(-0.3, 0.3), rand(0.2, 0.7), c.z + rand(-0.3, 0.3), rand(-4, 4), rand(2, 6), rand(-4, 4), rand(0.08, 0.2), pick([0xc89a5a, 0x8a6232, 0xa87a42]), rand(0.8, 1.4), 18, 0);
+    const n = this.wave >= 8 ? 3 : 2;
+    for (let k = 0; k < n; k++) {
+      const s = this.lootSpot(c.x, c.z);
+      this.spawnPickup(this.rollSupply(), s.x, s.z, c);
+    }
+    if (!this.demo) this.stats.score += 25;
+  }
+
+  // efeito de cada item ao ser coletado; false = não serve agora (fica no chão para o parceiro)
+  collect(p, c) {
+    const it = ITEMS[c.type];
+    const packMul = (p.pack ? 1.5 : 1) * (this.upg.doubleAmmo ? 2 : 1) * (1 + this.pv(p, 'ammo') / 100);
+    let msg = it.name;
+    let ic = it.icon;
+    let sound = 'pickup';
+    switch (c.type) {
+      case 'ammo': {
+        let got = 0;
+        for (const id of this.unlocked) {
+          if (id === 'pistol') continue;
+          p.ammo[id] = (p.ammo[id] || 0) + Math.round(WEAPONS[id].pack * packMul);
+          got++;
+        }
+        p.hp = Math.min(p.maxHp, p.hp + 10);
+        msg = got ? 'Munição! +10 vida' : '+10 vida';
+        ic = got ? 'ammo' : 'medkit';
+        sound = got ? 'ammo' : 'heal';
+        break;
+      }
+      case 'medkit': {
+        if (p.hp >= p.maxHp) return false;
+        const heal = Math.round(p.maxHp * MEDKIT_HEAL);
+        p.hp = Math.min(p.maxHp, p.hp + heal);
+        msg = `Kit médico +${heal} vida`;
+        sound = 'heal';
+        for (let k = 0; k < 12; k++) this.parts.spawn(p.pos.x + rand(-0.4, 0.4), rand(0.3, 1.2), p.pos.z + rand(-0.4, 0.4), 0, rand(1.5, 3), 0, 0.09, pick([0x60ff80, 0xffffff]), 0.7, -1, 2);
+        break;
+      }
+      case 'drink':
+        p.energyT = ENERGY_T;
+        msg = `Energia! ${ENERGY_T} s mais rápido`;
+        sound = 'levelup';
+        break;
+      case 'vest':
+        if (p.armor >= p.maxArmor) return false;
+        p.armor = p.maxArmor;
+        msg = `Colete: +${p.maxArmor} armadura`;
+        sound = 'hit_armor';
+        break;
+      case 'helmet':
+        if (p.helmet) return false;
+        p.helmet = true;
+        msg = 'Capacete: -40% dano especial';
+        sound = 'hit_armor';
+        break;
+      case 'backpack':
+        if (p.pack) return false;
+        p.pack = true;
+        msg = 'Mochila: +50% munição';
+        break;
+      case 'binoculars':
+        this.scoutT = SCOUT_T;
+        msg = `Inimigos marcados por ${SCOUT_T} s`;
+        sound = 'beep';
+        break;
+      case 'flashlight':
+        p.lightT = LIGHT_T;
+        msg = `Lanterna: ${LIGHT_T} s de bateria`;
+        sound = 'reload_in';
+        break;
+      case 'radio':
+        msg = this.callRadio(p);
+        sound = 'beep';
+        break;
+      case 'axe':
+        if (this.upg.axe) return false;
+        this.upg.axe = true;
+        this.ui.unlockBanner('Machado (corpo a corpo)');
+        msg = 'Machado! Golpeie com F';
+        sound = 'levelup';
+        break;
+      default:
+        // pacotes de munição de uma arma específica
+        if (it.weapon) {
+          const n = Math.round((c.type === 'grenade' ? 3 : WEAPONS[it.weapon].pack) * packMul);
+          p.ammo[it.weapon] = (p.ammo[it.weapon] || 0) + n;
+          msg = `${WEAPONS[it.weapon].name} +${n}`;
+          ic = 'ammo';
+          sound = 'ammo';
+        }
+    }
+    this.audio.play(sound, { volume: 0.8 });
+    this.ui.toast(p.id, msg, ic);
+    for (let k = 0; k < 10; k++) {
+      const a = (k / 10) * Math.PI * 2;
+      this.parts.spawn(c.x + Math.sin(a) * 0.3, 0.5, c.z + Math.cos(a) * 0.3, Math.sin(a) * 2, rand(2, 3.5), Math.cos(a) * 2, 0.09, it.ring, 0.45, 4, 2);
+    }
+    if (!this.demo) this.stats.score += 25;
+    return true;
+  }
+
+  // rádio: ataque aéreo no maior grupo de inimigos (longe dos jogadores); sem alvo, pede suprimentos
+  callRadio(p) {
+    let best = null;
+    let bs = -1;
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      if (Math.hypot(z.pos.x - p.pos.x, z.pos.z - p.pos.z) > 22) continue;
+      if (this.players.some((q) => q.alive && Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z) < 4.5)) continue;
+      let n = 0;
+      for (const o of this.zombies) if (o.alive && Math.hypot(o.pos.x - z.pos.x, o.pos.z - z.pos.z) < 4) n++;
+      if (n > bs) {
+        bs = n;
+        best = z;
+      }
+    }
+    if (best) {
+      this.strikes.push({ x: best.pos.x, z: best.pos.z, t: 2.4, max: 2.4, follow: best, owner: p });
+      this.ui.alert('Rádio: ataque aéreo a caminho — saia do círculo vermelho!', 'danger', 'radio');
+      return 'Ataque aéreo a caminho!';
+    }
+    const s = this.freeSpotNear(p.pos.x, p.pos.z, 0.4);
+    const spot = this.lootSpot(s.x, s.z);
+    this.spawnPickup('supply', spot.x, spot.z);
+    for (let k = 0; k < 20; k++) this.parts.spawn(spot.x + rand(-0.3, 0.3), rand(2, 5), spot.z + rand(-0.3, 0.3), 0, -rand(2, 5), 0, rand(0.1, 0.2), pick([0x60ff70, 0xffffff]), 0.6, 4, 2);
+    return 'Rádio: suprimentos lançados!';
+  }
+
+  updateStrikes(dt) {
+    for (const s of this.strikes) {
+      s.t -= dt;
+      // acompanha o grupo até 0,8 s antes do impacto
+      if (s.t > 0.8 && s.follow?.alive) {
+        s.x += (s.follow.pos.x - s.x) * Math.min(1, dt * 3);
+        s.z += (s.follow.pos.z - s.z) * Math.min(1, dt * 3);
+      }
+      if (Math.random() < dt * 6) this.parts.spawn(s.x, 0.2, s.z, rand(-0.5, 0.5), rand(2, 4), rand(-0.5, 0.5), 0.12, 0xff4020, 0.8, -1, 2);
+      if (s.t <= 0) {
+        s.done = true;
+        for (let k = 0; k < 5; k++) {
+          const ex = s.x + (k ? rand(-2.2, 2.2) : 0);
+          const ez = s.z + (k ? rand(-2.2, 2.2) : 0);
+          this.later(k * 0.14, () => this.explosion(ex, ez, 3.2, 120, s.owner));
+        }
+      }
+    }
+    this.strikes = this.strikes.filter((s) => !s.done);
+  }
+
+  // inimigo dentro do feixe de alguma lanterna?
+  litBy(z) {
+    for (const p of this.players) {
+      if (!p.alive || p.lightT <= 0) continue;
+      const dx = z.pos.x - p.pos.x;
+      const dz = z.pos.z - p.pos.z;
+      const d = Math.hypot(dx, dz);
+      if (d < 11 && Math.abs(angDiff(p.facing, Math.atan2(dx, dz))) < 0.5) return true;
+    }
+    return false;
+  }
+
+  // (legado) caixas antigas: munição ou kit médico
+  spawnCrate(x, z) {
+    return this.spawnPickup(Math.random() < 0.35 ? 'medkit' : 'ammo', x, z);
+  }
+
+  // ------------------------------------------------------------------ atualização
+  frame(now) {
+    const dt = Math.min(0.05, (now - this.last) / 1000 || 0.016);
+    this.last = now;
+    if (!this.scene) return;
+    this.input.capture = this.state === 'playing'; // Espaço/setas/Enter não rolam a página nem clicam botões
+    if (this.state === 'playing') this.update(dt);
+    else if (this.state === 'menu' || this.state === 'select') this.updateDemo(dt);
+    this.updateCamera(dt);
+    this.draw(dt);
+    this.renderer.render(this.scene, this.camera);
+    this.ui.fps(dt);
+    this.input.endFrame();
+  }
+
+  updateDemo(dt) {
+    this.menuT += dt;
+    this.time += dt;
+    // zumbis vagando para a cena do menu
+    const A = this.arena;
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      z.stateT -= dt;
+      if (z.stateT <= 0) {
+        z.stateT = rand(2, 5);
+        z.facing = rand(0, Math.PI * 2);
+      }
+      const sp = z.speed * 0.45;
+      if (A.move(z.pos, Math.sin(z.facing) * sp * dt, Math.cos(z.facing) * sp * dt, z.wallR)) z.facing += Math.PI * 0.7;
+      z.walk += dt * sp * 3;
+    }
+    this.camTarget.set(A.W / 2 + Math.sin(this.menuT * 0.07) * 10, 0, A.D / 2 + Math.cos(this.menuT * 0.05) * 5);
+    this.camDist = 26;
+    this.updateEnvironment(dt);
+    this.parts.update(dt, null);
+    this.audio.listener.x = this.camTarget.x;
+    this.audio.listener.z = this.camTarget.z;
+  }
+
+  update(dt) {
+    this.time += dt;
+    this.stats.time += dt;
+    const A = this.arena;
+    for (let i = this.timers.length - 1; i >= 0; i--) {
+      const t = this.timers[i];
+      if ((t.t -= dt) <= 0) {
+        this.timers.splice(i, 1);
+        t.fn();
+      }
+    }
+    if (this.state !== 'playing') return;
+    // ambiente (piso elétrico, clima, luzes) roda antes dos jogadores
+    this.updateEnvironment(dt);
+    // multiplicador decai
+    this.meter -= dt * (0.06 + this.mult * 0.006);
+    if (this.meter < 0) {
+      if (this.mult > 1) {
+        this.mult--;
+        this.meter = 0.6;
+      } else this.meter = 0;
+    }
+    // mira do mouse
+    if (this.mode === 'solo') {
+      this.raycaster.setFromCamera(this.input.mouseNdc, this.camera);
+      this.raycaster.ray.intersectPlane(this.aimPlane, this.mouseWorld);
+    }
+    for (const p of this.players) this.updatePlayer(p, dt);
+    this.flowT -= dt;
+    if (this.flowT <= 0) {
+      this.flowT = 0.3;
+      const src = this.players.filter((p) => p.alive && !(p.cloakT > 0)).map((p) => p.pos);
+      if (src.length) A.computeFlow(src);
+    }
+    this.updateWaves(dt);
+    for (const z of this.zombies) if (z.alive) this.updateZombie(z, dt);
+    this.separate();
+    for (const z of this.corpses) z.deadT += dt;
+    this.zombies = this.zombies.filter((z) => z.alive || z.deadT < 4);
+    this.corpses = this.corpses.filter((z) => z.deadT < 4);
+    this.updateProjectiles(dt);
+    this.updateClouds(dt);
+    this.updatePlaceables(dt);
+    this.updateScenery(dt);
+    this.updateAbilities(dt);
+    this.updatePickups(dt);
+    this.updateStrikes(dt);
+    this.scoutT = Math.max(0, this.scoutT - dt);
+    this.parts.update(dt, (x, z, s) => Math.random() < 0.5 && A.splat(x, z, s * rand(1.2, 2.2), '#7a0a08', 0.75));
+    A.updateTexture(dt);
+    for (const l of this.boomLights) l.intensity = Math.max(0, l.intensity - dt * 220);
+    this.audio.listener.x = this.camTarget.x;
+    this.audio.listener.z = this.camTarget.z;
+    this.ui.updateHud(dt);
+  }
+
+  updatePlayer(p, dt) {
+    const inp = this.input;
+    p.hurtT = Math.max(0, p.hurtT - dt);
+    p.recoil = Math.max(0, p.recoil - dt * 8);
+    p.firingT = Math.max(0, p.firingT - dt);
+    p.meleeT = Math.max(0, p.meleeT - dt);
+    p.meleeCd -= dt;
+    p.cxKick = Math.max(0, (p.cxKick || 0) - dt * 4);
+    p.hitT = Math.max(0, (p.hitT || 0) - dt);
+    p.killT = Math.max(0, (p.killT || 0) - dt);
+    this.updatePlayerAbilities(p, dt);
+    if (!p.alive) {
+      p.deadT += dt;
+      return;
+    }
+    if (p.dashT > 0) {
+      this.updateDash(p, dt);
+      p.fireCd -= dt;
+      return;
+    }
+    if (p.energyT > 0) {
+      p.energyT = Math.max(0, p.energyT - dt);
+      if (p.energyT === 0) this.ui.toast(p.id, 'Energia acabou', 'drink', 'bad');
+    }
+    if (p.lightT > 0) {
+      p.lightT = Math.max(0, p.lightT - dt);
+      if (p.lightT === 0) this.ui.toast(p.id, 'Lanterna sem bateria', 'flashlight', 'bad');
+    }
+    const c = p.ctl;
+    let mx = 0;
+    let mz = 0;
+    if (inp.any(c.up)) mz -= 1;
+    if (inp.any(c.down)) mz += 1;
+    if (inp.any(c.left)) mx -= 1;
+    if (inp.any(c.right)) mx += 1;
+    const len = Math.hypot(mx, mz);
+    const ter = this.arena.terrainAt(p.pos.x, p.pos.z);
+    let speed = 4.7 * (p.energyT > 0 ? 1.3 : 1) * (ter === T_WATER ? 0.6 : ter === T_BUSH ? 0.7 : 1) * (1 + this.pv(p, 'agility') / 100) * (p.furyT > 0 ? 1.3 : 1);
+    // terreno contaminado, piso elétrico e efeitos de chefe
+    if (ter === T_TOXIC) speed *= 0.65;
+    if (this.elecOn && ter === T_ELEC) speed *= 0.8;
+    if (p.rootT > 0) {
+      p.rootT -= dt;
+      speed *= 0.12;
+    }
+    if (p.slowT > 0) {
+      p.slowT -= dt;
+      speed *= p.slowMul ?? 0.6;
+    }
+    p.onPlat = ter === T_PLATFORM;
+    const tx = len ? (mx / len) * speed : 0;
+    const tz = len ? (mz / len) * speed : 0;
+    const k = 1 - Math.exp(-dt * 14);
+    p.vel.x += (tx - p.vel.x) * k;
+    p.vel.z += (tz - p.vel.z) * k;
+    this.arena.move(p.pos, p.vel.x * dt, p.vel.z * dt, p.radius);
+    const hs = Math.hypot(p.vel.x, p.vel.z);
+    if (len) this.tryPush(p, mx, mz, dt);
+    else p.pushT = 0;
+    // lava queima; água espirra
+    if (ter === T_LAVA) {
+      p.lavaT = (p.lavaT || 0) + dt;
+      if (Math.random() < dt * 12) this.parts.spawn(p.pos.x + rand(-0.3, 0.3), 0.2, p.pos.z + rand(-0.3, 0.3), 0, rand(1, 2), 0, 0.1, pick([0xff7a1a, 0xffd040]), 0.4, -1, 2);
+      if (p.lavaT >= 0.35) {
+        p.lavaT = 0;
+        this.damagePlayer(p, 7, p.pos.x, p.pos.z, 0);
+      }
+    } else p.lavaT = 0;
+    if (ter === T_WATER && hs > 1 && Math.random() < dt * 10) this.parts.spawn(p.pos.x + rand(-0.2, 0.2), 0.1, p.pos.z + rand(-0.2, 0.2), rand(-1, 1), rand(1, 2), rand(-1, 1), 0.07, 0xb8e0ff, 0.4, 12, 0);
+    // esteira arrasta jogadores e inimigos
+    const belt = this.arena.beltAt(p.pos.x, p.pos.z);
+    if (belt && p.rootT <= 0) this.arena.move(p.pos, belt[0] * BELT_SPEED * dt, belt[1] * BELT_SPEED * dt, p.radius);
+    // contaminação: corrói a vida devagar
+    if (ter === T_TOXIC) {
+      p.toxicT = (p.toxicT || 0) + dt;
+      if (Math.random() < dt * 6) this.parts.spawn(p.pos.x + rand(-0.3, 0.3), 0.3, p.pos.z + rand(-0.3, 0.3), 0, rand(0.6, 1.4), 0, 0.07, 0x8aff4a, 0.5, -0.5, 2);
+      if (p.toxicT >= 0.5) {
+        p.toxicT = 0;
+        this.damagePlayer(p, 3, p.pos.x, p.pos.z, 0, true);
+      }
+    } else p.toxicT = 0;
+    // piso elétrico ligado: choque e atordoamento curto
+    p.shockCd = Math.max(0, (p.shockCd || 0) - dt);
+    if (this.elecOn && ter === T_ELEC && p.shockCd <= 0) {
+      p.shockCd = 0.7;
+      p.slowT = 0.5;
+      p.slowMul = 0.7;
+      this.damagePlayer(p, 6, p.pos.x, p.pos.z, 0, true);
+      this.audio.play('hit_armor', { volume: 0.5, pos: p.pos, rate: 1.6 });
+      for (let k = 0; k < 6; k++) this.parts.spawn(p.pos.x + rand(-0.3, 0.3), rand(0.4, 1.2), p.pos.z + rand(-0.3, 0.3), rand(-2, 2), rand(1, 3), rand(-2, 2), 0.05, 0x9adcff, 0.25, 0, 2);
+    }
+    p.walk += hs * dt * 2.6;
+    // direção da mira
+    if (c.mouse && !inp.mouseIdle) p.aim = Math.atan2(this.mouseWorld.x - p.pos.x, this.mouseWorld.z - p.pos.z);
+    else if (len) p.aim = Math.atan2(mx, mz);
+    const target = p.firingT > 0 || c.mouse ? p.aim : len ? Math.atan2(mx, mz) : p.facing;
+    p.facing += angDiff(p.facing, target) * Math.min(1, dt * 18);
+    // armas
+    if (inp.anyHit(c.next)) this.cycleWeapon(p, 1);
+    if (inp.anyHit(c.prev)) this.cycleWeapon(p, -1);
+    if (c.mouse) {
+      if (inp.mouse.wheel) this.cycleWeapon(p, inp.mouse.wheel > 0 ? 1 : -1);
+      WEAPON_ORDER.forEach((id, i) => {
+        if (inp.hit(SLOT_CODES[i]) && this.unlocked.has(id) && (id === 'pistol' || p.ammo[id] > 0)) p.weapon = id;
+      });
+    }
+    p.fireCd -= dt;
+    const wantMelee = inp.any(c.melee) || (c.mouse && inp.mouse.right);
+    if (wantMelee && p.meleeCd <= 0 && p.meleeT <= 0) this.melee(p);
+    const wantFire = inp.any(c.fire) || (c.mouse && inp.mouse.left);
+    if (wantFire && p.fireCd <= 0 && p.meleeT <= 0) this.fire(p);
+    if (p.energyT > 0 && hs > 1 && Math.random() < dt * 25) this.parts.spawn(p.pos.x + rand(-0.2, 0.2), 0.15, p.pos.z + rand(-0.2, 0.2), -p.vel.x * 0.2, rand(0.5, 1.5), -p.vel.z * 0.2, 0.08, pick([0x40c8ff, 0xffffff]), 0.35, 0, 2);
+    // passos
+    if (hs > 1 && Math.floor(p.walk / Math.PI) !== Math.floor((p.walk - hs * dt * 2.6) / Math.PI)) this.audio.play('step' + (1 + Math.floor(Math.random() * 3)), { volume: 0.18, pos: p.pos });
+  }
+
+  updateZombie(z, dt) {
+    const A = this.arena;
+    const def = z.def;
+    z.hurtT = Math.max(0, z.hurtT - dt);
+    z.attackCd -= dt;
+    z.attackT = Math.max(0, z.attackT - dt);
+    if (z.rise > 0) z.rise = Math.max(0, z.rise - dt * 2);
+    // alvo: sobrevivente vivo mais próximo
+    let tgt = null;
+    let td = Infinity;
+    for (const p of this.players) {
+      if (!p.alive || p.cloakT > 0) continue; // camuflado: invisível para a horda
+      const d = Math.hypot(p.pos.x - z.pos.x, p.pos.z - z.pos.z);
+      if (d < td) {
+        td = d;
+        tgt = p;
+      }
+    }
+    let vx = 0;
+    let vz = 0;
+    let speed = z.speed;
+    if (tgt) {
+      const dx = tgt.pos.x - z.pos.x;
+      const dz = tgt.pos.z - z.pos.z;
+      const direct = def.fly || (td < 5 && A.walkable(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z, z.wallR * 0.9));
+      const out = this._fd || (this._fd = {});
+      let blockedBy = null;
+      if (direct) {
+        vx = dx / td;
+        vz = dz / td;
+      } else if (A.flowDir(z.pos.x, z.pos.z, out)) {
+        vx = out.x;
+        vz = out.z;
+        if (A.dyn[A.idx(out.i, out.j)] === 1) blockedBy = this.placeables.find((b) => !b.dead && b.kind === 'barricade' && b.i === out.i && b.j === out.j);
+      } else {
+        vx = dx / td;
+        vz = dz / td;
+      }
+      // cuspidor mantém distância e cospe
+      if (def.spit) {
+        z.spitCd -= dt;
+        if (td < def.spit.range && A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z)) {
+          if (td < 6) speed = 0;
+          if (z.spitCd <= 0) {
+            z.spitCd = def.spit.cd * rand(0.8, 1.2);
+            z.attackT = 0.35;
+            const T = Math.max(0.5, td / 9);
+            this.projectiles.push({ kind: 'acid', x: z.pos.x, y: 1.2, z: z.pos.z, vx: dx / T, vy: 4.5, vz: dz / T, t: 0, dmg: def.spit.dmg });
+            this.audio.play('spit', { pos: z.pos, volume: 0.7 });
+          }
+        }
+      }
+      this.enemyAbilities(z, tgt, td, dx, dz, dt);
+      if (z.state === 'lunge') {
+        vx = Math.sin(z.chargeDir);
+        vz = Math.cos(z.chargeDir);
+        speed = def.lunge.speed;
+      } else if (z.state === 'cast' || z.state === 'slam' || z.state === 'throw') speed = 0;
+      // aranha: zigue-zague; invocador: mantém distância; esporo: finca raiz para atirar
+      if (def.strafe && td > 2.2 && z.state === 'move') {
+        const k = Math.sin(this.time * 3.2 + z.strafe) * 0.75;
+        const nx = vx - vz * k;
+        const nz = vz + vx * k;
+        const l = Math.hypot(nx, nz) || 1;
+        vx = nx / l;
+        vz = nz / l;
+      }
+      if (def.summon && td < 6 && A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z)) {
+        vx = -dx / td;
+        vz = -dz / td;
+        speed *= 0.8;
+      }
+      if (def.spore && td < def.spore.range && A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z)) speed = 0;
+      // investida do colosso
+      if (def.boss) {
+        z.chargeCd -= dt;
+        if (z.state === 'move' && z.chargeCd <= 0 && td < 14 && td > 4.5) {
+          z.state = 'wind';
+          z.stateT = 0.8;
+          z.chargeDir = Math.atan2(dx, dz);
+          this.audio.play('roar', { pos: z.pos, volume: 1, priority: true });
+        }
+        if (z.state === 'wind') {
+          speed = 0;
+          z.facing = z.chargeDir;
+          if ((z.stateT -= dt) <= 0) {
+            z.state = 'charge';
+            z.stateT = 1.1;
+          }
+        } else if (z.state === 'charge') {
+          vx = Math.sin(z.chargeDir);
+          vz = Math.cos(z.chargeDir);
+          speed = 9;
+          for (let k = 0; k < 2; k++) this.parts.spawn(z.pos.x + rand(-0.5, 0.5), 0.1, z.pos.z + rand(-0.5, 0.5), rand(-1, 1), rand(1, 2), rand(-1, 1), 0.25, 0x5a4a3a, 0.6, 4, 0);
+          // o Devorador atropela o cenário: paredes e caixas se despedaçam
+          if (def.bossKind === 'devourer') for (const pr of A.props) {
+            if (pr.dead || !pr.def.hp || pr.def.boomOnly) continue;
+            if (Math.hypot(pr.x - z.pos.x, pr.z - z.pos.z) < z.radius + 0.9) this.damageProp(pr, 120, null, Math.sin(z.chargeDir), Math.cos(z.chargeDir), true);
+          }
+          for (const p of this.players)
+            if (p.alive && Math.hypot(p.pos.x - z.pos.x, p.pos.z - z.pos.z) < z.radius + 0.6 && !z.chargeHit) {
+              z.chargeHit = true;
+              this.damagePlayer(p, def.dmg * 1.2, z.pos.x, z.pos.z, 12, true);
+            }
+          if ((z.stateT -= dt) <= 0) {
+            z.state = 'move';
+            z.chargeCd = rand(4.5, 7);
+            z.chargeHit = false;
+          }
+        }
+      }
+      // ataque corpo a corpo
+      const reach = def.reach + tgt.radius;
+      if (def.fly) z.flyY += ((z.attackT > 0 ? 0.95 : 1.4 + Math.sin(this.time * 3 + z.strafe) * 0.12) - z.flyY) * Math.min(1, dt * 6);
+      if (def.explode && td < 1.3) {
+        z.hp = 0;
+        this.killZombie(z, 0, 0, null);
+        return;
+      }
+      if (z.state === 'move' && def.dmg > 0 && td < reach && (def.fly || A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z))) {
+        speed = 0;
+        if (z.attackCd <= 0) {
+          z.attackCd = def.rate;
+          z.attackT = 0.35;
+          this.audio.play('zombie_attack', { pos: z.pos, volume: 0.6 });
+          const target = tgt;
+          this.later(0.18, () => {
+            if (z.alive && Math.hypot(target.pos.x - z.pos.x, target.pos.z - z.pos.z) < reach * 1.3) this.damagePlayer(target, def.dmg * (1 + 0.04 * (this.wave - 1)), z.pos.x, z.pos.z, def.boss ? 6 : 1.5);
+          });
+        }
+      } else if (blockedBy && Math.hypot(blockedBy.x - z.pos.x, blockedBy.z - z.pos.z) < 1.0 + z.radius) {
+        speed = 0;
+        if (z.attackCd <= 0) {
+          z.attackCd = def.rate;
+          z.attackT = 0.35;
+          blockedBy.hp -= Math.max(6, def.dmg);
+          this.audio.play('melee_hit', { pos: z.pos, volume: 0.4, rate: 0.7 });
+          for (let k = 0; k < 3; k++) this.parts.spawn(blockedBy.x, 0.7, blockedBy.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.08, 0x8a6a3a, 0.8, 16, 0);
+          if (blockedBy.hp <= 0) this.removePlaceable(blockedBy);
+        }
+      }
+      if (z.state === 'move' && (vx || vz)) {
+        // quem recua ou para para atacar continua olhando para o alvo
+        const look = def.summon || def.spore || speed === 0 ? Math.atan2(dx, dz) : Math.atan2(vx, vz);
+        z.facing += angDiff(z.facing, look) * Math.min(1, dt * 8);
+      }
+    }
+    if (z.rise > 0) speed = 0;
+    // ofuscado pela lanterna
+    z.lit = z.state === 'move' && this.litBy(z);
+    if (z.lit) speed *= 0.65;
+    // atordoado (explosão elétrica) não anda nem ataca; eletrocutado anda mais devagar
+    if (z.stunT > 0) {
+      z.stunT -= dt;
+      speed = 0;
+      z.attackCd = Math.max(z.attackCd, 0.1);
+      if (Math.random() < dt * 10) this.parts.spawn(z.pos.x + rand(-0.3, 0.3), 1.6 * z.scale, z.pos.z + rand(-0.3, 0.3), 0, 0.5, 0, 0.06, 0x9adcff, 0.25, 0, 2);
+    }
+    if (z.shockT > 0) {
+      z.shockT -= dt;
+      speed *= 0.65;
+    }
+    // terreno: água e arbusto atrasam, lava queima, contaminação corrói (voadores passam por cima)
+    if (!def.fly) {
+      const ter = A.terrainAt(z.pos.x, z.pos.z);
+      if (ter === T_WATER) speed *= 0.6;
+      else if (ter === T_BUSH) speed *= 0.7;
+      else if (ter === T_TOXIC) speed *= 0.75;
+      if (ter === T_TOXIC) {
+        z.toxicT = (z.toxicT || 0) + dt;
+        if (z.toxicT >= 0.7) {
+          z.toxicT = 0;
+          this.damageZombie(z, 4, 0, 0, null, 0);
+          if (!z.alive) return;
+        }
+      }
+      if (ter === T_ELEC && this.elecOn) {
+        z.elecT = (z.elecT || 0) + dt;
+        if (z.elecT >= 0.8) {
+          z.elecT = 0;
+          z.stunT = Math.max(z.stunT, 0.3);
+          this.damageZombie(z, 6, 0, 0, null, 0);
+          if (!z.alive) return;
+        }
+      }
+      if (ter === T_LAVA) {
+        z.lavaT = (z.lavaT || 0) + dt;
+        if (z.lavaT >= 0.4) {
+          z.lavaT = 0;
+          this.damageZombie(z, 9, 0, 0, null, 0);
+          if (!z.alive) return;
+        }
+      }
+    }
+    // grito de guerra do General: horda mais rápida
+    if (z.buffT > 0) {
+      z.buffT -= dt;
+      speed *= 1.25;
+    }
+    // portão fechado: os zumbis tentam arrombar
+    if (speed > 0 && def.dmg > 0) {
+      for (const gp of this.gateProps) {
+        if (gp.dead || !gp.closed) continue;
+        if (Math.hypot(gp.x - z.pos.x, gp.z - z.pos.z) > 1.5 + z.radius) continue;
+        speed = 0;
+        if (z.attackCd <= 0) {
+          z.attackCd = def.rate;
+          z.attackT = 0.35;
+          gp.hp -= Math.max(8, def.dmg);
+          this.audio.play('hit_armor', { volume: 0.5, pos: gp, rate: 0.7 });
+          for (let k = 0; k < 3; k++) this.parts.spawn(gp.x + rand(-0.5, 0.5), rand(0.4, 1.4), gp.z + rand(-0.5, 0.5), rand(-2, 2), rand(1, 3), rand(-2, 2), 0.06, 0xd8b050, 0.4, 14, 0);
+          if (gp.hp <= 0) this.breakGate(gp);
+        }
+        break;
+      }
+    }
+    const mvx = vx * speed + z.kx;
+    const mvz = vz * speed + z.kz;
+    z.kx *= Math.exp(-dt * 8);
+    z.kz *= Math.exp(-dt * 8);
+    if (def.fly) {
+      z.pos.x = Math.max(1, Math.min(A.W - 1, z.pos.x + mvx * dt));
+      z.pos.z = Math.max(1, Math.min(A.D - 1, z.pos.z + mvz * dt));
+    } else A.move(z.pos, mvx * dt, mvz * dt, z.wallR);
+    // esteira também arrasta os inimigos
+    if (!def.fly && z.stunT <= 0) {
+      const belt = A.beltAt(z.pos.x, z.pos.z);
+      if (belt) A.move(z.pos, belt[0] * BELT_SPEED * dt, belt[1] * BELT_SPEED * dt, z.wallR);
+    }
+    z.walk += Math.hypot(mvx, mvz) * dt * 2.4;
+    if (Math.random() < dt * 0.06) this.audio.play('groan' + (1 + Math.floor(Math.random() * 4)), { pos: z.pos, volume: 0.45, rate: rand(0.85, 1.15) });
+  }
+
+  separate() {
+    const list = this.zombies;
+    const A = this.arena;
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
+      if (!a.alive) continue;
+      for (let j = i + 1; j < list.length; j++) {
+        const b = list[j];
+        if (!b.alive) continue;
+        const dx = b.pos.x - a.pos.x;
+        const dz = b.pos.z - a.pos.z;
+        const min = a.radius + b.radius;
+        const d2 = dx * dx + dz * dz;
+        if (d2 >= min * min || d2 < 1e-6) continue;
+        const d = Math.sqrt(d2);
+        const push = (min - d) * 0.5;
+        if (!a.def.fly !== !b.def.fly) continue; // morcego passa por cima de quem anda
+        const wa = a.def.boss ? 0.15 : b.def.boss ? 1.85 : 1;
+        this.nudge(a, (-dx / d) * push * wa, (-dz / d) * push * wa);
+        this.nudge(b, (dx / d) * push * (2 - wa), (dz / d) * push * (2 - wa));
+      }
+      for (const p of this.players) {
+        if (!p.alive || a.def.fly) continue;
+        const dx = a.pos.x - p.pos.x;
+        const dz = a.pos.z - p.pos.z;
+        const min = a.radius + p.radius;
+        const d2 = dx * dx + dz * dz;
+        if (d2 < min * min && d2 > 1e-6) {
+          const d = Math.sqrt(d2);
+          const f = a.def.boss ? 0.15 : 0.6;
+          A.move(a.pos, (dx / d) * (min - d) * f, (dz / d) * (min - d) * f, a.wallR);
+          A.move(p.pos, (-dx / d) * (min - d) * (1 - f), (-dz / d) * (min - d) * (1 - f), p.radius);
+        }
+      }
+    }
+    // jogadores não se sobrepõem
+    if (this.players.length === 2 && this.players[0].alive && this.players[1].alive) {
+      const [a, b] = this.players;
+      const dx = b.pos.x - a.pos.x;
+      const dz = b.pos.z - a.pos.z;
+      const d = Math.hypot(dx, dz);
+      if (d < 0.66 && d > 1e-4) {
+        const push = (0.66 - d) * 0.5;
+        A.move(a.pos, (-dx / d) * push, (-dz / d) * push, a.radius);
+        A.move(b.pos, (dx / d) * push, (dz / d) * push, b.radius);
+      }
+    }
+  }
+
+  nudge(z, dx, dz) {
+    if (z.def.fly) {
+      z.pos.x += dx;
+      z.pos.z += dz;
+    } else this.arena.move(z.pos, dx, dz, z.wallR);
+  }
+
+  // habilidades especiais: bote do cão, invocação, esporos, pancada e pedra do colosso
+  enemyAbilities(z, tgt, td, dx, dz, dt) {
+    const def = z.def;
+    const A = this.arena;
+    if (z.state === 'lunge') {
+      if (!z.chargeHit && td < z.radius + tgt.radius + 0.35) {
+        z.chargeHit = true;
+        this.damagePlayer(tgt, def.dmg * 1.4, z.pos.x, z.pos.z, 4, true);
+      }
+      if ((z.stateT -= dt) <= 0) z.state = 'move';
+      return;
+    }
+    if (def.lunge) {
+      z.lungeCd -= dt;
+      if (z.state === 'move' && z.lungeCd <= 0 && td < def.lunge.range && td > 1.4 && A.walkable(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z, z.wallR)) {
+        z.state = 'lunge';
+        z.stateT = 0.38;
+        z.chargeHit = false;
+        z.chargeDir = Math.atan2(dx, dz);
+        z.facing = z.chargeDir;
+        z.lungeCd = def.lunge.cd * rand(0.8, 1.2);
+        this.audio.play('zombie_attack', { pos: z.pos, volume: 0.7, rate: 1.4 });
+      }
+    }
+    if (def.summon) {
+      z.summonCd -= dt;
+      z.minions = z.minions.filter((m) => m.alive);
+      if (z.state === 'move' && z.summonCd <= 0 && td < 16 && z.minions.length < def.summon.max && this.countAlive() < this.aliveCap()) {
+        z.state = 'cast';
+        z.stateT = 0.9;
+        this.audio.play('roar', { pos: z.pos, volume: 0.6, rate: 1.6 });
+      }
+      if (z.state === 'cast') {
+        z.facing += angDiff(z.facing, Math.atan2(dx, dz)) * Math.min(1, dt * 8);
+        if (Math.random() < dt * 30) this.parts.spawn(z.pos.x + rand(-0.8, 0.8), 0.1, z.pos.z + rand(-0.8, 0.8), 0, rand(1.5, 3), 0, rand(0.08, 0.16), pick([0xc070ff, 0x8a3ad0]), 0.7, -1, 2);
+        if ((z.stateT -= dt) <= 0) {
+          z.state = 'move';
+          z.summonCd = def.summon.cd * rand(0.85, 1.2);
+          for (let k = 0; k < def.summon.n && this.countAlive() < this.aliveCap(); k++) {
+            const a = rand(0, 6.28);
+            const x = z.pos.x + Math.sin(a) * 1.3;
+            const zz = z.pos.z + Math.cos(a) * 1.3;
+            if (A.circleBlocked(x, zz, 0.35)) continue;
+            const m = this.spawnZombie(pick(def.summon.types), x, zz);
+            z.minions.push(m);
+            for (let j = 0; j < 10; j++) this.parts.spawn(x, 0.3, zz, rand(-1.5, 1.5), rand(2, 4), rand(-1.5, 1.5), rand(0.1, 0.2), pick([0xc070ff, 0xe0a0ff]), 0.7, 3, 2);
+          }
+        }
+      }
+    }
+    if (def.spore) {
+      z.sporeCd -= dt;
+      if (z.sporeCd <= 0 && td < def.spore.range && A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z)) {
+        z.sporeCd = def.spore.cd * rand(0.85, 1.2);
+        z.attackT = 0.35;
+        const T = Math.max(0.6, td / 8);
+        const ex = tgt.pos.x + tgt.vel.x * T * 0.5 - z.pos.x;
+        const ez = tgt.pos.z + tgt.vel.z * T * 0.5 - z.pos.z;
+        this.projectiles.push({ kind: 'spore', x: z.pos.x, y: 1.6, z: z.pos.z, vx: ex / T, vy: 7 * T - 1.6 / T, vz: ez / T, t: 0, T, def: def.spore });
+        this.audio.play('spit', { pos: z.pos, volume: 0.6, rate: 0.6 });
+      }
+    }
+    if (def.boss) {
+      z.slamCd -= dt;
+      z.throwCd -= dt;
+      if (z.state === 'move' && z.slamCd <= 0 && td < 3.4) {
+        z.state = 'slam';
+        z.stateT = 0.75;
+        this.audio.play('roar', { pos: z.pos, volume: 0.9, priority: true });
+      } else if (z.state === 'move' && z.throwCd <= 0 && td > 5 && td < 15 && A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z)) {
+        z.state = 'throw';
+        z.stateT = 0.6;
+        z.throwAt = { x: tgt.pos.x, z: tgt.pos.z };
+      }
+      if (z.state === 'slam' || z.state === 'throw') z.facing += angDiff(z.facing, Math.atan2(dx, dz)) * Math.min(1, dt * 5);
+      if (z.state === 'slam' && (z.stateT -= dt) <= 0) {
+        z.state = 'move';
+        z.slamCd = rand(4, 6);
+        const R = 3.8;
+        for (const p of this.players) {
+          const d = Math.hypot(p.pos.x - z.pos.x, p.pos.z - z.pos.z);
+          if (p.alive && d < R) this.damagePlayer(p, def.dmg * (1 - (d / R) * 0.5), z.pos.x, z.pos.z, 11, true);
+        }
+        for (let k = 0; k < 36; k++) {
+          const a = (k / 36) * 6.28;
+          this.parts.spawn(z.pos.x + Math.sin(a) * 1.2, 0.2, z.pos.z + Math.cos(a) * 1.2, Math.sin(a) * 7, rand(1, 3), Math.cos(a) * 7, rand(0.2, 0.35), pick([0x5a4a44, 0x6a5a52, 0xff5a1a]), 0.6, 10, 0);
+        }
+        A.scorch(z.pos.x, z.pos.z, 2.2);
+        this.audio.play('stomp', { volume: 1, pos: z.pos, priority: true });
+        this.noiseShake(1.2);
+        const kind = def.bossKind;
+        // Operário Mutante: onda elétrica (dano extra + lentidão)
+        if (kind === 'mechworker') {
+          for (const p of this.players) {
+            const d = Math.hypot(p.pos.x - z.pos.x, p.pos.z - z.pos.z);
+            if (p.alive && d < 5.6) {
+              this.damagePlayer(p, 16 * (1 - (d / 5.6) * 0.5), z.pos.x, z.pos.z, 6, true);
+              p.slowT = 1.6;
+              p.slowMul = 0.55;
+            }
+          }
+          for (let k = 0; k < 28; k++) {
+            const a = (k / 28) * 6.28;
+            this.parts.spawn(z.pos.x + Math.sin(a) * 1.4, 0.35, z.pos.z + Math.cos(a) * 1.4, Math.sin(a) * 8, rand(1, 2), Math.cos(a) * 8, rand(0.06, 0.12), pick([0x3fe0ff, 0x9adcff, 0xffd060]), 0.5, 2, 2);
+          }
+          this.audio.play('hit_armor', { volume: 0.8, pos: z.pos, rate: 0.6 });
+        }
+        // Guardião da Floresta: raízes prendem quem está por perto e solta esporos
+        if (kind === 'guardian') {
+          for (const p of this.players) {
+            const d = Math.hypot(p.pos.x - z.pos.x, p.pos.z - z.pos.z);
+            if (p.alive && d < 6.2) {
+              this.damagePlayer(p, 12, z.pos.x, z.pos.z, 4, true);
+              p.rootT = 1.8;
+            }
+          }
+          this.addCloud(z.pos.x, z.pos.z, { radius: 2.4, dps: 8, life: 5 });
+          for (let k = 0; k < 22; k++) {
+            const a = (k / 22) * 6.28;
+            this.parts.spawn(z.pos.x + Math.sin(a) * 1.2, 0.2, z.pos.z + Math.cos(a) * 1.2, Math.sin(a) * 4, rand(1, 3), Math.cos(a) * 4, rand(0.1, 0.2), pick([0x4a6a24, 0x8a4ad0, 0x5a3a22]), 0.9, 6, 0);
+          }
+          this.audio.play('groan1', { volume: 0.9, pos: z.pos, rate: 0.5 });
+        }
+        // General Infectado: grito de guerra + reforços
+        if (kind === 'general') {
+          for (const q of this.zombies) {
+            if (!q.alive || q === z) continue;
+            if (Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z) < 13) {
+              q.buffT = 6;
+              q.hp = Math.min(q.maxHp, q.hp + q.maxHp * 0.12);
+            }
+          }
+          for (let k = 0; k < 3 && this.countAlive() < this.aliveCap(); k++) {
+            const a = rand(0, 6.28);
+            const x = z.pos.x + Math.sin(a) * 1.6;
+            const zz = z.pos.z + Math.cos(a) * 1.6;
+            if (A.circleBlocked(x, zz, 0.35)) continue;
+            this.spawnZombie(pick(['walker', 'armored', 'runner']), x, zz);
+          }
+          for (let k = 0; k < 18; k++) {
+            const a = (k / 18) * 6.28;
+            this.parts.spawn(z.pos.x + Math.sin(a) * 1.2, 1.2, z.pos.z + Math.cos(a) * 1.2, Math.sin(a) * 3, rand(1, 2), Math.cos(a) * 3, 0.08, pick([0xb01c1c, 0xff5a1a]), 0.7, 0, 2);
+          }
+          this.audio.play('roar', { volume: 1, pos: z.pos, priority: true, rate: 0.7 });
+        }
+      }
+      if (z.state === 'throw' && (z.stateT -= dt) <= 0) {
+        z.state = 'move';
+        z.throwCd = rand(4, 6.5);
+        const ex = z.throwAt.x - z.pos.x;
+        const ez = z.throwAt.z - z.pos.z;
+        const T = Math.max(0.7, Math.hypot(ex, ez) / 10);
+        this.projectiles.push({ kind: 'rock', x: z.pos.x, y: 3.2, z: z.pos.z, vx: ex / T, vy: 7 * T - 3.2 / T, vz: ez / T, t: 0, T, dmg: def.dmg * 0.7 });
+        this.audio.play('throw', { pos: z.pos, volume: 1, rate: 0.5 });
+      }
+    }
+  }
+
+  addCloud(x, z, sp) {
+    this.clouds.push({ x, z, r: sp.radius, life: sp.life, max: sp.life, dps: sp.dps, tick: 0 });
+    this.arena.splat(x, z, sp.radius * 0.8, '#5a2a7a', 0.6);
+    for (let k = 0; k < 14; k++) this.parts.spawn(x + rand(-0.5, 0.5), 0.3, z + rand(-0.5, 0.5), rand(-2.5, 2.5), rand(1, 3), rand(-2.5, 2.5), rand(0.15, 0.3), pick([0xb060ff, 0x8a3ad0]), 0.8, 2, 2);
+    this.audio.play('splash', { pos: { x, z }, volume: 0.6, rate: 0.6 });
+  }
+
+  updateClouds(dt) {
+    for (const c of this.clouds) {
+      c.life -= dt;
+      c.tick -= dt;
+      if (c.tick <= 0) {
+        c.tick = 0.5;
+        for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - c.x, p.pos.z - c.z) < c.r + p.radius * 0.5) this.damagePlayer(p, c.dps * 0.5, c.x, c.z, 0, true);
+      }
+      if (Math.random() < dt * 8) this.parts.spawn(c.x + rand(-c.r, c.r) * 0.7, 0.2, c.z + rand(-c.r, c.r) * 0.7, rand(-0.3, 0.3), rand(0.6, 1.4), rand(-0.3, 0.3), rand(0.08, 0.16), 0xc080ff, 1, -0.5, 2);
+    }
+    this.clouds = this.clouds.filter((c) => c.life > 0);
+  }
+
+  updateProjectiles(dt) {
+    const A = this.arena;
+    for (const pr of this.projectiles) {
+      pr.t += dt;
+      if (pr.kind === 'grenade' || pr.kind === 'dynamite' || pr.kind === 'sgrenade') {
+        if (pr.kind === 'sgrenade' && Math.random() < dt * 30) this.parts.spawn(pr.x, pr.y, pr.z, rand(-0.5, 0.5), rand(0, 1), rand(-0.5, 0.5), 0.06, pick([0x9adcff, 0xffffff]), 0.3, 0, 2);
+        const dyn = pr.kind === 'dynamite';
+        // pavio aceso soltando faíscas
+        if (dyn && Math.random() < dt * 40) this.parts.spawn(pr.x, pr.y + 0.25, pr.z, rand(-1, 1), rand(1, 2.5), rand(-1, 1), 0.05, pick([0xffd040, 0xff8a20, 0xffffff]), 0.25, 6, 2);
+        pr.vy -= 18 * dt;
+        const nx = pr.x + pr.vx * dt;
+        const nz = pr.z + pr.vz * dt;
+        if (A.tallAt(nx, pr.z) || (A.blocked(Math.floor(nx), Math.floor(pr.z)) && pr.y < 1)) pr.vx *= -0.5;
+        else pr.x = nx;
+        if (A.tallAt(pr.x, nz) || (A.blocked(Math.floor(pr.x), Math.floor(nz)) && pr.y < 1)) pr.vz *= -0.5;
+        else pr.z = nz;
+        pr.y += pr.vy * dt;
+        if (pr.y < 0.12) {
+          pr.y = 0.12;
+          if (pr.vy < -2) this.audio.play('bounce', { pos: pr, volume: 0.4 });
+          pr.vy *= dyn ? -0.2 : -0.4;
+          pr.vx *= dyn ? 0.35 : 0.6;
+          pr.vz *= dyn ? 0.35 : 0.6;
+        }
+        if (pr.t > pr.fuse) {
+          pr.dead = true;
+          if (pr.kind === 'sgrenade') this.specialBlast(pr);
+          else this.explosion(pr.x, pr.z, pr.w.radius, pr.w.dmg, pr.owner);
+        }
+      } else if (pr.kind === 'rocket') {
+        // teleguiado: vira até 3,5 rad/s na direção do alvo travado
+        if (pr.homing?.alive) {
+          const want = Math.atan2(pr.homing.pos.x - pr.x, pr.homing.pos.z - pr.z);
+          const cur = Math.atan2(pr.vx, pr.vz);
+          const a = cur + Math.max(-3.5 * dt, Math.min(3.5 * dt, angDiff(cur, want)));
+          const sp = Math.hypot(pr.vx, pr.vz);
+          pr.vx = Math.sin(a) * sp;
+          pr.vz = Math.cos(a) * sp;
+        }
+        pr.x += pr.vx * dt;
+        pr.z += pr.vz * dt;
+        this.parts.spawn(pr.x, pr.y, pr.z, rand(-0.4, 0.4), rand(0.3, 0.8), rand(-0.4, 0.4), rand(0.15, 0.25), 0x8a8a8a, 0.6, -1, 0);
+        let hit = A.tallAt(pr.x, pr.z) || pr.t > 1.6;
+        if (!hit) for (const z of this.zombies) if (z.alive && Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z) < z.radius + 0.2) hit = true;
+        if (!hit) for (const b of this.placeables) if (!b.dead && b.kind !== 'mine' && Math.hypot(b.x - pr.x, b.z - pr.z) < 0.55) hit = true;
+        if (hit) {
+          pr.dead = true;
+          this.explosion(pr.x - pr.vx * dt, pr.z - pr.vz * dt, pr.w.radius, pr.w.dmg, pr.owner);
+        }
+      } else if (pr.kind === 'spore' || pr.kind === 'rock') {
+        pr.vy -= 14 * dt;
+        pr.x += pr.vx * dt;
+        pr.z += pr.vz * dt;
+        pr.y += pr.vy * dt;
+        if (pr.kind === 'spore' && Math.random() < dt * 20) this.parts.spawn(pr.x, pr.y, pr.z, 0, 0.3, 0, 0.08, 0xc080ff, 0.5, 0, 2);
+        if (pr.y <= 0.1 || pr.t > 4) {
+          pr.dead = true;
+          if (pr.kind === 'spore') this.addCloud(pr.x, pr.z, pr.def);
+          else {
+            for (const p of this.players) {
+              const d = Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z);
+              if (p.alive && d < 1.9) this.damagePlayer(p, pr.dmg * (1 - d / 3.8), pr.x, pr.z, 7, true);
+            }
+            for (let k = 0; k < 14; k++) this.parts.spawn(pr.x, 0.3, pr.z, rand(-4, 4), rand(2, 6), rand(-4, 4), rand(0.12, 0.28), pick([0x5a4a44, 0x6a5a52, 0xff5a1a]), 1, 18, 0);
+            this.arena.scorch(pr.x, pr.z, 1.4);
+            this.audio.play('stomp', { volume: 0.8, pos: pr });
+            this.noiseShake(0.5);
+          }
+        }
+      } else if (pr.kind === 'acid') {
+        pr.vy -= 14 * dt;
+        pr.x += pr.vx * dt;
+        pr.z += pr.vz * dt;
+        pr.y += pr.vy * dt;
+        let hit = false;
+        for (const p of this.players)
+          if (p.alive && Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) < 0.5 && pr.y < 1.6) {
+            this.damagePlayer(p, pr.dmg, pr.x, pr.z, 1, true);
+            hit = true;
+          }
+        // coberturas baixas (muretas, sacos de areia, barreiras, caixas) barram o ácido
+        const ck = Math.floor(pr.x) + Math.floor(pr.z) * A.W;
+        if (A.inb(Math.floor(pr.x), Math.floor(pr.z)) && A.cover[ck] && pr.y < 0.95) hit = true;
+        if (hit || pr.y <= 0.05 || A.tallAt(pr.x, pr.z)) {
+          pr.dead = true;
+          A.splat(pr.x, pr.z, 0.45, '#6aba2a', 0.7);
+          for (let k = 0; k < 6; k++) this.parts.spawn(pr.x, 0.2, pr.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.08, 0x8aff4a, 0.5, 14, 2);
+          this.audio.play('splash', { pos: pr, volume: 0.5 });
+        }
+      }
+    }
+    this.projectiles = this.projectiles.filter((p) => !p.dead);
+  }
+
+  updatePlaceables(dt) {
+    for (const b of this.placeables) {
+      if (b.dead) continue;
+      b.armT -= dt;
+      if (b.kind === 'mine' && b.armT <= 0) {
+        for (const z of this.zombies)
+          if (z.alive && Math.hypot(z.pos.x - b.x, z.pos.z - b.z) < 0.7 + z.radius) {
+            this.removePlaceable(b);
+            this.audio.play('beep', { pos: b, volume: 0.8 });
+            this.later(0.1, () => this.explosion(b.x, b.z, 3.2 * (this.upg.bigBoom ? 1.4 : 1), 140, b.owner));
+            break;
+          }
+      }
+    }
+    this.placeables = this.placeables.filter((b) => !b.dead);
+  }
+
+  updatePickups(dt) {
+    this.crateT -= dt;
+    if (this.crateT <= 0) {
+      this.crateT = rand(9, 14);
+      if (this.fieldCount() < 4) this.spawnPickup(this.rollField());
+    }
+    for (const c of this.pickups) {
+      c.t += dt;
+      if (c.popT > 0) {
+        c.popT = Math.max(0, c.popT - dt);
+        continue;
+      }
+      for (const p of this.players) {
+        if (!p.alive || c.taken) continue;
+        if (Math.hypot(p.pos.x - c.x, p.pos.z - c.z) < (c.type === 'supply' ? 0.95 : 0.9)) {
+          if (c.type === 'supply') this.openSupply(c, p);
+          else if (this.collect(p, c)) c.taken = true;
+        }
+      }
+    }
+    this.pickups = this.pickups.filter((c) => !c.taken && c.t < c.life); // itens esquecidos somem
+  }
+
+  gameOver() {
+    if (this.state !== 'playing') return;
+    this.state = 'gameover';
+    this.audio.setMusic(null);
+    this.audio.play('gameover', { volume: 0.9, priority: true });
+    const key = `${this.arenaDef.id}_${this.mode}`;
+    const rec = this.records();
+    const prev = rec[key];
+    const isRecord = !prev || this.stats.score > prev.score;
+    if (isRecord) {
+      rec[key] = { score: this.stats.score, wave: this.wave, mult: this.maxMult, date: Date.now() };
+      try {
+        localStorage.setItem(RECORDS_KEY, JSON.stringify(rec));
+      } catch {
+        /* ignora */
+      }
+    }
+    this.canvas.style.cursor = 'default';
+    this.ui.showScreen('gameover', { isRecord, prev });
+  }
+
+  // ------------------------------------------------------------------ câmera e desenho
+  updateCamera(dt) {
+    if (this.state === 'playing' || this.state === 'paused' || this.state === 'gameover') {
+      const alive = this.players.filter((p) => p.alive);
+      const list = alive.length ? alive : this.players;
+      let cx = 0;
+      let cz = 0;
+      for (const p of list) {
+        cx += p.pos.x;
+        cz += p.pos.z;
+      }
+      cx /= list.length;
+      cz /= list.length;
+      let spread = 0;
+      for (const p of list) spread = Math.max(spread, Math.abs(p.pos.x - cx) * 0.75, Math.abs(p.pos.z - cz) * 1.3);
+      // telas estreitas (retrato) precisam de mais distância para ver o mesmo pedaço da arena
+      const aspectK = Math.min(1.8, Math.max(1, 1.45 / this.camera.aspect));
+      // luneta (sniper no solo com mouse): câmera avança na direção da mira e se afasta para ver longe
+      const sp = this.players[0];
+      const scope = this.mode === 'solo' && this.state === 'playing' && sp?.alive && sp.weapon === 'sniper' && !this.input.mouseIdle;
+      this.scopeK += ((scope ? 1 : 0) - (this.scopeK || 0)) * Math.min(1, dt * 4);
+      if (this.scopeK > 0.01) {
+        const ox = this.mouseWorld.x - sp.pos.x;
+        const oz = this.mouseWorld.z - sp.pos.z;
+        const l = Math.hypot(ox, oz) || 1;
+        const m = Math.min(7, l * 0.45) * this.scopeK;
+        cx += (ox / l) * m;
+        cz += (oz / l) * m;
+      }
+      const want = Math.min(48, Math.max(17, 9 + spread * 2.2) * aspectK) + (this.scopeK || 0) * 5;
+      this.camDist += (want - this.camDist) * Math.min(1, dt * 3);
+      const k = Math.min(1, dt * 6);
+      this.camTarget.x += (cx - this.camTarget.x) * k;
+      this.camTarget.z += (cz + 0.5 - this.camTarget.z) * k;
+    }
+    const pitch = 1.0;
+    this.shakeAmt = Math.max(0, this.shakeAmt - dt * 3);
+    const s = this.shakeAmt * 0.25;
+    this.camera.position.set(this.camTarget.x + rand(-s, s), Math.sin(pitch) * this.camDist, this.camTarget.z + Math.cos(pitch) * this.camDist + rand(-s, s));
+    this.camera.lookAt(this.camTarget.x, 0, this.camTarget.z);
+  }
+
+  draw(dt) {
+    const B = this.B;
+    const G = this.G;
+    B.begin();
+    G.begin();
+    for (const [k, p] of this.players.entries()) {
+      const gl = GUN_LEN[p.weapon];
+      // lanterna: feixe saindo do ombro na direção em que o jogador olha
+      const spot = this.spots[k];
+      if (spot) {
+        if (p.alive && p.lightT > 0) {
+          const sx = p.pos.x + Math.sin(p.facing) * 0.25 - Math.cos(p.facing) * 0.2;
+          const sz = p.pos.z + Math.cos(p.facing) * 0.25 + Math.sin(p.facing) * 0.2;
+          spot.position.set(sx, 1.35, sz);
+          spot.target.position.set(p.pos.x + Math.sin(p.facing) * 8, 0, p.pos.z + Math.cos(p.facing) * 8);
+          spot.intensity = p.lightT < 3 && Math.sin(this.time * 40) > 0.3 ? 15 : 140;
+        } else spot.intensity = 0;
+      }
+      if (!p.alive) {
+        drawCharacter(B, p.pos.x, 0.18, p.pos.z, p.facing, 0.95, p.look, { tilt: -Math.PI / 2 * Math.min(1, p.deadT * 3), walk: 0, swing: 0, G });
+        continue;
+      }
+      const hs = Math.hypot(p.vel.x, p.vel.z);
+      const gear = [];
+      if (p.armor > 0) gear.push(...GEAR.vest);
+      if (p.pack) gear.push(...GEAR.backpack);
+      if (p.helmet) gear.push(...GEAR.helmet);
+      if (p.lightT > 0) gear.push(...GEAR.flashlight);
+      const m = p.meleeT > 0 ? MELEE[p.meleeKind] : null;
+      // camuflado: desenhado como holograma ciano (lote emissivo, sem sombra), piscando
+      const cloak = p.cloakT > 0;
+      if (!cloak || Math.random() > 0.08) {
+        const look = cloak ? p.holoLook || (p.holoLook = holoLook(p.look)) : p.look;
+        drawCharacter(cloak ? G : B, p.pos.x, 0, p.pos.z, p.facing, 0.95, look, {
+          walk: p.walk, swing: Math.min(1, hs / 4) * 0.8, aim: p.firingT > 0 || this.mode === 'solo', recoil: p.recoil, hurt: cloak ? 0 : p.hurtT,
+          gun: gl ? { len: gl, color: WEAPONS[p.weapon].color, model: GUN_MODELS[p.weapon] } : null, G,
+          melee: m ? { model: GUN_MODELS[m.id], k: 1 - p.meleeT / p.meleeDur, a0: m.a0, a1: m.a1 } : null,
+          gear: gear.length && !cloak ? gear : null,
+        });
+      }
+      this.drawPlayerFx(B, G, p);
+      // marcador do jogador no chão
+      const c = p.color;
+      G.box(p.pos.x, 0.03, p.pos.z - 0.48, 0.9, 0.02, 0.06, c);
+      G.box(p.pos.x, 0.03, p.pos.z + 0.48, 0.9, 0.02, 0.06, c);
+      G.box(p.pos.x - 0.48, 0.03, p.pos.z, 0.06, 0.02, 0.9, c);
+      G.box(p.pos.x + 0.48, 0.03, p.pos.z, 0.06, 0.02, 0.9, c);
+      // indicador da direção de tiro
+      G.box(p.pos.x + Math.sin(p.aim) * 0.85, 0.04, p.pos.z + Math.cos(p.aim) * 0.85, 0.12, 0.02, 0.12, c);
+    }
+    const scout = this.scoutT > 0;
+    for (const z of this.zombies) {
+      drawEnemy(B, G, z, this.time);
+      if (!z.alive) continue;
+      // binóculos: marcador vermelho sobre cada inimigo
+      if (scout) {
+        const top = z.def.fly ? (z.flyY || 1.4) + 0.75 : 2.05 * z.scale;
+        const bob = Math.sin(this.time * 6 + z.strafe) * 0.06;
+        G.box(z.pos.x, top + bob, z.pos.z, 0.2, 0.2, 0.2, 0xff3030, this.time * 2);
+        G.box(z.pos.x, top + bob - 0.2, z.pos.z, 0.08, 0.14, 0.08, 0xff3030);
+      }
+      // avisos no chão: investida, pancada e alvo da pedra do colosso
+      if (z.state === 'wind') G.box(z.pos.x + Math.sin(z.facing) * 2, 0.03, z.pos.z + Math.cos(z.facing) * 2, 0.6, 0.02, 3, 0xff2020, z.facing);
+      if (z.state === 'slam') ring(G, z.pos.x, z.pos.z, 3.8 * Math.min(1, (0.75 - z.stateT) / 0.6 + 0.3), 0xff3020, this.time);
+      if (z.state === 'throw' && z.throwAt) ring(G, z.throwAt.x, z.throwAt.z, 1.9, 0xff8020, this.time);
+    }
+    for (const pr of this.projectiles) if (pr.kind === 'rock') ring(G, pr.x + pr.vx * Math.max(0, pr.T - pr.t), pr.z + pr.vz * Math.max(0, pr.T - pr.t), 1.9, 0xff8020, this.time);
+    for (const c of this.clouds) {
+      const f = Math.min(1, c.life / 0.6, (c.max - c.life) / 0.3 + 0.3);
+      for (let k = 0; k < 9; k++) {
+        const a = this.time * 0.7 + k * 0.698;
+        const rr = c.r * (0.25 + (k % 3) * 0.28);
+        const sz = (0.45 + (k % 2) * 0.2) * f;
+        G.box(c.x + Math.sin(a) * rr, 0.25 + (k % 3) * 0.22 + Math.sin(this.time * 2 + k) * 0.08, c.z + Math.cos(a) * rr, sz, sz * 0.7, sz, k % 2 ? 0x8a3ad0 : 0x6a2aa8, a);
+      }
+      ring(G, c.x, c.z, c.r, 0x9a4ae0, this.time);
+    }
+    // rádio: alvo do ataque aéreo (anel que fecha) e sinalizador
+    for (const s of this.strikes) {
+      const f = 1 - s.t / s.max;
+      ring(G, s.x, s.z, 3.2, 0xff2020, this.time * 2);
+      ring(G, s.x, s.z, 3.2 * (1 - f * 0.85), 0xff8020, -this.time * 3);
+      if (Math.sin(this.time * 18) > 0) G.box(s.x, 0.15, s.z, 0.18, 0.3, 0.18, 0xff3020);
+    }
+    for (const pr of this.projectiles) {
+      if (pr.kind === 'grenade') drawItem(B, G, 'grenade', pr.x, pr.y, pr.z, pr.t * 8, 0.85);
+      else if (pr.kind === 'sgrenade') {
+        drawItem(B, G, 'grenade', pr.x, pr.y, pr.z, pr.t * 10, 0.9);
+        G.box(pr.x, pr.y, pr.z, 0.3, 0.06, 0.3, 0x9adcff, pr.t * 10);
+      }
+      else if (pr.kind === 'dynamite') {
+        drawItem(B, G, 'dynamite', pr.x, pr.y, pr.z, pr.t * 6, 0.75);
+        if (Math.random() < 0.7) G.box(pr.x + Math.sin(pr.t * 6) * 0.06, pr.y + 0.3, pr.z + Math.cos(pr.t * 6) * 0.06, 0.07, 0.07, 0.07, 0xffd040);
+      } else if (pr.kind === 'rocket') {
+        const a = Math.atan2(pr.vx, pr.vz);
+        B.box(pr.x, pr.y, pr.z, 0.14, 0.14, 0.5, 0x4a5a4a, a);
+        G.box(pr.x - Math.sin(a) * 0.3, pr.y, pr.z - Math.cos(a) * 0.3, 0.12, 0.12, 0.12, 0xffb030, a);
+      } else if (pr.kind === 'rock') {
+        B.box(pr.x, pr.y, pr.z, 0.7, 0.6, 0.7, 0x5e504a, pr.t * 5);
+        G.box(pr.x, pr.y, pr.z, 0.5, 0.64, 0.12, 0xff5a1a, pr.t * 5);
+      } else if (pr.kind === 'spore') G.box(pr.x, pr.y, pr.z, 0.3, 0.3, 0.3, 0xb060ff, pr.t * 4);
+      else G.box(pr.x, pr.y, pr.z, 0.18, 0.18, 0.18, 0x8aff4a, pr.t * 6);
+    }
+    this.arena.drawProps(B, G, this.time);
+    // piso elétrico energizado, chuva e progresso das interações
+    if (this.elecOn) {
+      const blink = Math.sin(this.time * 16) > -0.3;
+      const W = this.arena.W;
+      for (const k of this.arena.elecCells) {
+        const i = k % W;
+        const j = Math.floor(k / W);
+        if (!blink) continue;
+        G.box(i + 0.5, 0.045, j + 0.5, 0.86, 0.03, 0.86, 0x3aa0ff);
+        G.box(i + 0.5, 0.06, j + 0.5, 0.1, 0.04, 0.72, 0xd8f0ff);
+      }
+    }
+    for (const d of this.rain) if (d.on) G.box(d.x, d.y, d.z, 0.04, 0.55, 0.04, 0xa8cce8);
+    for (const pr of this.arena.props) {
+      if (pr.dead || !(pr.holdT > 0) || !pr.holdNeed) continue;
+      const f = Math.min(1, pr.holdT / pr.holdNeed);
+      const seg = Math.ceil(f * 8);
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2 - Math.PI / 2;
+        G.box(pr.x + Math.sin(a) * 0.9, 1.15, pr.z + Math.cos(a) * 0.9, k < seg ? 0.15 : 0.09, 0.06, 0.15, k < seg ? 0xffc107 : 0x3a3f4a, a);
+      }
+    }
+    this.drawAbilities(B, G);
+    for (const b of this.placeables) {
+      if (b.kind === 'barrel') {
+        for (const q of BARREL_MODEL) B.box(b.x + q[0], q[1], b.z + q[2], q[3], q[4], q[5], q[6]);
+      } else if (b.kind === 'barricade') {
+        const f = b.hp / b.maxHp;
+        const c = f > 0.6 ? 0x9a7444 : f > 0.3 ? 0x7a5a34 : 0x5a4026;
+        B.box(b.x, 0.35, b.z, 0.98, 0.7, 0.98, c);
+        B.box(b.x, 0.85, b.z, 0.98, 0.3, 0.7, c);
+        B.box(b.x, 0.55, b.z, 1.05, 0.12, 0.12, 0x5a3a1a, 0.6);
+        B.box(b.x, 0.55, b.z, 1.05, 0.12, 0.12, 0x5a3a1a, -0.6);
+      } else {
+        B.box(b.x, 0.05, b.z, 0.5, 0.1, 0.5, 0x2a2a2a);
+        if (b.armT <= 0 && Math.sin(this.time * 8) > 0) G.box(b.x, 0.12, b.z, 0.12, 0.05, 0.12, 0xff2020);
+      }
+    }
+    for (const c of this.pickups) {
+      const it = ITEMS[c.type];
+      // pisca nos últimos 6 s antes de sumir
+      if (c.life - c.t < 6 && Math.sin(c.t * 14) < -0.2) continue;
+      let x = c.x;
+      let z = c.z;
+      let lift = 0;
+      if (c.popT > 0) {
+        const f = 1 - c.popT / 0.45;
+        x = c.sx + (c.x - c.sx) * f;
+        z = c.sz + (c.z - c.sz) * f;
+        lift = Math.sin(f * Math.PI) * 1.1;
+      }
+      if (c.type === 'supply') {
+        drawItem(B, G, 'supply', x, 0.35, z, 0, 1);
+        continue;
+      }
+      const y = 0.5 + Math.sin(c.t * 3) * 0.08 + lift;
+      drawItem(B, G, c.type, x, y, z, c.t * 1.6, it.pick);
+      // contorno girando no chão, na cor do item
+      const r = 0.42 + Math.sin(c.t * 4) * 0.04;
+      for (let k = 0; k < 4; k++) {
+        const a = c.t * 0.8 + (k * Math.PI) / 2;
+        G.box(x + Math.sin(a) * r, 0.03, z + Math.cos(a) * r, 0.62, 0.02, 0.05, it.ring, a);
+      }
+    }
+    for (const t of this.tracers) {
+      const dx = t.x2 - t.x1;
+      const dz = t.z2 - t.z1;
+      const len = Math.hypot(dx, dz);
+      const tw = t.w || 0.035;
+      G.box((t.x1 + t.x2) / 2, 1.0, (t.z1 + t.z2) / 2, tw, tw, len, t.color || 0xffe08a, Math.atan2(dx, dz));
+      t.life -= dt;
+    }
+    this.tracers = this.tracers.filter((t) => t.life > 0);
+    for (const f of this.flashes) {
+      G.box(f.x, 1.0, f.z, 0.3, 0.3, 0.3, 0xffd060, Math.random() * 3);
+      f.life -= dt;
+    }
+    this.flashes = this.flashes.filter((f) => f.life > 0);
+    this.parts.draw(B, G);
+    B.end();
+    G.end();
+  }
+}
+
+// holograma ciano da Camuflagem: cada cor vira um tom de ciano conforme o brilho original
+function holoLook(look) {
+  const map = (c) => {
+    if (typeof c !== 'number') return c;
+    const l = (((c >> 16) & 255) * 0.3 + ((c >> 8) & 255) * 0.59 + (c & 255) * 0.11) / 255;
+    const r = Math.round(10 + l * 60);
+    const g = Math.round(110 + l * 120);
+    const b = Math.round(140 + l * 110);
+    return (r << 16) | (g << 8) | b;
+  };
+  const out = { ...look };
+  for (const k of ['skin', 'shirt', 'pants', 'sleeve', 'hands', 'boots', 'eyes']) if (out[k] !== undefined) out[k] = map(out[k]);
+  if (look.extras) out.extras = look.extras.map((e) => {
+    const n = e.slice();
+    n[7] = map(e[7]);
+    return n;
+  });
+  return out;
+}
+
+// anel de aviso no chão (8 segmentos)
+function ring(G, x, z, r, color, t) {
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2 + t * 0.6;
+    G.box(x + Math.sin(a) * r, 0.03, z + Math.cos(a) * r, r * 0.8, 0.02, 0.08, color, a); // segmento tangente
+  }
+}
+
+// interseção raio-círculo 2D; retorna t >= 0 ou -1
+function rayCircle(ox, oz, dx, dz, cx, cz, r) {
+  const fx = ox - cx;
+  const fz = oz - cz;
+  const b = fx * dx + fz * dz;
+  const c = fx * fx + fz * fz - r * r;
+  const disc = b * b - c;
+  if (disc < 0) return -1;
+  const s = Math.sqrt(disc);
+  const t = -b - s;
+  if (t >= 0) return t;
+  return -b + s >= 0 ? 0 : -1;
+}
