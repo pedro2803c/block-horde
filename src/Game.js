@@ -30,6 +30,8 @@ const SETTINGS_KEY = 'blockhorde_settings_v1';
 const RECORDS_KEY = 'blockhorde_records_v1';
 const PROFILE_KEY = 'blockhorde_profile_v1';
 const TUTORIAL_KEY = 'blockhorde_tutorial_v1';
+// armas que o tiro automático do celular dispara (granadas e armadilhas só com o dedo)
+const AUTO_FIRE = new Set(['gun', 'flame', 'bolt', 'glob', 'rocket']);
 
 // Controles: solo = WASD + mouse; co-op = metade do teclado para cada jogador
 // remove do vetor, no lugar, os itens que não passam no teste (sem criar outro vetor a cada quadro)
@@ -62,7 +64,7 @@ const EVENT_INFO = {
 export class Game {
   constructor(canvas, uiRoot) {
     this.canvas = canvas;
-    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95 };
+    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95, touchAuto: true, touchSize: 1, touchHaptic: true };
     try {
       Object.assign(this.settings, JSON.parse(platform.getItem(SETTINGS_KEY) || '{}'));
     } catch {
@@ -739,6 +741,22 @@ export class Game {
   }
 
   // inimigo que a assistência de mira escolhe (teclado): o mais próximo num cone estreito à frente
+  // celular: alvo do tiro automático (o mais próximo à vista, dentro do alcance da arma)
+  touchTarget(p) {
+    const w = WEAPONS[p.weapon];
+    const range = Math.min(14, (w.range || 12) * (w.kind === 'flame' ? 1 : 0.9));
+    let best = null;
+    let bd = range;
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      const d = Math.hypot(z.pos.x - p.pos.x, z.pos.z - p.pos.z);
+      if (d < bd && this.arena.los(p.pos.x, p.pos.z, z.pos.x, z.pos.z)) {
+        bd = d;
+        best = z;
+      }
+    }
+    return best;
+  }
   aimTarget(p) {
     let best = null;
     let bd = 15;
@@ -2977,7 +2995,10 @@ export class Game {
     }
     p.walk += hs * dt * 2.6;
     // direção da mira
+    // celular: sem mira manual, o sobrevivente encara o zumbi mais próximo ao alcance
+    const tt = c.mouse && inp.touchMode && !inp.touchAim ? this.touchTarget(p) : null;
     if (c.mouse && inp.touchAim) p.aim = Math.atan2(inp.touchAim.x, inp.touchAim.z);
+    else if (tt) p.aim = Math.atan2(tt.pos.x - p.pos.x, tt.pos.z - p.pos.z);
     else if (c.mouse && !inp.mouseIdle) p.aim = Math.atan2(this.mouseWorld.x - p.pos.x, this.mouseWorld.z - p.pos.z);
     else if (len) p.aim = Math.atan2(mx, mz);
     const target = p.firingT > 0 || c.mouse ? p.aim : len ? Math.atan2(mx, mz) : p.facing;
@@ -2995,7 +3016,7 @@ export class Game {
     p.fireCd -= dt;
     const wantMelee = inp.any(c.melee) || (c.mouse && inp.mouse.right);
     if (wantMelee && p.meleeCd <= 0 && p.meleeT <= 0) this.melee(p);
-    const wantFire = inp.any(c.fire) || (c.mouse && inp.mouse.left);
+    const wantFire = inp.any(c.fire) || (c.mouse && inp.mouse.left) || (tt && this.settings.touchAuto !== false && AUTO_FIRE.has(WEAPONS[p.weapon].kind));
     if (wantFire && p.fireCd <= 0 && p.meleeT <= 0) this.fire(p);
     if (p.energyT > 0 && hs > 1 && Math.random() < dt * 25) this.parts.spawn(p.pos.x + rand(-0.2, 0.2), 0.15, p.pos.z + rand(-0.2, 0.2), -p.vel.x * 0.2, rand(0.5, 1.5), -p.vel.z * 0.2, 0.08, pick([0x40c8ff, 0xffffff]), 0.35, 0, 2);
     // passos

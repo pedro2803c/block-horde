@@ -1,12 +1,14 @@
 // Controles de toque (celular e tablet): dois direcionais virtuais + botões.
-// Esquerda: arraste para andar. Direita: segure para atirar (mira automática);
-// arraste para mirar você mesmo. Botões: 3 habilidades, ultimate, arma, recarga e faca.
+// Esquerda: arraste para andar. Direita: segure para atirar; arraste para mirar você mesmo.
+// Com "Tiro automático" (padrão), o sobrevivente já atira sozinho no zumbi mais próximo ao alcance.
+// Botões: 3 habilidades, ultimate, arma (toque = próxima; segure = lista), recarga e faca.
 import { ACTIVES, ULTIMATES } from './abilities.js';
-import { WEAPONS } from './data.js';
+import { WEAPONS, WEAPON_ORDER } from './data.js';
 import { icon, weaponIcon } from './icons.js';
 
-const R = 58; // raio do direcional (px)
+const BASE_R = 58; // raio do direcional (px) no tamanho 100%
 const DEAD = 0.18;
+const HOLD_MS = 320; // segurar o botão da arma abre a lista
 
 function el(tag, cls, ...kids) {
   const e = document.createElement(tag);
@@ -20,12 +22,11 @@ export class TouchControls {
     this.g = game;
     this.inp = game.input;
     this.on = false; // modo toque ativo (vira true no primeiro toque)
-    this.ptrs = new Map(); // pointerId → { role, x0, y0 }
+    this.ptrs = new Map(); // pointerId → direcional
     this.root = el('div', 'touch hidden');
     this.root.setAttribute('aria-hidden', 'true');
     this.sMove = this.stick('s-move');
     this.sAim = this.stick('s-aim');
-    // botões em arco em volta do direcional de tiro
     this.btns = el('div', 'tbtns');
     this.ab = [0, 1, 2, 3].map((i) => {
       const b = el('button', 'tb ab' + (i === 3 ? ' ult' : ''));
@@ -33,15 +34,21 @@ export class TouchControls {
       this.hold(b, () => this.press(this.g.players[0]?.akeys[i][0]));
       return b;
     });
-    this.bWeapon = el('button', 'tb wpn', el('span', 'ico'));
-    this.hold(this.bWeapon, () => this.press('KeyE'));
+    this.bWeapon = el('button', 'tb wpn', el('span', 'ico'), el('small', 'wn'));
+    this.weaponHold(this.bWeapon);
     this.bReload = el('button', 'tb rel', icon('reload'));
     this.hold(this.bReload, () => this.press('KeyG'));
     this.bMelee = el('button', 'tb mel', icon('knife'));
     this.hold(this.bMelee, () => this.inp.down.add('KeyF'), () => this.inp.down.delete('KeyF'));
-    this.btns.append(...this.ab, this.bWeapon, this.bReload, this.bMelee);
-    this.root.append(this.sMove.base, this.sAim.base, this.btns);
+    this.picker = el('div', 'wpicker hidden');
+    this.btns.append(...this.ab, this.bWeapon, this.bReload, this.bMelee, this.picker);
+    this.autoTag = el('div', 'auto-tag', icon('target'), el('span', '', 'Tiro automático'));
+    this.root.append(this.sMove.base, this.sAim.base, this.btns, this.autoTag);
     root.prepend(this.root); // por baixo do HUD: pausa e árvore continuam tocáveis
+    // no celular o jogo é só na horizontal: em pé, cobre a tela e pausa
+    this.rotate = el('div', 'rotate-lock', el('div', 'phone'), el('strong', '', 'Gire o celular'), el('span', '', 'Block Horde é jogado na horizontal'));
+    root.append(this.rotate);
+    this.portraitMq = window.matchMedia ? window.matchMedia('(orientation: portrait)') : null;
 
     this.root.addEventListener('pointerdown', (e) => this.down(e));
     this.root.addEventListener('pointermove', (e) => this.move(e));
@@ -49,12 +56,48 @@ export class TouchControls {
     this.root.addEventListener('contextmenu', (e) => e.preventDefault());
 
     // liga o modo toque no primeiro toque; um mouse de verdade desliga
-    const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(any-pointer: fine)').matches;
-    if (coarse) this.setMode(true);
-    window.addEventListener('pointerdown', (e) => e.pointerType === 'touch' && this.setMode(true), { capture: true });
-    window.addEventListener('pointermove', (e) => {
-      if (e.pointerType === 'mouse' && this.on && (Math.abs(e.movementX) + Math.abs(e.movementY) > 3)) this.setMode(false);
+    const mq = (q) => window.matchMedia && window.matchMedia(q).matches;
+    if (mq('(pointer: coarse)') && !mq('(any-pointer: fine)')) this.setMode(true);
+    window.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'touch') return;
+      this.setMode(true);
+      this.lockLandscape();
     }, { capture: true });
+    window.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'mouse' && this.on && Math.abs(e.movementX) + Math.abs(e.movementY) > 3) this.setMode(false);
+    }, { capture: true });
+    // sem zoom de pinça / toque duplo no meio do jogo (iOS ignora o viewport)
+    document.addEventListener('gesturestart', (e) => e.preventDefault());
+    document.addEventListener('dblclick', (e) => this.on && e.preventDefault());
+    this.applySettings();
+  }
+
+  // Android (tela cheia) aceita travar a orientação; nos outros, o aviso de girar resolve
+  lockLandscape() {
+    if (this.lockTried) return;
+    this.lockTried = true;
+    try {
+      const o = screen.orientation;
+      if (o && o.lock) o.lock('landscape').catch(() => {});
+    } catch {
+      /* não suportado */
+    }
+  }
+
+  get portrait() {
+    return !!(this.portraitMq && this.portraitMq.matches);
+  }
+
+  get s() {
+    return this.g.settings;
+  }
+
+  // tamanho dos botões (configurações) e um pouco maior em tablets
+  applySettings() {
+    const tablet = Math.min(window.innerWidth, window.innerHeight) >= 600 ? 1.15 : 1;
+    this.scale = (this.s.touchSize ?? 1) * tablet;
+    this.R = BASE_R * this.scale;
+    this.root.style.setProperty('--ts', this.scale.toFixed(3));
   }
 
   setMode(on) {
@@ -67,6 +110,16 @@ export class TouchControls {
     }
     document.body.classList.toggle('touch', on);
     if (!on) this.reset();
+  }
+
+  buzz(ms = 10) {
+    if (this.s.touchHaptic === false) return;
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return; // o navegador só vibra depois de um toque real
+    try {
+      navigator.vibrate && navigator.vibrate(ms);
+    } catch {
+      /* sem vibração */
+    }
   }
 
   stick(cls) {
@@ -85,6 +138,7 @@ export class TouchControls {
       } catch {
         /* ignora */
       }
+      this.buzz();
       onDown();
     });
     const end = () => {
@@ -95,14 +149,92 @@ export class TouchControls {
     b.addEventListener('pointercancel', end);
   }
 
+  // botão da arma: toque = próxima arma; segure = lista para escolher (deslize e solte)
+  weaponHold(b) {
+    let timer = 0;
+    let open = false;
+    const pick = (x, y) => {
+      const it = document.elementFromPoint(x, y)?.closest('.wpicker button');
+      for (const k of this.picker.children) k.classList.toggle('sel', k === it);
+      return it;
+    };
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      b.classList.add('pressed');
+      try {
+        b.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignora */
+      }
+      this.buzz();
+      open = false;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        open = this.openPicker();
+        if (open) this.buzz(18);
+      }, HOLD_MS);
+    });
+    b.addEventListener('pointermove', (e) => open && pick(e.clientX, e.clientY));
+    const end = (e, cancel) => {
+      clearTimeout(timer);
+      b.classList.remove('pressed');
+      if (open) {
+        const it = !cancel && pick(e.clientX, e.clientY);
+        if (it) this.choose(it.dataset.id);
+        // soltou fora da lista: ela fica aberta para escolher com um toque
+        else if (cancel) this.closePicker();
+      } else if (!cancel) this.press('KeyE');
+      if (open && this.picker.querySelector('.sel')) this.closePicker();
+      open = false;
+    };
+    b.addEventListener('pointerup', (e) => end(e, false));
+    b.addEventListener('pointercancel', (e) => end(e, true));
+  }
+
+  openPicker() {
+    const g = this.g;
+    const p = g.players[0];
+    if (!p) return false;
+    const list = WEAPON_ORDER.filter((id) => g.unlocked.has(id) && g.usable(p, id));
+    if (list.length < 2) return false;
+    this.picker.replaceChildren(...list.map((id) => {
+      const it = el('button', id === p.weapon ? 'cur' : '', weaponIcon(id));
+      it.dataset.id = id;
+      it.title = WEAPONS[id].name;
+      // toque direto num item também escolhe
+      it.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      });
+      it.addEventListener('pointerup', () => {
+        this.choose(id);
+        this.closePicker();
+      });
+      return it;
+    }));
+    this.picker.classList.remove('hidden');
+    return true;
+  }
+  closePicker() {
+    this.picker.classList.add('hidden');
+  }
+  choose(id) {
+    const p = this.g.players[0];
+    if (p && id) {
+      this.g.selectWeapon(p, id);
+      this.buzz(14);
+    }
+  }
+
   press(code) {
-    if (!code) return;
-    this.inp.pressed.add(code);
+    if (code) this.inp.pressed.add(code);
   }
 
   down(e) {
-    if (e.target.closest('.tb')) return;
+    if (e.target.closest('.tb, .wpicker')) return;
     e.preventDefault();
+    this.closePicker();
     const left = e.clientX < window.innerWidth * 0.45;
     const s = left ? this.sMove : this.sAim;
     if (s.id !== null) return;
@@ -128,6 +260,7 @@ export class TouchControls {
     const s = this.ptrs.get(e.pointerId);
     if (!s) return;
     e.preventDefault();
+    const R = this.R;
     let dx = (e.clientX - s.cx) / R;
     let dy = (e.clientY - s.cy) / R;
     const m = Math.hypot(dx, dy);
@@ -142,7 +275,7 @@ export class TouchControls {
     }
     s.x = dx;
     s.y = dy;
-    s.knob.style.transform = `translate(calc(-50% + ${dx * R}px), calc(-50% + ${dy * R}px))`;
+    s.knob.style.transform = `translate(calc(-50% + ${dx * BASE_R}px), calc(-50% + ${dy * BASE_R}px))`; // a base já está escalada
     this.sync();
   }
 
@@ -161,12 +294,10 @@ export class TouchControls {
   sync() {
     const inp = this.inp;
     const mv = this.sMove;
-    const mm = Math.hypot(mv.x, mv.y);
-    inp.touchMove = mm > DEAD ? { x: mv.x, z: mv.y } : null;
+    inp.touchMove = Math.hypot(mv.x, mv.y) > DEAD ? { x: mv.x, z: mv.y } : null;
     const am = this.sAim;
     const aiming = am.id !== null;
-    const amag = Math.hypot(am.x, am.y);
-    inp.touchAim = aiming && amag > 0.3 ? { x: am.x, z: am.y } : null;
+    inp.touchAim = aiming && Math.hypot(am.x, am.y) > 0.3 ? { x: am.x, z: am.y } : null;
     if (aiming) inp.down.add('Space');
     else inp.down.delete('Space');
   }
@@ -180,21 +311,30 @@ export class TouchControls {
     }
     this.ptrs.clear();
     this.inp.down.delete('KeyF');
+    this.closePicker();
     this.sync();
   }
 
   // todo quadro: mostra/esconde e atualiza recargas e arma
   update() {
     const g = this.g;
+    const blocked = this.on && this.portrait;
+    if (blocked !== this.blocked) {
+      this.blocked = blocked;
+      document.body.classList.toggle('portrait-lock', blocked);
+      if (blocked && g.state === 'playing') g.pause();
+    }
     const show = this.on && g.state === 'playing' && g.mode === 'solo';
     if (show !== this.shown) {
       this.shown = show;
       this.root.classList.toggle('hidden', !show);
       if (!show) this.reset();
+      else this.applySettings();
     }
     if (!show) return;
     const p = g.players[0];
     if (!p) return;
+    this.autoTag.classList.toggle('hidden', this.s.touchAuto === false);
     for (let i = 0; i < 4; i++) {
       const b = this.ab[i];
       const id = p.slots[i];
@@ -208,17 +348,29 @@ export class TouchControls {
       }
       const left = p.cds[i];
       const max = (p.cdMax && p.cdMax[i]) || (def && def.cd) || 1;
-      const frac = left > 0 ? Math.min(1, left / max) : 0;
-      b.querySelector('.cd').style.setProperty('--f', frac.toFixed(3));
+      b.querySelector('.cd').style.setProperty('--f', (left > 0 ? Math.min(1, left / max) : 0).toFixed(3));
       const txt = left > 0 ? String(Math.ceil(left)) : '';
       const n = b.querySelector('.cdn');
-      if (n.textContent !== txt) n.textContent = txt;
+      if (n.textContent !== txt) {
+        // acabou a recarga: pulso de "pronto"
+        if (!txt && n.textContent && !locked) {
+          b.classList.remove('ready');
+          void b.offsetWidth;
+          b.classList.add('ready');
+        }
+        n.textContent = txt;
+      }
       b.classList.toggle('dim', locked || left > 0);
     }
     if (this.bWeapon.dataset.w !== p.weapon) {
       this.bWeapon.dataset.w = p.weapon;
       this.bWeapon.querySelector('.ico').replaceChildren(weaponIcon(p.weapon));
-      this.bWeapon.title = WEAPONS[p.weapon]?.name || '';
     }
+    // munição no botão da arma
+    const w = WEAPONS[p.weapon];
+    const ammo = w.mag ? String(p.clip[p.weapon] || 0) : p.ammo[p.weapon] === Infinity ? '∞' : String(p.ammo[p.weapon] || 0);
+    const wn = this.bWeapon.querySelector('.wn');
+    if (wn.textContent !== ammo) wn.textContent = ammo;
+    this.bReload.classList.toggle('dim', !w.mag || p.reloadT > 0);
   }
 }

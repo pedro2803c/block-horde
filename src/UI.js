@@ -362,6 +362,25 @@ export class UI {
       h('div', { class: 'row end' }, btn('primary back', 'check', 'Ok', () => this.showScreen(back))));
   }
 
+  // celular: tamanho dos botões, tiro automático e vibração
+  touchSettings(slider) {
+    const g = this.g;
+    const s = g.settings;
+    const sw = (ic, label, key) => h('div', { class: 'set' }, icon(ic), h('span', {}, label),
+      h('label', { class: 'switch ctrl' },
+        h('input', { type: 'checkbox', checked: s[key] !== false, role: 'switch', 'aria-label': label, onchange: (e) => {
+          s[key] = e.target.checked;
+          g.saveSettings();
+        } }),
+        h('span', { class: 'track' })));
+    return [
+      h('h3', { class: 'section slashed' }, 'Celular'),
+      slider('gamepad', 'Tamanho dos botões', 'touchSize', 0.8, 1.4, 0.05, () => g.touch.applySettings()),
+      sw('target', 'Tiro automático', 'touchAuto'),
+      sw('bolt', 'Vibração', 'touchHaptic'),
+    ];
+  }
+
   scr_settings({ back, tab = 0 }) {
     const g = this.g;
     const s = g.settings;
@@ -402,6 +421,7 @@ export class UI {
       slider('burst', 'Efeitos', 'sfx'),
       h('div', { class: 'set' }, icon('monitor'), h('span', {}, 'Qualidade gráfica'), quality),
       h('div', { class: 'set' }, icon('bolt'), h('span', {}, 'Mostrar FPS'), fps),
+      ...(g.input.touchMode ? this.touchSettings(slider) : []),
       h('p', { class: 'muted' }, 'A quantidade de partículas e zumbis simultâneos muda na próxima partida.'),
       h('div', { class: 'row end' }, btn('primary back', 'check', 'Confirmar', () => this.showScreen(back))));
   }
@@ -1182,8 +1202,8 @@ export class UI {
     }
     const steps = this.g.input.touchMode ? [
       'Arraste no lado esquerdo da tela para andar',
-      'Segure no lado direito para atirar (arraste para mirar)',
-      'Encoste nos itens para pegar. O botão da arma troca de arma',
+      'O tiro é automático. Segure e arraste à direita para mirar você mesmo',
+      'Toque na arma para trocar; segure para escolher na lista',
       'Os botões redondos usam habilidades; o de cadeado é a ultimate',
     ] : [
       'Mova-se com W A S D',
@@ -1231,6 +1251,7 @@ export class UI {
     this.hMult.classList.add('pulse');
   }
   playerHurt(id) {
+    if (this.g.input.touchMode) this.g.touch?.buzz(25);
     const el = this.pEls[id]?.root;
     if (!el) return;
     // alterna entre duas animações iguais: reinicia sem forçar recálculo de layout

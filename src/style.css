@@ -681,3 +681,38 @@ body.touch .coop-btn { display: none; } /* co-op é no mesmo teclado */
   body.touch .boss { top: 200px; left: 10px; right: 10px; width: auto; transform: none; }
   .touch::after { display: none; }
 }
+
+/* ---------- celular: usabilidade ---------- */
+/* tamanho dos botões (Configurações → Celular) e áreas seguras (entalhe, barra de gestos) */
+.tbtns { transform: scale(var(--ts, 1)); transform-origin: right bottom; right: calc(14px + env(safe-area-inset-right)); bottom: calc(14px + env(safe-area-inset-bottom)); }
+body.touch .players { left: calc(10px + env(safe-area-inset-left)); }
+body.touch .pause-btn { right: calc(10px + env(safe-area-inset-right)); }
+.touch .stick { transform: scale(var(--ts, 1)); }
+.touch::before { left: calc(34px + env(safe-area-inset-left)); }
+/* área de toque maior que o desenho do botão */
+.tb::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; }
+.tb.dim:not(.ab) { opacity: 0.55; }
+.tb.wpn .wn { position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; font: 700 0.62rem/1 var(--font, inherit); color: #ffe08a; text-shadow: 0 1px 0 #000; pointer-events: none; }
+.tb.wpn .ico { margin-top: -8px; }
+.tb.ready { animation: tb-ready 0.5s ease-out; }
+@keyframes tb-ready { 0% { box-shadow: 0 0 0 0 var(--c, #fff); transform: scale(1.12); } 100% { box-shadow: 0 0 0 14px transparent; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .tb.ready { animation: none; } }
+/* lista de armas (segurar o botão da arma) */
+.wpicker { position: absolute; right: 120px; bottom: 76px; display: flex; flex-wrap: wrap-reverse; justify-content: flex-end; gap: 6px; width: 300px; pointer-events: auto; }
+.wpicker.hidden { display: none; }
+.wpicker button { width: 64px; height: 44px; padding: 0; display: grid; place-items: center; border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.3); background: rgba(14, 17, 24, 0.88); color: #fff; }
+.wpicker button svg { width: 44px; height: 20px; }
+.wpicker button.cur { border-color: var(--primary); }
+.wpicker button.sel { border-color: #fff; background: rgba(60, 70, 90, 0.95); transform: scale(1.08); }
+/* selo de tiro automático */
+.auto-tag { position: absolute; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: rgba(0, 0, 0, 0.45); color: #ffd36a; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; pointer-events: none; }
+.auto-tag .ic { width: 14px; height: 14px; }
+.auto-tag.hidden { display: none; }
+/* só na horizontal: aviso de girar o celular */
+.rotate-lock { display: none; position: absolute; inset: 0; z-index: 100; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; padding: 2rem; text-align: center; background: radial-gradient(circle at 50% 40%, #1d2330, #07090d); color: #fff; pointer-events: auto; touch-action: none; }
+.rotate-lock strong { font: 400 2.4rem/1 var(--display); letter-spacing: 0.04em; color: var(--primary); }
+.rotate-lock span { color: var(--muted); }
+.rotate-lock .phone { width: 54px; height: 92px; border: 4px solid #fff; border-radius: 12px; margin-bottom: 1rem; animation: rot-phone 1.8s ease-in-out infinite; }
+@keyframes rot-phone { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+body.portrait-lock .rotate-lock { display: flex; }
+.tb { overflow: visible; }
