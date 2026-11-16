@@ -8,16 +8,27 @@ import '@fontsource/exo-2/latin-800.css';
 import '@fontsource/exo-2/latin-800-italic.css';
 import './style.css';
 import { Game } from './Game.js';
+import { platform } from './platform.js';
+import { startI18n, detectLang } from './i18n.js';
 
 const canvas = document.getElementById('game-canvas');
 const ui = document.getElementById('ui');
 
-try {
-  const game = new Game(canvas, ui);
-  game.boot().catch((err) => fatal(err));
-} catch (err) {
-  fatal(err);
-}
+// ?lang=en / ?lang=pt força o idioma (útil para testar)
+const forced = new URLSearchParams(location.search).get('lang');
+
+platform
+  .init()
+  .catch(() => {})
+  .then(() => {
+    startI18n(forced === 'pt' || forced === 'en' ? forced : detectLang(platform.locale));
+    try {
+      const game = new Game(canvas, ui);
+      game.boot().catch((err) => fatal(err));
+    } catch (err) {
+      fatal(err);
+    }
+  });
 
 function fatal(err) {
   console.error(err);

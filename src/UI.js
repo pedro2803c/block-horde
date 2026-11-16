@@ -5,6 +5,7 @@ import { CROSSHAIRS, CROSSHAIR_ORDER, WEAPON_CROSSHAIR, CROSS_COLORS, crosshairS
 import { ACTIVES, ACTIVE_ORDER, ULTIMATES, ULT_ORDER, PASSIVES, BRANCHES, BUILDS, SYNERGIES, MAX_LEVEL, NODE_REQ, ULT_REQ, levelCost, xpNeed, loadLoadouts, saveLoadouts, ABILITY_LABELS } from './abilities.js';
 import { Preview } from './Preview.js';
 import { icon, weaponIcon, skullSvg } from './icons.js';
+import { platform } from './platform.js';
 
 // Construtor de DOM enxuto: h('div', { class: 'x', onclick }, filhos...)
 function h(tag, attrs = {}, ...kids) {
@@ -182,7 +183,8 @@ export class UI {
       h('div', { class: 'menu-box' },
         h('div', {}, logo(), h('div', { class: 'logo-sub' }, 'Sobreviva à horda')),
         h('div', { class: 'menu-buttons' },
-          btn('primary lg', 'play', 'Jogar', () => this.showScreen('pick', { mode: 'solo' })),
+          btn('primary lg', 'play', 'Jogar agora', () => this.g.quickStart()),
+          btn('', 'map', 'Escolher arena e sobrevivente', () => this.showScreen('pick', { mode: 'solo' })),
           btn('', 'users', 'Co-op · 2 jogadores, 1 teclado', () => this.showScreen('pick', { mode: 'coop' })),
           h('div', { class: 'menu-duo' },
             btn('wide', 'bolt', 'Habilidades e builds', () => this.showScreen('skills')),
@@ -327,7 +329,7 @@ export class UI {
       const b = e.currentTarget;
       if (b.dataset.armed) {
         try {
-          localStorage.removeItem('blockhorde_records_v1');
+          platform.removeItem('blockhorde_records_v1');
         } catch {
           /* ignora */
         }
@@ -727,8 +729,32 @@ export class UI {
         h('div', {}, h('h3', { class: 'section slashed', style: 'margin-top:0' }, 'Desbloqueios'), this.unlockList())));
   }
 
-  scr_gameover({ isRecord, prev, xp }) {
+  scr_gameover({ isRecord, prev, xp, cont }) {
     const g = this.g;
+    // anúncios com recompensa (só na CrazyGames, com anúncios ativos): opcionais e com ícone de vídeo
+    let ads = null;
+    if (platform.adsAvailable) {
+      const fail = () => this.alert('Nenhum vídeo disponível agora. Tente mais tarde.', 'info');
+      const kids = [];
+      if (cont) {
+        let left = 10;
+        const label = h('span', {}, `Continuar com metade da vida · ${left}`);
+        const b = h('button', { class: 'btn ad-btn', onclick: () => g.adContinue(() => (fail(), b.remove())) }, icon('video'), label);
+        const tick = setInterval(() => {
+          left--;
+          if (left <= 0 || this.screen !== 'gameover' || !b.isConnected) {
+            clearInterval(tick);
+            if (!g.adBusy) b.remove();
+          } else label.textContent = `Continuar com metade da vida · ${left}`;
+        }, 1000);
+        kids.push(b);
+      }
+      if (xp && !xp.doubled && xp.gained > 0) {
+        const b = h('button', { class: 'btn ad-btn', onclick: () => g.adDoubleXp(() => this.showScreen('gameover', { isRecord, prev, xp, cont: false }), () => (fail(), b.remove())) }, icon('video'), h('span', {}, `Dobrar XP de perfil (+${fmt(xp.gained)})`));
+        kids.push(b);
+      }
+      if (kids.length) ads = h('div', { class: 'row ad-row' }, ...kids);
+    }
     const xpLine = xp ? h('div', { class: 'profile-line' }, icon('star'),
       h('b', {}, xp.level > xp.before ? `Nível ${xp.before} → ${xp.level}!` : `Nível ${xp.level}`),
       h('span', { class: 'pbar' }, h('i', { style: `width:${Math.round((xp.cur / xp.need) * 100)}%` })),
@@ -745,6 +771,7 @@ export class UI {
         chip('clock', 'Tempo', fmtTime(g.stats.time), 'blue'),
         chip('target', 'Disparos', fmt(g.stats.shots), 'blue')),
       g.players.length > 1 ? h('p', { class: 'muted' }, g.players.map((p) => `${p.look.name}: ${p.kills} abates`).join(' · ')) : null,
+      ads,
       h('div', { class: 'row' },
         btn('back', 'home', 'Menu principal', () => g.toMenu()),
         h('span', { class: 'grow' }),
@@ -1144,6 +1171,27 @@ export class UI {
   }
 
   // banner central para ondas; demais avisos viram notificações
+  // dicas da primeira partida (step -1 esconde)
+  tutorial(step) {
+    if (!this.tutEl) {
+      this.tutText = h('span', {});
+      this.tutCount = h('small', {});
+      this.tutEl = h('div', { class: 'tutorial hidden', role: 'status' }, icon('info'), h('div', {}, this.tutCount, this.tutText),
+        h('button', { class: 'btn sm', onclick: () => this.g.skipTutorial() }, 'Pular'));
+      this.hudEl.append(this.tutEl);
+    }
+    const steps = [
+      'Mova-se com W A S D',
+      'Mire com o mouse e clique (ou Espaço) para atirar',
+      'Encoste nos itens para pegar. Teclas 1–9 trocam de arma',
+      'Z · X · C usam habilidades, R a ultimate. Tab abre a árvore e P pausa',
+    ];
+    if (step < 0 || step >= steps.length) return this.tutEl.classList.add('hidden');
+    this.tutCount.textContent = `Dica ${step + 1}/${steps.length}`;
+    this.tutText.textContent = steps[step];
+    this.tutEl.classList.remove('hidden');
+  }
+
   banner(text, kind = 'info') {
     if (kind === 'good') return this.alert(text, 'success', 'checkCircle');
     if (kind === 'bad') return this.alert(text, 'danger', 'warning');

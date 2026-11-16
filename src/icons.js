@@ -1,6 +1,7 @@
 // Ícones SVG da interface (viewBox 24×24, preenchidos com currentColor) e silhuetas das armas (48×24).
 const P = {
   play: 'M8 5v14l11-7z',
+  video: 'M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11zM8 9v6l5-3z',
   pause: 'M6 5h4v14H6zM14 5h4v14h-4z',
   stop: 'M6 6h12v12H6z',
   back: 'M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z',

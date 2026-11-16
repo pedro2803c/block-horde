@@ -5,3 +5,4 @@ publish/
 *.log
 src_backup*/
 .DS_Store
+crazygames/build/

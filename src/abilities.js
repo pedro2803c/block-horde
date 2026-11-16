@@ -1,3 +1,4 @@
+import { platform } from './platform.js';
 // Sistema de habilidades do Block Horde: 8 ativas, 10 passivas (5 níveis), 3 ultimates,
 // árvore com 4 especializações, builds prontas e interações entre habilidades.
 //
@@ -77,7 +78,7 @@ const KEY = 'blockhorde_loadout_v1';
 export function loadLoadouts() {
   let out;
   try {
-    out = JSON.parse(localStorage.getItem(KEY) || 'null');
+    out = JSON.parse(platform.getItem(KEY) || 'null');
   } catch {
     out = null;
   }
@@ -86,7 +87,7 @@ export function loadLoadouts() {
 }
 export function saveLoadouts(list) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(list));
+    platform.setItem(KEY, JSON.stringify(list));
   } catch {
     /* sem armazenamento */
   }

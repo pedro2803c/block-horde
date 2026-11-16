@@ -31,6 +31,26 @@ Depois copie `portable/BlockHorde.html` para `publish/block-horde/index.html` e,
 npx vercel deploy --prod
 ```
 
+## Versão CrazyGames
+
+`npm run build:crazygames` gera `crazygames/build` com o SDK da CrazyGames v3. O pacote pronto para envio fica em `crazygames/BlockHorde-crazygames.zip`, as capas em `crazygames/covers` e o passo a passo em [crazygames/LEIA-ME-CRAZYGAMES.md](crazygames/LEIA-ME-CRAZYGAMES.md).
+
+O SDK fica inerte fora da CrazyGames. Ele cuida de três coisas:
+
+- **Eventos de jogo:** carregamento, início e fim de jogo, `happytime` e `muteAudio`.
+- **Salvamento:** os dados vão para a conta pelo `SDK.data`.
+- **Anúncios:**
+  - de intervalo, no fim de partida, no máximo 1 a cada 3 min;
+  - com recompensa, para continuar com metade da vida (1 vez por partida, a partir da onda 3) ou dobrar o XP de perfil.
+
+Em todas as versões:
+
+- **Idioma:** a interface troca para inglês sozinha quando o idioma não é português (`?lang=en` ou `?lang=pt` forçam).
+- **Menu:** o primeiro botão é "Jogar agora".
+- **Primeira partida solo:** aparecem 4 dicas curtas, que podem ser puladas.
+
+Para testar o SDK localmente, use `?useLocalSdk=true`.
+
 ## Como iniciar (desenvolvimento)
 
 Requisitos: Node.js 18 ou mais recente e um navegador com WebGL (Chrome, Edge ou Firefox).

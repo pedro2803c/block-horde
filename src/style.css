@@ -585,3 +585,20 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 .syn .ic { width: 18px; height: 18px; color: var(--info); }
 @media (max-width: 900px) { .tree-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .node.rec .node-head small { margin-right: 1.1rem; }
+
+/* anúncios com recompensa (CrazyGames) */
+.ad-row { gap: 0.6rem; flex-wrap: wrap; justify-content: center; margin: 0.4rem 0 0.2rem; }
+.ad-btn { border-color: #f5c542; color: #ffe08a; }
+.ad-btn svg { width: 1.2em; height: 1.2em; }
+
+/* tutorial da primeira partida */
+.tutorial {
+  position: absolute; left: 50%; top: 8.2rem; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 0.8rem; max-width: min(92vw, 34rem);
+  padding: 0.6rem 0.8rem 0.6rem 1rem; border: 1px solid rgba(255, 255, 255, 0.18); border-left: 3px solid #3aa0ff;
+  background: rgba(8, 10, 16, 0.82); color: #fff; font-weight: 600; pointer-events: auto; z-index: 5;
+}
+.tutorial svg { width: 1.3rem; height: 1.3rem; flex: none; color: #3aa0ff; }
+.tutorial small { display: block; color: #8fb8e8; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.tutorial .btn { margin-left: auto; flex: none; }
+.tutorial.hidden { display: none; }

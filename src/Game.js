@@ -11,6 +11,7 @@ import { enemyLook, drawEnemy } from './monsters.js';
 import { ITEMS, GUN_MODELS, GUN_LEN, MELEE, GEAR, drawItem, rollTable } from './items.js';
 import { ArsenalMixin, WALK_TRAPS } from './arsenal.js';
 import { WorldMixin } from './world.js';
+import { platform } from './platform.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -27,6 +28,7 @@ const PLAYER_COLORS = [0x3aa0ff, 0xff8a2a];
 const SETTINGS_KEY = 'blockhorde_settings_v1';
 const RECORDS_KEY = 'blockhorde_records_v1';
 const PROFILE_KEY = 'blockhorde_profile_v1';
+const TUTORIAL_KEY = 'blockhorde_tutorial_v1';
 
 // Controles: solo = WASD + mouse; co-op = metade do teclado para cada jogador
 // remove do vetor, no lugar, os itens que não passam no teste (sem criar outro vetor a cada quadro)
@@ -61,7 +63,7 @@ export class Game {
     this.canvas = canvas;
     this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95 };
     try {
-      Object.assign(this.settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'));
+      Object.assign(this.settings, JSON.parse(platform.getItem(SETTINGS_KEY) || '{}'));
     } catch {
       /* sem armazenamento */
     }
@@ -79,6 +81,7 @@ export class Game {
     this.audio = new AudioSystem();
     this.audio.listener.yaw = Math.PI; // direita da tela = +x
     this.applyVolumes();
+    platform.onMute(() => this.applyVolumes());
     this.ui = new UI(this, uiRoot);
     this.raycaster = new THREE.Raycaster();
     this.aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
@@ -102,6 +105,7 @@ export class Game {
   }
 
   async boot() {
+    platform.loadingStart();
     this.ui.loading(0, 'Preparando...');
     const total = SOUND_NAMES.length + 2;
     let done = 0;
@@ -118,6 +122,7 @@ export class Game {
     this.setupMatch(ARENAS[0], [], true);
     this.ui.loading(1, 'Pronto!');
     await new Promise((r) => setTimeout(r, 200));
+    platform.loadingStop();
     this.toMenu();
     this.last = performance.now();
     this.renderer.setAnimationLoop((t) => this.frame(t));
@@ -139,18 +144,20 @@ export class Game {
   }
   applyVolumes() {
     const s = this.settings;
-    this.audio.setVolumes(s.master, s.music, s.sfx);
+    // a plataforma pode pedir silêncio (botão de som da CrazyGames) e os anúncios também
+    const on = platform.muted || this.adMute ? 0 : 1;
+    this.audio.setVolumes(s.master * on, s.music, s.sfx);
   }
   saveSettings() {
     try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings));
+      platform.setItem(SETTINGS_KEY, JSON.stringify(this.settings));
     } catch {
       /* ignora */
     }
   }
   records() {
     try {
-      return JSON.parse(localStorage.getItem(RECORDS_KEY) || '{}');
+      return JSON.parse(platform.getItem(RECORDS_KEY) || '{}');
     } catch {
       return {};
     }
@@ -159,7 +166,7 @@ export class Game {
   profile() {
     let pr = null;
     try {
-      pr = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+      pr = JSON.parse(platform.getItem(PROFILE_KEY) || 'null');
     } catch {
       pr = null;
     }
@@ -182,7 +189,7 @@ export class Game {
   }
   saveProfile(pr) {
     try {
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(pr));
+      platform.setItem(PROFILE_KEY, JSON.stringify(pr));
     } catch {
       /* ignora */
     }
@@ -414,6 +421,9 @@ export class Game {
   }
 
   startMatch(arenaDef, survivors, mode) {
+    this.continued = false; // continuação com anúncio: 1 por partida
+    this.xpCredited = 0; // XP de perfil já creditado (se a partida continuar, não conta duas vezes)
+    this.firstPrev = undefined;
     this.mode = mode;
     this.arenaDef = arenaDef;
     this.survivorPicks = survivors;
@@ -424,11 +434,132 @@ export class Game {
     this.audio.setMusic('ambient');
     this.ui.banner('PREPARE-SE!', 'info');
     this.canvas.style.cursor = mode === 'solo' ? 'none' : 'default';
+    this.startTutorial();
+  }
+  // "Jogar agora": partida solo na primeira arena, sem passar pelas escolhas
+  quickStart() {
+    this.startMatch(ARENAS[0], [SURVIVORS[Math.floor(Math.random() * SURVIVORS.length)]], 'solo');
   }
   restart() {
-    this.startMatch(this.arenaDef, this.survivorPicks, this.mode);
+    this.afterBreak(() => this.startMatch(this.arenaDef, this.survivorPicks, this.mode));
   }
-  toMenu() {
+  // depois do fim de partida, a plataforma pode mostrar um anúncio de intervalo
+  afterBreak(fn) {
+    if (this.state !== 'gameover') return fn();
+    if (this.adBusy) return;
+    this.adBusy = true;
+    platform.midgame(this.adHooks(), () => {
+      this.adBusy = false;
+      fn();
+    });
+  }
+  adHooks() {
+    return {
+      start: () => {
+        this.adMute = true;
+        this.applyVolumes();
+      },
+      end: () => {
+        this.adMute = false;
+        this.applyVolumes();
+      },
+    };
+  }
+  // ------------------------------------------------------------------ anúncios com recompensa
+  canContinue() {
+    // não em toda morte: só uma vez por partida, a partir da onda 3
+    return platform.adsAvailable && !this.continued && this.wave >= 3;
+  }
+  adContinue(onFail) {
+    if (this.adBusy || !this.canContinue()) return;
+    this.adBusy = true;
+    platform.rewarded(this.adHooks(), () => {
+      this.adBusy = false;
+      this.continueMatch();
+    }, () => {
+      this.adBusy = false;
+      onFail && onFail();
+    });
+  }
+  continueMatch() {
+    if (this.state !== 'gameover') return;
+    this.continued = true;
+    const anchor = this.players[0];
+    for (const p of this.players) {
+      if (!p.alive && p !== anchor) {
+        const spot = this.freeSpotNear(anchor.pos.x, anchor.pos.z, p.radius);
+        p.pos.set(spot.x, 0, spot.z);
+      }
+      p.alive = true;
+      p.deadT = 0;
+      p.hp = Math.ceil(p.maxHp / 2);
+      p.shieldT = Math.max(p.shieldT || 0, 3); // respiro: 3 s de escudo
+    }
+    // empurra o perigo para longe: atordoa a horda e afasta quem está colado
+    for (const z of this.zombies) {
+      z.stunT = Math.max(z.stunT || 0, 2.5);
+    }
+    this.state = 'playing';
+    this.ui.hud(true);
+    this.ui.showScreen(null);
+    this.audio.setMusic(this.boss ? 'boss' : 'combat');
+    this.ui.banner('DE VOLTA À LUTA!', 'good');
+    this.canvas.style.cursor = this.mode === 'solo' ? 'none' : 'default';
+  }
+  adDoubleXp(onDone, onFail) {
+    if (this.adBusy || !platform.adsAvailable || !this.lastXp || this.lastXp.doubled) return;
+    this.adBusy = true;
+    platform.rewarded(this.adHooks(), () => {
+      this.adBusy = false;
+      const pf = this.profile();
+      const x = this.lastXp;
+      this.addProfileXp(pf, x.gained);
+      this.xpCredited += x.gained;
+      this.saveProfile(pf);
+      x.doubled = true;
+      x.gained *= 2;
+      x.level = pf.level;
+      x.cur = pf.xp;
+      x.need = profileNeed(pf.level);
+      x.unlocked = ARENAS.filter((a) => (a.unlock || 1) > x.before && (a.unlock || 1) <= pf.level).map((a) => a.name);
+      onDone && onDone();
+    }, () => {
+      this.adBusy = false;
+      onFail && onFail();
+    });
+  }
+  // ------------------------------------------------------------------ tutorial curto (1ª partida solo)
+  startTutorial() {
+    this.tut = null;
+    if (this.mode !== 'solo' || this.testMode || platform.getItem(TUTORIAL_KEY)) return;
+    const p = this.players[0];
+    this.tut = { step: 0, t: 0, x: p.pos.x, z: p.pos.z, shots: this.stats.shots };
+    this.ui.tutorial(this.tut.step);
+  }
+  skipTutorial() {
+    this.tut = null;
+    platform.setItem(TUTORIAL_KEY, '1');
+    this.ui.tutorial(-1);
+  }
+  updateTutorial(dt) {
+    const tu = this.tut;
+    if (!tu) return;
+    const p = this.players[0];
+    tu.t += dt;
+    let next = false;
+    if (tu.step === 0) next = Math.hypot(p.pos.x - tu.x, p.pos.z - tu.z) > 3 || tu.t > 12;
+    else if (tu.step === 1) next = this.stats.shots - tu.shots >= 4 || tu.t > 14;
+    else next = tu.t > 7;
+    if (!next) return;
+    tu.step++;
+    tu.t = 0;
+    if (tu.step >= 4) return this.skipTutorial();
+    this.ui.tutorial(tu.step);
+  }
+  toMenu(afterAd = false) {
+    if (this.state === 'gameover' && !afterAd) return this.afterBreak(() => this.toMenu(true));
+    this.tut = null;
+    this.ui.tutorial(-1);
     this.state = 'menu';
     this.ui.hud(false);
     this.ui.showScreen('menu');
@@ -861,6 +992,7 @@ export class Game {
       this.boss = null;
       this.audio.setMusic('combat');
       this.ui.banner(`${z.def.name.toUpperCase()} DERROTADO!`, 'gold');
+      platform.happytime();
       this.noiseShake(1);
       // o Colosso deixa uma caixa de madeira e um kit médico
       for (const type of ['supply', 'medkit']) {
@@ -2635,7 +2767,11 @@ export class Game {
     this.last = now;
     if (!this.scene) return;
     this.input.capture = this.state === 'playing'; // Espaço/setas/Enter não rolam a página nem clicam botões
-    if (this.state === 'playing') this.update(dt);
+    platform.setPlaying(this.state === 'playing');
+    if (this.state === 'playing') {
+      this.update(dt);
+      this.updateTutorial(dt);
+    }
     else if (this.state === 'menu' || this.state === 'select') this.updateDemo(dt);
     this.updateCamera(dt);
     this.draw(dt);
@@ -3500,23 +3636,26 @@ export class Game {
     const pf = this.profile(); // antes de gravar o recorde, para não creditar esta partida duas vezes
     const key = `${this.arenaDef.id}_${this.mode}`;
     const rec = this.records();
-    const prev = rec[key];
+    if (this.firstPrev === undefined) this.firstPrev = rec[key] || null;
+    const prev = this.firstPrev; // recorde de antes desta partida (mesmo depois de continuar)
     const isRecord = !prev || this.stats.score > prev.score;
     if (isRecord) {
       rec[key] = { score: this.stats.score, wave: this.wave, mult: this.maxMult, date: Date.now() };
       try {
-        localStorage.setItem(RECORDS_KEY, JSON.stringify(rec));
+        platform.setItem(RECORDS_KEY, JSON.stringify(rec));
       } catch {
         /* ignora */
       }
     }
     this.canvas.style.cursor = 'default';
     const before = pf.level;
-    const gained = matchXp(this.stats.score, this.wave);
+    const gained = Math.max(0, matchXp(this.stats.score, this.wave) - this.xpCredited);
+    this.xpCredited += gained;
     this.addProfileXp(pf, gained);
     this.saveProfile(pf);
     const unlocked = ARENAS.filter((a) => (a.unlock || 1) > before && (a.unlock || 1) <= pf.level).map((a) => a.name);
-    this.ui.showScreen('gameover', { isRecord, prev, xp: { gained, before, level: pf.level, cur: pf.xp, need: profileNeed(pf.level), unlocked } });
+    this.lastXp = { gained, before, level: pf.level, cur: pf.xp, need: profileNeed(pf.level), unlocked, doubled: false };
+    this.ui.showScreen('gameover', { isRecord, prev, xp: this.lastXp, cont: this.canContinue() });
   }
 
   // ------------------------------------------------------------------ câmera e desenho
