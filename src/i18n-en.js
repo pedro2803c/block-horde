@@ -779,9 +779,13 @@ export const EXACT = {
 "Tocha": "Torch",
 "Desativado": "Off",
 "Ativado": "On",
-"Danificado": "Damaged"
+"Danificado": "Damaged",
+"Voltar ao jogo": "Back to the game",
+"Pontos de habilidade: abra a pausa para evoluir": "Ability points: open the pause menu to upgrade"
 };
 export const PATTERNS = [
+  ["^Pausar\\ \\(P\\)\\ ·\\ (.*?)\\ ponto\\ de\\ habilidade$", "Pause (P) · {0} ability point"],
+  ["^Pausar\\ \\(P\\)\\ ·\\ (.*?)\\ pontos\\ de\\ habilidade$", "Pause (P) · {0} ability points"],
   ["^Biblioteca\\ de\\ cenário\\ de\\ todas\\ as\\ arenas\\ \\((.*?)\\ elementos\\)\\.\\ Cada\\ elemento\\ ocupa\\ 1\\ bloco\\ do\\ mapa\\ e\\ tem\\ um\\ símbolo\\ para\\ montar\\ arenas\\ novas;\\ os\\ blocos\\ modulares\\ vêm\\ em\\ 7\\ materiais\\ ×\\ 8\\ variações\\.$", "Scenery library of all arenas ({0} elements). Each element takes 1 map block and has a symbol for building new arenas; modular blocks come in 7 materials × 8 variations."],
   ["^Equipe\\ 3\\ ativas\\ \\(teclas\\ (.*?)\\)\\ e\\ 1\\ ultimate\\ \\((.*?)\\)\\.\\ Durante\\ a\\ partida,\\ abates\\ dão\\ XP\\ e\\ pontos\\ para\\ a\\ árvore\\ de\\ passivas\\ \\(Tab\\)\\.\\ A\\ ultimate\\ é\\ liberada\\ na\\ árvore\\ a\\ partir\\ do\\ nível\\ (.*?)\\.$", "Equip 3 actives (keys {0}) and 1 ultimate ({1}). During a match, kills give XP and points for the passive tree (Tab). The ultimate unlocks in the tree from level {2}."],
   ["^(.*?)\\ \\/\\ (.*?)\\ XP\\ ·\\ cada\\ partida\\ rende\\ XP\\ de\\ perfil\\ e\\ libera\\ novas\\ arenas$", "{0} / {1} XP · every match gives profile XP and unlocks new arenas"],

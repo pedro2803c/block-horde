@@ -157,7 +157,7 @@ export class UI {
   }
 
   // ------------------------------------------------------------ telas
-  showScreen(name, data = {}) {
+  showScreen(name, data = {}, focus = true) {
     this.screen = name;
     document.body.classList.toggle('screen-open', !!name);
     this.screenEl.replaceChildren();
@@ -166,7 +166,7 @@ export class UI {
     this.bannerEl.className = 'banner';
     const el = this['scr_' + name](data);
     this.screenEl.append(el);
-    (el.querySelector('[data-focus]') || el.querySelector('button.primary'))?.focus({ preventScroll: true });
+    if (focus) (el.querySelector('[data-focus]') || el.querySelector('button.primary'))?.focus({ preventScroll: true });
   }
 
   // janela padrão: borda vermelha, título com "///" e botão X que volta
@@ -428,12 +428,25 @@ export class UI {
   }
 
   // ------------------------------------------------------------ habilidades
-  // árvore (durante a partida, Tab): 4 ramos de passivas com 5 níveis e a ultimate
+  // árvore (durante a partida, Tab ou pausa): 4 ramos de passivas com 5 níveis e a ultimate
   scr_tree({ k = 0 } = {}) {
     const g = this.g;
     const p = g.players[k] || g.players[0];
     const back = () => g.resume();
-    const redraw = () => this.showScreen('tree', { k: p.id });
+    const redraw = () => {
+      // mantém a posição da rolagem: comprar um nó lá embaixo não volta para o topo
+      const sc = document.querySelector('.overlay.tree .panel')?.scrollTop || 0;
+      this.showScreen('tree', { k: p.id }, false);
+      const restore = () => {
+        const panel = document.querySelector('.overlay.tree .panel');
+        if (panel) panel.scrollTop = sc;
+      };
+      restore();
+      requestAnimationFrame(restore);
+    };
+    // no celular o botão é grande e o dedo toca duas vezes sem querer: ignora o toque que abriu a tela
+    this.treeT = performance.now();
+    const arm = () => performance.now() - this.treeT > 350;
     const rec = new Set(BUILDS.find((b) => b.id === p.build)?.passives || []);
     const pips = (n) => h('span', { class: 'pips' }, Array.from({ length: MAX_LEVEL }, (_, i) => h('i', { class: i < n ? 'on' : '' })));
     const node = (id, i, br) => {
@@ -449,7 +462,7 @@ export class UI {
         st === 'max' ? h('div', { class: 'node-next' }, 'Nível máximo') : h('div', { class: 'node-next' }, 'Próximo: ', d.fmt(d.v(lvl + 1))),
         st === 'max' ? null : st === 'locked'
           ? h('div', { class: 'node-lock' }, icon('lock'), `Requer ${PASSIVES[br.nodes[i - 1]].name} nível ${NODE_REQ}`)
-          : btn('sm' + (st === 'ok' ? ' primary' : ''), 'star', `Comprar · ${cost} pt${cost > 1 ? 's' : ''}`, () => { if (g.buyPassive(p, id)) redraw(); }, { disabled: st !== 'ok' }));
+          : btn('sm' + (st === 'ok' ? ' primary' : ''), 'star', `Comprar · ${cost} pt${cost > 1 ? 's' : ''}`, () => { if (arm() && g.buyPassive(p, id)) redraw(); }, { disabled: st !== 'ok' }));
     };
     const ultId = p.slots[3];
     const ud = ULTIMATES[ultId];
@@ -461,7 +474,7 @@ export class UI {
         h('div', { class: 'xpbar wide' }, h('i', { style: `width:${(p.xp / xpNeed(p.lv)) * 100}%` })),
         h('small', { class: 'muted' }, `${p.xp} / ${xpNeed(p.lv)} XP`),
         h('span', { class: 'pts-big' }, icon('star'), `${p.pts} ponto${p.pts === 1 ? '' : 's'}`)),
-      h('p', { class: 'muted', style: 'margin:0.2rem 0 0.8rem' }, 'Abates dão XP (o parceiro ganha metade). Cada nível dá 1 ponto. Níveis custam 1, 1, 2, 2 e 3 pontos; o próximo nó do ramo abre com o anterior no nível 2.' + (rec.size ? ' Estrela = recomendado para sua build.' : '')),
+      h('p', { class: 'muted tree-help', style: 'margin:0.2rem 0 0.8rem' }, 'Abates dão XP (o parceiro ganha metade). Cada nível dá 1 ponto. Níveis custam 1, 1, 2, 2 e 3 pontos; o próximo nó do ramo abre com o anterior no nível 2.' + (rec.size ? ' Estrela = recomendado para sua build.' : '')),
       h('div', { class: 'tree-grid' }, BRANCHES.map((br) => h('div', { class: 'branch', style: `--bc:${br.color}` },
         h('div', { class: 'branch-head' }, icon(br.icon), h('div', {}, h('b', {}, br.name), h('small', {}, `${br.tag} · ${br.desc}`))),
         br.nodes.map((id, i) => node(id, i, br))))),
@@ -469,8 +482,8 @@ export class UI {
         icon(ud.icon), h('div', {}, h('b', {}, `Ultimate: ${ud.name}`), h('small', {}, ud.desc)),
         us === 'on' ? h('span', { class: 'ok-tag' }, icon('check'), `Liberada (${ABILITY_LABELS[g.players.length > 1 ? (p.id ? 'p2' : 'p1') : 'solo'][3]})`)
           : us === 'locked' ? h('span', { class: 'node-lock' }, icon('lock'), `Bloqueada até o nível ${ULT_REQ.level}`)
-            : btn('sm' + (us === 'ok' ? ' primary' : ''), 'star', `Liberar · ${ULT_REQ.cost} pts`, () => { if (g.buyUlt(p)) redraw(); }, { disabled: us !== 'ok' })),
-      h('div', { class: 'row' }, h('span', { class: 'muted' }, 'Habilidades equipadas e builds: menu principal → Habilidades.'), h('span', { class: 'grow' }), btn('primary back', 'play', 'Voltar ao jogo (Tab)', back)));
+            : btn('sm' + (us === 'ok' ? ' primary' : ''), 'star', `Liberar · ${ULT_REQ.cost} pts`, () => { if (arm() && g.buyUlt(p)) redraw(); }, { disabled: us !== 'ok' })),
+      h('div', { class: 'row' }, h('span', { class: 'muted tree-help' }, 'Habilidades equipadas e builds: menu principal → Habilidades.'), h('span', { class: 'grow' }), btn('primary back lg', 'play', g.input.touchMode ? 'Voltar ao jogo' : 'Voltar ao jogo (Tab)', back)));
   }
 
   // montagem (menu): 3 ativas + 1 ultimate por jogador, builds prontas e interações
@@ -734,15 +747,24 @@ export class UI {
       chip('bolt', 'Mult. máx.', 'x' + g.maxMult));
   }
 
+  // pontos de habilidade disponíveis na partida (soma dos jogadores no co-op)
+  skillPoints() {
+    let n = 0;
+    for (const p of this.g.players) n += p.pts || 0;
+    return n;
+  }
+
   scr_pause() {
     const g = this.g;
+    const n = this.skillPoints();
+    const treeLabel = g.input.touchMode ? 'Árvore de habilidades' : 'Árvore de habilidades (Tab)';
     return this.win('pause', 'Pausado', () => g.resume(),
       h('div', { class: 'pause-cols' },
         h('div', {},
           this.statChips(),
           h('div', { class: 'menu-buttons' },
             btn('primary lg', 'play', 'Continuar', () => g.resume()),
-            btn('', 'tree', 'Árvore de habilidades (Tab)', () => g.openTree()),
+            btn('tree-btn' + (n ? ' has-pts' : ''), 'tree', h('span', { class: 'btn-txt' }, treeLabel, n ? h('span', { class: 'pt-badge inline' }, `+${n}`) : null), () => g.openTree()),
             btn('', 'keyboard', 'Controles', () => this.showScreen('controls', { back: 'pause' })),
             btn('', 'gear', 'Configurações', () => this.showScreen('settings', { back: 'pause' })),
             btn('', 'refresh', 'Reiniciar partida', () => g.restart()),
@@ -825,7 +847,7 @@ export class UI {
         (el.avatar = h('canvas', { class: 'avatar', width: 136, height: 136, 'aria-hidden': 'true' })),
         h('div', { class: 'pp-main' },
           h('div', { class: 'pp-top' }, (el.name = h('strong', {})), (el.tag = h('span', { class: 'tag' })), (el.down = h('span', { class: 'down' })),
-            (el.lvl = h('span', { class: 'lvl' })), (el.pts = h('button', { class: 'pts hidden', title: 'Árvore de habilidades (Tab)', onclick: () => this.g.openTree(k) }))),
+            (el.lvl = h('span', { class: 'lvl' })), (el.pts = h('button', { class: 'pts hidden', title: 'Árvore de habilidades (Tab)', onclick: () => (this.g.input.touchMode ? this.g.pause() : this.g.openTree(k)) }))),
           (el.xp = h('div', { class: 'xpbar' }, h('i'))),
           h('div', { class: 'bar-line' }, icon('heart', 'heart'), el.hp.el),
           (el.armorLine = h('div', { class: 'bar-line armor-line hidden' }, icon('vest', 'vest'), el.armor.el)),
@@ -837,6 +859,9 @@ export class UI {
         (el.toast = h('div', { class: 'toast' })));
       return el;
     });
+    this.ptBadge = h('span', { class: 'pt-badge hidden', 'aria-hidden': 'true' });
+    this.pauseBtn = iconBtn('sm pause-btn', 'pause', 'Pausar (P)', () => this.g.pause());
+    this.pauseBtn.append(this.ptBadge);
     this.hudEl.append(
       h('div', { class: 'top' },
         h('div', { class: 'chip' }, icon('trophy'), h('div', {}, h('small', {}, 'Pontos'), this.hScore)),
@@ -844,7 +869,7 @@ export class UI {
         h('div', { class: 'chip red' }, icon('skull'), h('div', {}, this.hLeftLabel, this.hLeft)),
         this.hEvent,
         h('div', { class: 'mult' }, this.hMult, h('div', { class: 'mult-body' }, h('div', { class: 'mult-next' }, this.hNextIcon, this.hNextText), this.hMeter.el))),
-      iconBtn('sm pause-btn', 'pause', 'Pausar (P)', () => this.g.pause()),
+      this.pauseBtn,
       this.radar,
       this.hBoss,
       h('div', { class: 'players' }, this.pEls[0].root, this.pEls[1].root),
@@ -885,6 +910,18 @@ export class UI {
     this.lastNext = null;
   }
 
+  // selo de pontos no botão de pausa: indica que há evolução disponível na árvore
+  updatePauseBadge() {
+    const n = this.skillPoints();
+    if (n === this.lastPts) return;
+    this.lastPts = n;
+    this.ptBadge.textContent = n > 9 ? '9+' : String(n);
+    this.ptBadge.classList.toggle('hidden', n <= 0);
+    this.pauseBtn.classList.toggle('has-pts', n > 0);
+    this.pauseBtn.title = n > 0 ? `Pausar (P) · ${n} ponto${n > 1 ? 's' : ''} de habilidade` : 'Pausar (P)';
+    this.pauseBtn.setAttribute('aria-label', this.pauseBtn.title);
+  }
+
   updateHud(dt) {
     const g = this.g;
     setT(this.hScore, fmt(g.stats.score));
@@ -918,6 +955,7 @@ export class UI {
       setT(this.hBossBar.val, `${fmt(Math.max(0, g.boss.hp))} / ${fmt(g.boss.maxHp)}`);
     }
     g.players.forEach((p, k) => this.updatePlayer(p, k));
+    this.updatePauseBadge();
     this.radarT = (this.radarT || 0) - dt;
     if (this.radarT <= 0) {
       this.radarT = 0.05;
@@ -1014,11 +1052,12 @@ export class UI {
     if (low && !el.lowWarned) this.alert(g.players.length > 1 ? `Vida baixa: ${p.look.name}!` : 'Vida baixa!', 'danger', 'warning');
     el.lowWarned = p.hp < 45 ? el.lowWarned || low : false;
     // nível, XP e pontos
-    const lk = `${p.lv}|${p.pts}`;
+    const lk = `${p.lv}|${p.pts}|${g.input.touchMode}`;
     if (lk !== el.lvlKey) {
       el.lvlKey = lk;
       el.lvl.textContent = `Nv ${p.lv}`;
-      el.pts.textContent = `+${p.pts} pt${p.pts > 1 ? 's' : ''} · Tab`;
+      el.pts.textContent = this.g.input.touchMode ? `+${p.pts} pt${p.pts > 1 ? 's' : ''}` : `+${p.pts} pt${p.pts > 1 ? 's' : ''} · Tab`;
+      el.pts.title = this.g.input.touchMode ? 'Pontos de habilidade: abra a pausa para evoluir' : 'Árvore de habilidades (Tab)';
       el.pts.classList.toggle('hidden', !p.pts);
     }
     setW(el.xp.firstChild, (p.xp / xpNeed(p.lv)) * 100);

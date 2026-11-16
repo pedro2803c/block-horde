@@ -583,7 +583,7 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 .syn { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.85rem; }
 .syn li { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
 .syn .ic { width: 18px; height: 18px; color: var(--info); }
-@media (max-width: 900px) { .tree-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1024px) { .tree-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .node.rec .node-head small { margin-right: 1.1rem; }
 
 /* anúncios com recompensa (CrazyGames) */
@@ -762,4 +762,80 @@ body.touch .mult .bar { height: 15px; font-size: 0.72rem; }
   .menu-buttons > button:not(.lg) { justify-content: flex-start; }
   .menu-duo .wide { grid-column: auto; }
   .version { display: none; }
+}
+
+/* ==========================================================================
+   Pontos de habilidade: selo na pausa e árvore no celular
+   ========================================================================== */
+/* selo no botão de pausa e no botão da árvore */
+.pt-badge {
+  position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 999px;
+  background: linear-gradient(180deg, #ffe066, #f0a800); color: #1a1204;
+  border: 2px solid #0b0d12; box-shadow: 0 0 9px rgba(255, 193, 7, 0.8);
+  font: 700 0.72rem/1 var(--body); pointer-events: none;
+}
+.pt-badge.hidden { display: none; }
+.pt-badge.inline { position: static; margin-left: 0.5rem; vertical-align: middle; border-width: 1px; box-shadow: none; }
+.pause-btn { overflow: visible; }
+.pause-btn.has-pts { animation: ptsPulse 1.2s infinite alternate; }
+.pause-btn.has-pts .ic { color: var(--primary); }
+.tree-btn.has-pts { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3), 0 0 18px rgba(255, 193, 7, 0.35); }
+.tree-btn .btn-txt { display: inline-flex; align-items: center; }
+
+/* celular: pausa em duas colunas (a árvore ocupa a largura toda) */
+body.touch .overlay.pause .menu-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+body.touch .overlay.pause .menu-buttons .lg,
+body.touch .overlay.pause .menu-buttons .tree-btn { grid-column: 1 / -1; }
+body.touch .overlay.pause .menu-buttons button { min-height: 46px; font-size: 0.85rem; padding-left: 0.6rem; padding-right: 0.55rem; gap: 0.45rem; }
+body.touch .overlay.pause .menu-buttons .lg,
+body.touch .overlay.pause .menu-buttons .tree-btn { min-height: 52px; }
+body.touch .overlay.pause .menu-buttons .lg { font-size: 1.35rem; }
+
+/* árvore no celular: botões grandes, cartões legíveis e retorno sempre à vista */
+body.touch .overlay.tree .win-head .close { width: 52px; height: 52px; min-height: 52px; }
+body.touch .overlay.tree .tree-top { flex-wrap: wrap; gap: 0.5rem 0.7rem; }
+body.touch .overlay.tree .tree-top .xpbar.wide { min-width: 140px; }
+body.touch .node { padding: 0.6rem; gap: 0.35rem; }
+body.touch .node-head b { font-size: 1rem; }
+body.touch .node-fx { font-size: 0.9rem; }
+body.touch .node-next { font-size: 0.8rem; }
+body.touch .node-lock { font-size: 0.8rem; }
+body.touch .node-lock .ic { width: 15px; height: 15px; }
+body.touch .node .sm, body.touch .ult-row .sm { width: 100%; min-height: 48px; font-size: 0.95rem; }
+body.touch .ult-row { flex-wrap: wrap; }
+body.touch .overlay.tree .panel > .row:last-child button.lg { min-height: 54px; flex: 1 1 auto; }
+/* rodapé da árvore sólido: os botões dos nós não aparecem por baixo dele */
+body.touch .overlay.tree .panel > .row:last-child { background: #161a22; border-top: 1px solid var(--border); box-shadow: 0 -10px 18px rgba(0, 0, 0, 0.5); padding-top: 8px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+
+/* celular deitado com pouca altura: fecha o espaçamento sem cortar informações */
+@media (max-height: 520px) {
+  .overlay.tree .tree-help { display: none; }
+  .overlay.tree .tree-grid { gap: 0.6rem; }
+  .overlay.tree .node { padding: 0.5rem; gap: 0.25rem; }
+  .overlay.tree .tree-top .lvl.big { font-size: 0.9rem; }
+  .overlay.tree .pts-big { font-size: 1.25rem; }
+  .overlay.tree .ult-row { margin-top: 0.6rem; padding: 0.55rem; }
+  body.touch .overlay.tree .node .sm, body.touch .overlay.tree .ult-row .sm { min-height: 46px; }
+  /* pausa no celular: contadores numa linha só para as ações caberem sem rolar */
+  .overlay.pause .chips { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; margin: 0.1rem 0 0.3rem; }
+  .overlay.pause .chip { padding: 0.25rem 0.4rem; gap: 0.35rem; }
+  .overlay.pause .chip > .ic { width: 20px; height: 20px; }
+  .overlay.pause .chip small { font-size: 0.6rem; }
+  .overlay.pause .chip b { font-size: 1.15rem; }
+}
+
+/* telas bem baixas (568×320): pausa inteira sem rolar */
+@media (max-height: 360px) {
+  .overlay.pause .win-head { padding: 4px 0; margin-bottom: 4px; }
+  .overlay.pause .win-head .title { font-size: 1.4rem; }
+  .overlay.pause .chips { gap: 0.3rem; margin: 0 0 0.25rem; }
+  .overlay.pause .chip { padding: 0.15rem 0.35rem; gap: 0.25rem; }
+  .overlay.pause .chip > .ic { width: 16px; height: 16px; }
+  .overlay.pause .chip small { font-size: 0.55rem; }
+  .overlay.pause .chip b { font-size: 0.95rem; }
+  .overlay.pause .pause-cols .menu-buttons { margin-top: 0.4rem; gap: 0.4rem; }
+  body.touch .overlay.pause .menu-buttons button { min-height: 44px; }
+  body.touch .overlay.pause .menu-buttons .lg,
+  body.touch .overlay.pause .menu-buttons .tree-btn { min-height: 46px; }
 }

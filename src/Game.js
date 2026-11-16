@@ -578,15 +578,27 @@ export class Game {
     this.canvas.style.cursor = 'default';
     if (!this.demo) this.setupMatch(ARENAS[Math.floor(Math.random() * ARENAS.length)], [], true);
   }
+  // solta tudo ao abrir uma tela: nenhum comando da partida continua valendo por baixo dela
+  clearInput() {
+    const i = this.input;
+    i.down.clear();
+    i.pressed.clear();
+    i.mouse.left = false;
+    i.mouse.right = false;
+    i.mouse.wheel = 0;
+    this.touch.reset();
+  }
   pause() {
     if (this.state !== 'playing') return;
     this.state = 'paused';
+    this.clearInput();
     this.ui.showScreen('pause');
     this.canvas.style.cursor = 'default';
   }
   openTree(k = 0) {
     if (this.state !== 'playing' && this.state !== 'paused') return;
     this.state = 'paused';
+    this.clearInput();
     this.ui.showScreen('tree', { k });
     this.canvas.style.cursor = 'default';
   }
