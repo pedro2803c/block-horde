@@ -338,8 +338,9 @@ export const SURVIVORS = [
       // ---------- cabeça de pato branca ----------
       ['head', 0, 0.42, 0.42, 0.5, 0.5, 0.5, 0xf2f2f2],         // cabeça
       // ---------- bico laranja ----------
-      ['head', 0, 0.08, 0.52, 0.18, 0.12, 0.05, 0xff9800],     // bico principal
-      ['head', 0, -0.04, 0.54, 0.06, 0.04, 0.02, 0xe67e00],   // narinas
+      ['head', 0, 0.06, 0.56, 0.3, 0.16, 0.09, 0xff9800],     // bico principal (maior e para frente)
+      ['head', 0, -0.02, 0.6, 0.24, 0.1, 0.04, 0xe67e00],     // parte inferior do bico
+      ['head', 0, -0.06, 0.62, 0.1, 0.04, 0.02, 0x0a0a0a],   // narinas/fenda do bico
       // ---------- olhos expressivos ----------
       ...mirror(['head', 0.18, 0.28, 0.18, 0.09, 0.09, 0.03, 0xf57c00]),  // íris
       ...mirror(['head', 0.18, 0.28, 0.2, 0.045, 0.045, 0.03, 0x0a0a0a]), // pupilas
