@@ -288,71 +288,76 @@ export const SURVIVORS = [
       ...CROSS('armL', -0.043, -0.66, 0.04, 0.14, 0xffffff),
     ],
   },
-    {
+      {
     id: 'gatito', name: 'Gatito', role: 'Assalto',
-    skin: 0xff8a00, shirt: 0xd41f1f, pants: 0xd41f1f, sleeve: 0xff8a00, hands: 0x2a2a2a, boots: 0x2a2a2a, noFace: true,
+    skin: 0xff8a00, shirt: 0xd41f1f, pants: 0xd41f1f, sleeve: 0xff8a00, hands: 0x2a2a2a, boots: 0x161616, noFace: true,
     extras: [
       // ---------- capuz vermelho ----------
-      ['head', 0, 0.6, 0, 0.66, 0.34, 0.66, 0xd41f1f],       // capuz principal
-      ['head', 0, 0.72, -0.08, 0.5, 0.12, 0.5, 0x8a0e0e],    // forro escuro
+      ['head', 0, 0.62, 0, 0.66, 0.34, 0.66, 0xd41f1f],       // capuz principal
+      ['head', 0, 0.74, -0.08, 0.5, 0.14, 0.5, 0x8a0e0e],    // forro escuro
       // ---------- orelhas de tigre para fora do capuz ----------
-      ...mirror(['head', 0.28, 0.78, -0.08, 0.17, 0.32, 0.17, 0xff8a00]),
-      ...mirror(['head', 0.28, 0.78, -0.04, 0.08, 0.16, 0.08, 0xf0c0a8]),
-      ...mirror(['head', 0.28, 0.76, -0.02, 0.03, 0.12, 0.03, 0x000000]),
+      ...mirror(['head', 0.3, 0.8, -0.1, 0.18, 0.34, 0.18, 0xff8a00]),
+      ...mirror(['head', 0.3, 0.8, -0.05, 0.08, 0.16, 0.08, 0xf0c0a8]),
+      ...mirror(['head', 0.3, 0.78, -0.03, 0.04, 0.12, 0.04, 0x000000]),
       // ---------- focinho branco volumoso ----------
-      ['head', 0, 0.3, 0.38, 0.58, 0.42, 0.12, 0xf2f2f2],
-      ['head', 0, 0.18, 0.46, 0.18, 0.16, 0.04, 0xd41f1f],   // nariz
-      ['head', 0, 0.08, 0.48, 0.1, 0.04, 0.03, 0x2a2a2a],   // boca
+      ['head', 0, 0.32, 0.4, 0.6, 0.44, 0.14, 0xf2f2f2],
+      ['head', 0, 0.18, 0.5, 0.2, 0.18, 0.04, 0xd41f1f],     // nariz vermelho
+      ['head', 0, 0.08, 0.52, 0.12, 0.05, 0.03, 0x0a0a0a],   // boca
       // bigodes
-      ...mirror(['head', 0.16, 0.16, 0.46, 0.015, 0.18, 0.02, 0x000000]),
-      ...mirror(['head', 0.18, 0.12, 0.46, 0.015, 0.16, 0.02, 0x000000]),
-      // olhos amarelos com pupilas
-      ...mirror(['head', 0.2, 0.48, 0.2, 0.11, 0.11, 0.03, 0xffd700]),
-      ...mirror(['head', 0.2, 0.48, 0.22, 0.055, 0.055, 0.03, 0x000000]),
+      ...mirror(['head', 0.17, 0.16, 0.5, 0.015, 0.2, 0.02, 0x000000]),
+      ...mirror(['head', 0.19, 0.12, 0.5, 0.015, 0.18, 0.02, 0x000000]),
+      // olhos amarelos com pupilas e olhar sÃ©rio
+      ...mirror(['head', 0.21, 0.5, 0.22, 0.12, 0.12, 0.03, 0xffd700]),
+      ...mirror(['head', 0.21, 0.5, 0.24, 0.06, 0.06, 0.03, 0x0a0a0a]),
+      // sobrancelhas pretas (olhar severo)
+      ...mirror(['head', 0.22, 0.54, 0.18, 0.12, 0.04, 0.03, 0x0a0a0a]),
       // ---------- listras de tigre ----------
       // testa (marca M)
-      ['head', 0, 0.62, 0.14, 0.04, 0.2, 0.02, 0x000000],
-      ...mirror(['head', 0.13, 0.58, 0.16, 0.04, 0.16, 0.02, 0x000000]),
+      ['head', 0, 0.64, 0.16, 0.04, 0.22, 0.02, 0x000000],
+      ...mirror(['head', 0.14, 0.6, 0.18, 0.04, 0.18, 0.02, 0x000000]),
       // ao redor dos olhos e bochechas
-      ...mirror(['head', 0.26, 0.44, 0.22, 0.03, 0.18, 0.02, 0x000000]),
-      ...mirror(['head', 0.3, 0.32, 0.26, 0.03, 0.14, 0.02, 0x000000]),
+      ...mirror(['head', 0.28, 0.46, 0.24, 0.03, 0.2, 0.02, 0x000000]),
+      ...mirror(['head', 0.32, 0.34, 0.28, 0.03, 0.14, 0.02, 0x000000]),
       // pescoÃ§o
-      ...mirror(['head', 0.16, 0.18, 0, 0.03, 0.22, 0.02, 0x000000]),
+      ...mirror(['head', 0.16, 0.2, 0, 0.03, 0.24, 0.02, 0x000000]),
       // ---------- torso: jaqueta vermelha ----------
-      ['torso', 0, 0.32, 0, 0.68, 0.58, 0.48, 0xd41f1f],     // jaqueta
-      ['torso', 0, 0.04, 0, 0.06, 0.48, 0.03, 0x000000],     // zÃ­per central
-      ...mirror(['torso', 0.32, 0.32, 0, 0.12, 0.44, 0.02, 0x000000]),
+      ['torso', 0, 0.34, 0, 0.7, 0.6, 0.5, 0xd41f1f],        // jaqueta vermelha
+      ['torso', 0, 0.04, 0, 0.06, 0.5, 0.03, 0x000000],      // zÃ­per central
+      ...mirror(['torso', 0.34, 0.34, 0, 0.12, 0.46, 0.02, 0x000000]),
       // listras na jaqueta
-      ...mirror(['torso', 0.3, 0.32, 0, 0.05, 0.46, 0.02, 0x000000]),
-      // colete preto com caveira branca
-      ['torso', 0, 0.18, 0.24, 0.52, 0.44, 0.18, 0x161616],
-      ['torso', 0, 0.18, 0.26, 0.2, 0.18, 0.02, 0xf2f2f2],   // crÃ¢nio
-      ['torso', 0, 0.1, 0.26, 0.14, 0.08, 0.02, 0x000000],   // olhos da caveira
-      ...mirror(['torso', 0.07, 0.14, 0.26, 0.05, 0.07, 0.02, 0x000000]),
-      ['torso', 0, 0.04, 0.26, 0.12, 0.07, 0.02, 0x000000],  // nariz da caveira
-      ...mirror(['torso', 0.08, 0.22, 0.26, 0.06, 0.09, 0.02, 0xf2f2f2]),
+      ...mirror(['torso', 0.32, 0.34, 0, 0.05, 0.48, 0.02, 0x000000]),
+      // colete preto com caveira branca nas costas
+      ['torso', 0, 0.2, 0.26, 0.54, 0.46, 0.2, 0x161616],
+      ['torso', 0, 0.2, 0.28, 0.22, 0.2, 0.02, 0xf2f2f2],    // crÃ¢nio
+      ['torso', 0, 0.12, 0.28, 0.16, 0.08, 0.02, 0x000000],  // olhos da caveira
+      ...mirror(['torso', 0.07, 0.16, 0.28, 0.05, 0.07, 0.02, 0x000000]),
+      ['torso', 0, 0.06, 0.28, 0.12, 0.07, 0.02, 0x000000],  // nariz da caveira
+      ...mirror(['torso', 0.08, 0.24, 0.28, 0.06, 0.09, 0.02, 0xf2f2f2]),
       // listras de tigre no torso (pele visÃ­vel)
-      ...mirror(['torso', 0.22, 0.12, 0, 0.04, 0.32, 0.02, 0x000000]),
-      ...mirror(['torso', 0.36, 0.04, 0, 0.04, 0.26, 0.02, 0x000000]),
+      ...mirror(['torso', 0.24, 0.14, 0, 0.04, 0.34, 0.02, 0x000000]),
+      ...mirror(['torso', 0.38, 0.06, 0, 0.04, 0.28, 0.02, 0x000000]),
       // ---------- cauda listrada ----------
-      ['torso', 0, -0.02, -0.28, 0.07, 0.42, 0.07, 0xff8a00],
-      ['torso', 0, -0.12, -0.38, 0.06, 0.3, 0.06, 0x000000],
-      ['torso', 0, -0.22, -0.48, 0.06, 0.26, 0.06, 0xff8a00],
-      ['torso', 0, -0.3, -0.58, 0.05, 0.2, 0.05, 0x000000],
-      // ---------- braÃ§os ----------
-      ...mirror(['armL', 0.02, -0.08, 0, 0.2, 0.16, 0.2, 0xff8a00]),
-      ...mirror(['armL', 0.05, -0.4, 0, 0.03, 0.18, 0.03, 0x000000]),
-      ...mirror(['armL', 0, -0.5, 0, 0.22, 0.16, 0.22, 0xd41f1f]),
-      ...mirror(['armL', 0, -0.62, 0, 0.24, 0.18, 0.24, 0x2a2a2a]),
-      // rifle no braÃ§o direito
-      ['armR', 0, -0.55, 0.02, 0.06, 0.5, 0.06, 0x2a2a2a],
+      ['torso', 0, -0.02, -0.3, 0.08, 0.44, 0.08, 0xff8a00],
+      ['torso', 0, -0.12, -0.4, 0.07, 0.32, 0.07, 0x000000],
+      ['torso', 0, -0.22, -0.5, 0.07, 0.28, 0.07, 0xff8a00],
+      ['torso', 0, -0.3, -0.6, 0.06, 0.22, 0.06, 0x000000],
+      // ---------- braÃ§os listrados ----------
+      ...mirror(['armL', 0.02, -0.08, 0, 0.22, 0.18, 0.22, 0xff8a00]),
+      ...mirror(['armL', 0.06, -0.42, 0, 0.03, 0.2, 0.03, 0x000000]),
+      ...mirror(['armL', 0.06, -0.52, 0, 0.03, 0.2, 0.03, 0x000000]),
+      ...mirror(['armL', 0, -0.58, 0, 0.24, 0.18, 0.24, 0xd41f1f]),
+      ...mirror(['armL', 0, -0.66, 0, 0.26, 0.2, 0.26, 0x161616]),
+      // rifle na mÃ£o direita
+      ['armR', 0, -0.6, 0.04, 0.07, 0.55, 0.07, 0x2a2a2a],
       // ---------- pernas ----------
-      ...mirror(['legL', 0.14, -0.1, 0, 0.04, 0.26, 0.04, 0x000000]),
-      ...mirror(['legL', 0, -0.2, 0.04, 0.22, 0.16, 0.14, 0x3a3a3a]),
-      ...mirror(['legL', 0.1, -0.3, 0, 0.05, 0.16, 0.05, 0x000000]),
+      ...mirror(['legL', 0.16, -0.12, 0, 0.04, 0.28, 0.04, 0x000000]),
+      ...mirror(['legL', 0, -0.22, 0.04, 0.24, 0.18, 0.16, 0x3a3a3a]),
+      ...mirror(['legL', 0.12, -0.32, 0, 0.05, 0.18, 0.05, 0x000000]),
+      ...mirror(['legL', 0.12, -0.42, 0, 0.05, 0.18, 0.05, 0x000000]),
     ],
   },
 ];
+
 
 
 // Arenas reconstruÃ­das. Cada caractere Ã© um bloco de 1 m; sÃ­mbolos em SCENERY/SCENERY2.
@@ -712,4 +717,5 @@ export const TIPS = [
   'Torres posicionÃ¡veis tÃªm bateria de 90 s: coloque onde a horda vai passar.',
   'O fogo detona barris e queima caixas de madeira: cuidado onde vocÃª aponta o lanÃ§a-chamas.',
 ];
+
 
