@@ -356,6 +356,63 @@ export const SURVIVORS = [
       ...mirror(['legL', 0.1, -0.46, 0, 0.04, 0.14, 0.04, 0x000000]),  // listra canela
     ],
   },
+  {
+    id: 'patito', name: 'Patito', role: 'Especialista',
+    skin: 0xf2f2f2, shirt: 0xffd600, pants: 0x3a3a3a, sleeve: 0xffd600, hands: 0x161616, boots: 0x161616, noFace: true,
+    extras: [
+      // ---------- cabeça de pato branca ----------
+      ['head', 0, 0.42, 0.42, 0.5, 0.5, 0.5, 0xf2f2f2],         // cabeça
+      // ---------- bico laranja ----------
+      ['head', 0, 0.08, 0.52, 0.18, 0.12, 0.05, 0xff9800],     // bico principal
+      ['head', 0, -0.04, 0.54, 0.06, 0.04, 0.02, 0xe67e00],   // narinas
+      // ---------- olhos expressivos ----------
+      ...mirror(['head', 0.18, 0.28, 0.18, 0.09, 0.09, 0.03, 0xf57c00]),  // íris
+      ...mirror(['head', 0.18, 0.28, 0.2, 0.045, 0.045, 0.03, 0x0a0a0a]), // pupilas
+      // ---------- sobrancelhas agressivas ----------
+      ...mirror(['head', 0.22, 0.34, 0.14, 0.14, 0.04, 0.03, 0x0a0a0a]),
+      // ---------- boné amarelo para trás ----------
+      ['head', 0, 0.62, -0.1, 0.66, 0.16, 0.66, 0xffd600],     // aba/corpo do boné
+      ['head', 0, 0.72, -0.14, 0.5, 0.06, 0.5, 0xd4a800],     // aba atrás
+      // ---------- óculos tecnológicos ----------
+      ['head', 0, 0.38, 0.18, 0.58, 0.06, 0.62, 0x161616],    // armação
+      ...mirror(['head', 0.22, 0.38, 0.18, 0.16, 0.14, 0.03, 0x4dd0ff]), // lente esquerda
+      ...mirror(['head', -0.22, 0.38, 0.18, 0.16, 0.14, 0.03, 0x4dd0ff]), // lente direita
+      ['head', 0, 0.28, 0.18, 0.04, 0.12, 0.03, 0x161616],   // ponte do óculo
+      // ---------- headset tático ----------
+      ['head', 0, 0.58, -0.28, 0.68, 0.14, 0.68, 0x161616],   // arco do headset
+      ...mirror(['head', 0.34, 0.34, -0.22, 0.14, 0.18, 0.14, 0x161616]), // fone direito
+      ...mirror(['head', -0.34, 0.34, -0.22, 0.14, 0.18, 0.14, 0x161616]), // fone esquerdo
+      ...mirror(['head', 0.36, 0.26, -0.24, 0.1, 0.12, 0.02, 0xffd600]), // símbolo pato no fone
+      // ---------- listras na cabeça (peto do pato) ----------
+      ...mirror(['head', 0.24, 0.18, 0.2, 0.03, 0.24, 0.02, 0x0a0a0a]),
+      // ---------- torso: camiseta amarela ----------
+      ['torso', 0, 0.32, 0, 0.64, 0.56, 0.46, 0xffd600],       // camiseta
+      ['torso', 0, 0.04, 0, 0.06, 0.46, 0.03, 0x0a0a0a],       // zíper central
+      // ---------- colete militar preto ----------
+      ['torso', 0, 0.18, 0.26, 0.52, 0.44, 0.2, 0x161616],
+      ['torso', 0, 0.18, 0.28, 0.16, 0.16, 0.02, 0xffd600],    // símbolo de pato amarelo no peito
+      ['torso', 0, 0.08, 0.28, 0.1, 0.06, 0.02, 0x0a0a0a],    // bico do símbolo
+      // alças do colete
+      ...mirror(['torso', 0.26, 0.32, 0, 0.05, 0.24, 0.03, 0x0a0a0a]),
+      // ---------- mochila tática ----------
+      ['torso', 0, 0.3, -0.34, 0.46, 0.5, 0.3, 0x2a2a2a],
+      ['torso', 0, 0.14, -0.46, 0.3, 0.12, 0.03, 0x0a0a0a],   // alça superior
+      ...mirror(['torso', 0.36, 0.14, -0.38, 0.04, 0.12, 0.03, 0x0a0a0a]),
+      // ---------- braços ----------
+      ...mirror(['armL', 0.02, -0.08, 0, 0.2, 0.16, 0.2, 0xffd600]),
+      ...mirror(['armL', 0, -0.4, 0, 0.22, 0.18, 0.22, 0x161616]), // luva preta
+      ...mirror(['armL', 0, -0.52, 0, 0.18, 0.14, 0.18, 0x3a3a3a]),   // braçadeira
+      // rifle futurista na mão direita
+      ['armR', 0, -0.55, 0.04, 0.07, 0.55, 0.07, 0x2a2a2a],
+      // ---------- pernas ----------
+      ...mirror(['legL', 0, -0.18, 0.1, 0.22, 0.16, 0.1, 0x3a3a3a]),   // coxa escura
+      ...mirror(['legL', 0.12, -0.28, 0, 0.04, 0.16, 0.04, 0x000000]),
+      ...mirror(['legL', 0, -0.38, 0.08, 0.2, 0.14, 0.12, 0x161616]),  // joelheira
+      ...mirror(['legL', 0.1, -0.46, 0, 0.04, 0.14, 0.04, 0xffd600]),  // detalhe amarelo
+      ...mirror(['legL', 0, -0.56, 0.06, 0.18, 0.16, 0.16, 0x161616]), // bota preta
+      ...mirror(['legL', 0, -0.66, 0.08, 0.16, 0.08, 0.1, 0xffd600]), // bico da bota amarelo
+    ],
+  },
 ];
 
 
