@@ -202,31 +202,6 @@ export const SURVIVORS = [
     ],
   },
   {
-    id: 'rubro', name: 'Rubro', role: 'DemÃ´nio blindado',
-    skin: 0xd41f1f, shirt: 0xd41f1f, pants: 0xc21a1a, sleeve: 0xd41f1f, hands: 0x161616, boots: 0x161616, noFace: true,
-    extras: [
-      // chifres pretos e "V" na testa
-      ...mirror(['head', 0.24, 0.66, 0, 0.11, 0.3, 0.11, 0x161616, 0, -0.42]),
-      ...mirror(['head', 0.33, 0.88, 0, 0.065, 0.24, 0.065, 0x161616, 0, -0.3]),
-      ['head', 0, 0.47, 0.276, 0.1, 0.1, 0.012, 0x161616, 0, Math.PI / 4],
-      ...mirror(['head', 0.276, 0.3, 0.1, 0.012, 0.1, 0.12, 0xa81414]),
-      // ombreiras com espinhos
-      ...mirror(['torso', 0.37, 0.5, 0, 0.28, 0.17, 0.34, 0xb81616]),
-      ...mirror(['torso', 0.42, 0.64, 0, 0.07, 0.16, 0.07, 0x8a0e0e, 0, -0.5]),
-      ...mirror(['torso', 0.45, 0.62, 0.11, 0.06, 0.13, 0.06, 0x8a0e0e, 0.3, -0.6]),
-      ...mirror(['torso', 0.45, 0.62, -0.11, 0.06, 0.13, 0.06, 0x8a0e0e, -0.3, -0.6]),
-      // peitoral com caveira branca
-      ['torso', 0, 0.3, 0.165, 0.34, 0.3, 0.012, 0xb01616],
-      ['torso', 0, 0.33, 0.172, 0.18, 0.12, 0.012, 0xf2f2f2],
-      ['torso', 0, 0.245, 0.172, 0.12, 0.06, 0.012, 0xf2f2f2],
-      ...mirror(['torso', 0.11, 0.41, 0.172, 0.04, 0.07, 0.012, 0xf2f2f2, 0, -0.4]),
-      ...mirror(['torso', 0.04, 0.33, 0.18, 0.045, 0.045, 0.012, 0xb01616]),
-      ['torso', 0, 0.025, 0, 0.56, 0.06, 0.34, 0x161616],
-      // luvas grandes
-      ...mirror(['armL', 0, -0.37, 0, 0.2, 0.12, 0.22, 0x161616]),
-    ],
-  },
-  {
     id: 'vetor', name: 'Vetor', role: 'Ciborgue', gunGlow: 0x3fe0ff,
     skin: 0x1e1f24, shirt: 0xe8eaee, pants: 0x2a2c32, sleeve: 0xd8dbe0, hands: 0x1e1f24, boots: 0x1e1f24, noFace: true,
     extras: [
