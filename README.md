@@ -61,11 +61,12 @@ O preview abre em http://localhost:4174. A pasta `dist/` pode ser publicada em q
 
 | Modo | Mover | Atirar | Trocar arma | Outros |
 |---|---|---|---|---|
-| Solo | WASD | Clique ou Espaço (mira com o mouse) | Q / E, roda do mouse, 1–9 | P ou ESC pausa |
-| Co-op, jogador 1 | WASD | Espaço | Q / E | P ou ESC pausa |
-| Co-op, jogador 2 | Setas | Enter, Num 0 ou L | , / . ou Shift direito | |
+| Solo | WASD | Clique ou Espaço (mira com o mouse) | Q / E, roda do mouse, 1–9, 0 e - (grupos) | G recarrega · P ou ESC pausa |
+| Co-op, jogador 1 | WASD | Espaço | Q / E | G recarrega · P ou ESC pausa |
+| Co-op, jogador 2 | Setas | Enter, Num 0 ou L | , / . ou Shift direito | H ou Num 3 recarrega |
 
 No teclado, a mira segue a direção do movimento e corrige levemente para o zumbi mais próximo à frente.
+As teclas 1–9, 0 e - escolhem um **grupo** de armas; apertar de novo a mesma tecla alterna entre as armas do grupo (o HUD mostra quantas o grupo tem).
 
 ## Como funciona
 
@@ -102,28 +103,55 @@ No teclado, a mira segue a direção do movimento e corrige levemente para o zum
   |---|---|
   | x2 | Submetralhadora |
   | x3 | Granadas |
-  | x4 | Escopeta |
-  | x5 | Barris explosivos |
-  | x6 | Pistola: disparo rápido |
-  | x7 | Fuzil, que atravessa inimigos |
-  | x8 | Barricadas |
-  | x9 | Submetralhadora: +40% de dano |
-  | x10 | Minas |
-  | x12 | Escopeta: 11 projéteis |
-  | x14 | Lança-foguetes |
-  | x16 | Explosões maiores |
-  | x18 | Fuzil: atravessa 8 inimigos |
-  | x20 | Caixas de munição em dobro |
+  | x4 | Escopeta tática · Barreira de espinhos |
+  | x5 | Barris explosivos · Granada incendiária |
+  | x6 | Pistola: disparo rápido · Lança-ácido |
+  | x7 | Fuzil de assalto MK-5, que atravessa inimigos |
+  | x8 | Barricadas · Granada congelante |
+  | x9 | Submetralhadora: +40% de dano · Canhão criogênico |
+  | x10 | Minas terrestres · Mina de proximidade |
+  | x11 | Rifle de precisão · Cerca elétrica |
+  | x12 | Escopeta: 11 projéteis · Lança-chamas |
+  | x13 | Dinamite · Granada EMP |
+  | x14 | Lança-foguetes · Granada tóxica |
+  | x15 | Machado · Metralhadora pesada |
+  | x16 | Explosões maiores · Torre de gelo |
+  | x17 | Lança-granadas |
+  | x18 | Fuzil: atravessa 8 inimigos · Torre de fogo |
+  | x19 | Rifle de plasma |
+  | x20 | Caixas de munição em dobro · Torre de laser |
 
   A tela de pausa mostra a lista com o que já foi liberado.
-- **Objetos que você coloca**:
+- **Carregador e recarga**: as armas de fogo têm pente (pistola 12, submetralhadora 40, fuzil 30, metralhadora 100...). O pente vazio recarrega sozinho; G recarrega antes. A escopeta carrega cartucho por cartucho e atirar interrompe a recarga. Trocar de arma cancela a recarga. O HUD mostra "pente / reserva" e uma barra de recarga; o personagem baixa a arma e um anel amarelo se completa em volta dele.
+- **Arsenal** (dados em `src/data.js`, modelos em `src/items.js`, lógica em `src/arsenal.js`):
+
+  | Arma | Categoria | Destaque |
+  |---|---|---|
+  | Fuzil de assalto MK-5 | Rifle de assalto | Automático, atravessa 3, recuo leve progressivo |
+  | Escopeta tática | Curta distância | 7 projéteis, perde dano com a distância, recarga por cartucho |
+  | Submetralhadora | Submetralhadora | Cadência altíssima; a dispersão cresce a cada disparo seguido |
+  | Rifle de precisão | Sniper | Dano 120, luneta, atravessa 4 |
+  | Metralhadora pesada | Suporte pesado | Cinto de 100, coice que empurra e passos curtos atirando |
+  | Lança-chamas | Especial | Cone de fogo, incendeia, deixa fogo no chão, detona barris, queima madeira |
+  | Lança-granadas | Explosiva | Arco balístico, explode no impacto, ricocheteia até 2 vezes |
+  | Rifle de plasma | Energia | Projétil luminoso, atravessa 2, estouro de energia no impacto |
+  | Canhão criogênico | Controle | Gela e congela inimigos comuns; chefões só ficam lentos |
+  | Lança-ácido | Corrosiva | Corrosão por 4 s, poça ácida, derrete escudos e blindagem |
+
+- **Efeitos e resistências**: fogo (queima), gelo (lentidão e congelamento), ácido (corrosão) e EMP. Cada inimigo tem resistências próprias (`RESIST` em `src/data.js`): o Guardião da Floresta queima mais, o Operário Mutante resiste a fogo, sofre com ácido e desliga com EMP, o Espectro é sensível a energia.
+- **Granadas especiais**: EMP (desliga mecânicos 4 s), incendiária (fogo por 6 s), congelante e tóxica (nuvem de 8 s que não fere o time).
+- **Equipamentos**: colete, capacete, mochila, **botas de velocidade** (+15% até cair) e **exoesqueleto temporário** (20 s: -45% de dano, golpes 60% mais fortes, imune a lentidão). Escudo, drone e torreta existem como habilidades.
+- **Objetos que você coloca** (durabilidade, alcance e bateria em `TRAPS`, `src/data.js`):
   - Barris explodem quando levam tiro, e uma explosão detona outros barris por perto.
   - Barricadas bloqueiam a passagem; os zumbis desviam ou ficam batendo nelas até quebrá-las.
-  - Minas explodem quando um zumbi pisa nelas.
+  - Minas terrestres explodem quando um zumbi pisa; a **mina de proximidade** detecta a 2,4 m e explode em 4 m.
+  - **Barreira de espinhos**: andável, fere e atrasa quem passa e se gasta com o uso.
+  - **Cerca elétrica**: bloqueia e dá choques que atordoam (40 descargas).
+  - **Torres de laser, fogo e gelo**: miram sozinhas, têm 90 s de bateria e podem ser destruídas pela horda.
 - **Caixas** de munição e de kit médico aparecem pelo mapa.
 - **Fogo amigo**: suas explosões também ferem você e seu parceiro, com dano reduzido.
 - **Co-op**: quem cai volta na onda seguinte com metade da vida. A partida acaba quando os dois caem.
-- **4 arenas de sobrevivência**, cada uma com estratégia própria, mais a Necrópole de bônus:
+- **7 arenas de sobrevivência**, cada uma com estratégia própria, mais a Necrópole de bônus:
 
   | Arena | Dificuldade | Libera no | Evento | Chefão | O que muda no jogo |
   |---|---|---|---|---|---|
@@ -131,8 +159,14 @@ No teclado, a mira segue a direção do movimento e corrige levemente para o zum
   | Complexo Industrial | Alta | nível 5 | Sobrecarga das máquinas: prensas e vapor aceleram, piso elétrico liga mais, luzes piscam | O Operário Mutante | Esteiras arrastam todos, prensas e vapor ferem a horda |
   | Floresta Sombria | Muito alta | nível 10 | Névoa tóxica: visão curta e dano crescente fora das ruínas e da cabana; esporos mais fortes | O Guardião da Floresta | Zumbis brotam da vegetação, árvores caem e bloqueiam trilhas |
   | Base Militar | Extrema | nível 15 | Ataque de reforços: esquadrões entram por uma entrada diferente a cada vez | O General Infectado | Torres automáticas, portões, gerador e plataformas de tiro |
+  | Coliseu da Arena | Alta | nível 3 | Prova de sobrevivência: portões abrem, espinhos aceleram, abates valem o dobro e quem sobrevive ganha suprimentos | O Colosso | Portões monumentais e túneis por onde a horda entra, armadilhas de espinhos, centro aberto para o chefão |
+  | Laboratório de Pesquisa | Muito alta | nível 7 | Quebra de contenção: cápsulas soltam criaturas e tanques vazam | O Devorador | Painel holográfico tranca as portas automáticas, tanques biológicos e químicos destrutíveis, totem médico |
+  | Templo Antigo | Extrema | nível 12 | Maldição do templo: escuridão, hieróglifos acesos, lâminas mais rápidas, portais e sarcófagos soltam mortos | O Guardião da Floresta | Placas de pressão com dardos, lâminas giratórias, portais mágicos, alavanca, portas secretas e câmara de desafio |
 
   Cada arena também deixa os inimigos mais fortes, rápidos e numerosos conforme a dificuldade.
+- **Objetos interativos** (lógica em `src/world.js`): todos mostram o estado numa luz (cinza desativado, verde disponível, amarelo ativado, vermelho danificado; destruído some). Tanque químico (nuvem tóxica ao quebrar), totem médico (cura em área, recarga de 35 s), portal de onda (ponto de surgimento), gerador e painéis.
+- **Biblioteca de cenário** (`src/scenery*.js`, tela **Cenário**): 169 elementos, incluindo a biblioteca modular de 7 materiais (concreto, metal, tijolo, pedra, arenito, vidro, grade) × 8 variações (inteiro, danificado, destruído, coluna, canto, piso, rampa, plataforma), com 1 m de base e símbolo de mapa próprio.
+- **Partículas de ambiente** por arena (poeira, cinzas, brasas, faíscas, vapor, esporos, areia), leves para não atrapalhar o combate.
 - **Nível de perfil**: toda partida rende XP de perfil (pontos ÷ 10 + 20 por onda), salvo no navegador. Ele libera as arenas; recordes antigos contam na primeira vez.
 - **Sangue e queimaduras**: as manchas de sangue e as marcas de explosão ficam pintadas no chão até o fim da partida.
 - **Recordes**: um por arena e modo (solo e co-op), salvos no navegador.
@@ -212,6 +246,16 @@ Otimizações:
 - **Voxels**: matrizes escritas direto, cores em cache e envio à GPU só da parte usada.
 - **Listas por quadro**: compactadas no lugar, sem gerar lixo para o coletor.
 
+### Expansão do arsenal e das arenas
+
+- Cada uma das 26 armas e estruturas foi disparada contra inimigos de teste: todas causaram dano, e as estruturas foram colocadas e funcionaram.
+- Recarga: a submetralhadora esvaziou 40 tiros, recarregou sozinha (40 / 60 na reserva) e abriu a dispersão até o limite. A escopeta recarregou cartucho a cartucho (2 → 3 → 6).
+- Efeitos: o lança-chamas incendiou (3 s) e deixou fogo no chão; o criogênico congelou o zumbi comum e só gelou o chefe (limite de 60); a EMP desligou o Operário por 4 s; a granada congelante congelou o corredor e só gelou o brutamontes (resistente); o ácido corroeu e deixou poça; a nuvem tóxica feriu a horda e não o jogador.
+- Armadilhas: espinhos atrasaram e se desgastaram, a cerca gastou descargas, a torre de gelo congelou e a de laser desligou ao fim da bateria.
+- Arenas novas: todos os portões e pontos de surgimento alcançam os jogadores. Objetos: contenção do laboratório (portas trancadas e evento encerrado), totem (cura e recarga), espinhos (45 de dano), placa de pressão (6 dardos), lâmina, alavanca e portas secretas, portais mágicos, altar (elite e 2 caixas de recompensa), vidro quebrando a tiros.
+- 2.400 quadros em co-op em cada uma das 8 arenas com o arsenal inteiro: nenhum erro e nenhum valor inválido, cerca de 0,2 ms de lógica por quadro.
+- Carga: 80 inimigos, 18 áreas no chão e 6 torres com lança-chamas e metralhadora atirando: 1,3 ms por quadro (lógica e montagem), pior quadro 6,8 ms.
+
 ## Limitações conhecidas
 
 - O balanceamento foi ajustado com o bot, não com jogadores humanos. As ondas acima de 20 não foram testadas.
@@ -233,7 +277,12 @@ src/
   UI.js        menus, janelas, HUD, radar e notificações (componentes do design system)
   icons.js     ícones SVG da interface e silhuetas das armas
   Input.js     teclado compartilhado e mouse
-  data.js      armas, desbloqueios, inimigos, sobreviventes, arenas
+  data.js      armas, estruturas, resistências, desbloqueios, inimigos, sobreviventes, arenas
+  items.js     modelos e catálogo de itens, armas na mão, armadilhas e equipamento no corpo
+  arsenal.js   carregador e recarga, efeitos elementais, áreas no chão, projéteis novos, armadilhas e torres
+  world.js     objetos interativos (estados), eventos do laboratório, coliseu e templo, partículas de ambiente
+  scenery.js   biblioteca de cenário (scenery2.js e scenery3.js: expansões temáticas e blocos modulares)
+  crosshairs.js miras
   style.css    estilo da interface
   core/        áudio procedural e números aleatórios
 portable/      BlockHorde.html, a versão de arquivo único (gerada por `npm run build:portable`)

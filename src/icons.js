@@ -98,6 +98,8 @@ Object.assign(P, {
   multishot: 'M2 11h12v2H2zM14 9l6 3-6 3zM4 5.5h9v2H4zM13 4l5 2.5-5 2.5zM4 16.5h9v2H4zM13 15l5 2.5-5 2.5z',
   regen: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35zM11 8v3H8v2h3v3h2v-3h3v-2h-3V8z',
   tree: 'M11 2h2v5h-2zM5 7h14v2H5zM5 9h2v4H5zM17 9h2v4h-2zM3 13h6v6H3zM15 13h6v6h-6zM10.5 12h3v9h-3z',
+  snow: 'M11 1h2v22h-2zM1 11h22v2H1zM4.2 5.6l1.4-1.4 14.2 14.2-1.4 1.4zM4.2 18.4 18.4 4.2l1.4 1.4L5.6 19.8zM8 2l4 3 4-3v2.4l-4 3-4-3zM8 22l4-3 4 3v-2.4l-4-3-4 3z',
+  reload: 'M12 3a9 9 0 0 1 8.5 6H23l-4 5-4-5h2.3A6.5 6.5 0 1 0 18 15.5l2 1.6A9 9 0 1 1 12 3z',
 });
 
 // Ícones com recortes internos (olhos da caveira, rosto do capuz, olhos do fantasma, bolsos) usam evenodd
@@ -118,6 +120,22 @@ const W = {
   dynamite: 'M14 6h6v16h-6zM21 6h6v16h-6zM28 6h6v16h-6zM12 11h24v3H12zM19 2h10v4H19zM31 0h2v2h-2z',
   knife: 'M4 10h12v4H4zM16 8h2v8h-2zM18 10h20l8 2-8 2H18z',
   axe: 'M2 11H32V14H2zM32 5H38L44 2V22L38 18H32z',
+  lmg: 'M1 8h8V6h20v2h8v2h10v3H37v1h-4v3h3v5h-2l-1-5h-3l-1 5h-2v-5h-6v6h-6v-6h-4l-4 6H5l4-6H1zM14 3h10v3H14z',
+  flamer: 'M1 9h10V7h16v3h9v4H27v1h-5v7h-8v-7h-2l-3 6H3l3-6H1zM36 10h4l3-2v8l-3-2h-4z',
+  glauncher: 'M1 8h10V6h6v2h22v6H22v4h-4v-1h-2l-3 5H5l3-5H1zM17 10h6v6h-6z',
+  plasma: 'M1 9h9V7h22v2h6l6 3-6 3h-6v2h-8v4h-4v-4h-5l-4 4H5l4-4H1zM14 10h16v2H14z',
+  cryo: 'M1 9h10V6h18v3h7v6h-7v2h-8v4h-4v-4H11l-4 4H3l4-4H1zM37 8h3v8h-3zM41 10h4v4h-4zM14 2h10v4H14z',
+  acidgun: 'M1 9h10V7h20v2h7v4h-7v4h-8v4h-4v-4h-5l-4 4H5l4-4H1zM15 1h8v6h-8z',
+  egrenade: 'M19 8h10l3 3v8l-3 3H19l-3-3v-8zM21 3h6v4h-6zM27 3h8v2h-8zM23 11l3 0-2 3h3l-4 5 1-4h-3z',
+  igrenade: 'M19 8h10l3 3v8l-3 3H19l-3-3v-8zM21 3h6v4h-6zM27 3h8v2h-8zM24 10c2 3 4 4 4 7a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3z',
+  fgrenade: 'M19 8h10l3 3v8l-3 3H19l-3-3v-8zM21 3h6v4h-6zM27 3h8v2h-8zM23 10h2v10h-2zM19 14h10v2H19z',
+  tgrenade: 'M19 8h10l3 3v8l-3 3H19l-3-3v-8zM21 3h6v4h-6zM27 3h8v2h-8zM21 12h3v3h-3zM25 15h3v3h-3zM22 17h2v2h-2z',
+  proxmine: 'M10 15h28v6H10zM16 12h16v3H16zM30 4h2v8h-2zM29 2h4v3h-4z',
+  spikes: 'M4 18h40v4H4zM7 18l3-12 3 12zM15 18l3-12 3 12zM23 18l3-12 3 12zM31 18l3-12 3 12zM39 18l2-8 2 8z',
+  efence: 'M6 3h4v19H6zM38 3h4v19h-4zM10 6h28v2H10zM10 11h28v2H10zM10 16h28v2H10zM22 8l4 0-3 4h3l-5 6 1-5h-3z',
+  ltower: 'M14 19h20v4H14zM21 11h6v8h-6zM15 4h18v8H15zM33 6h13v3H33z',
+  ftower: 'M14 19h20v4H14zM21 11h6v8h-6zM15 4h16v8H15zM31 6h5v4h-5zM37 5l8 3-8 3z',
+  itower: 'M14 19h20v4H14zM21 13h6v6h-6zM24 1l6 6-6 6-6-6zM34 7h10v2H34z',
 };
 
 const svg = (vb, d, evenodd) => `<svg viewBox="${vb}" aria-hidden="true" focusable="false"><path${evenodd ? ' fill-rule="evenodd"' : ''} d="${d}"/></svg>`;

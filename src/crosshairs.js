@@ -75,6 +75,9 @@ export const CROSSHAIR_ORDER = Object.keys(CROSSHAIRS).sort((a, b) => CROSSHAIRS
 export const WEAPON_CROSSHAIR = {
   pistol: 'classic', uzi: 'bracket', grenade: 'gold', shotgun: 'directional', barrel: 'tactical', rifle: 'holo',
   sniper: 'scope', barricade: 'tactical', mine: 'tactical', dynamite: 'gold', rocket: 'lockon',
+  lmg: 'bracket', flamer: 'directional', glauncher: 'gold', plasma: 'gold', cryo: 'tactical', acidgun: 'directional',
+  egrenade: 'gold', igrenade: 'gold', fgrenade: 'gold', tgrenade: 'gold',
+  proxmine: 'tactical', spikes: 'tactical', efence: 'tactical', ltower: 'tactical', ftower: 'tactical', itower: 'tactical',
 };
 
 export const CROSS_COLORS = [

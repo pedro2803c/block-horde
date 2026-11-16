@@ -178,6 +178,22 @@ const DEFS = {
   steam: [1.3, (c, o) => { noiseHit(c, o, 'highpass', 2200, 5200, 1, 0, 0.18, 0.55, 1.0); noiseHit(c, o, 'bandpass', 900, 2600, 2, 0.05, 0.05, 0.3, 0.6); }],
   siren: [2.6, (c, o) => { tone(c, o, 'sawtooth', 620, 900, 0, 0.12, 0.9, 0.55); tone(c, o, 'sawtooth', 460, 700, 0.9, 0.12, 0.8, 0.5); tone(c, o, 'square', 310, 450, 1.8, 0.12, 0.6, 0.35); }],
   bell: [2.8, (c, o) => { [[880, 0], [1320, 0.02], [1760, 0.05], [2640, 0.09]].forEach(([f, d]) => tone(c, o, 'sine', f, f, d, 0.004, 0.5, 1.6)); }],
+  // expansão do arsenal: armas novas, elementos e armadilhas
+  shot_lmg: [0.45, (c, o) => gun(c, o, { nf: 3000, ne: 400, dec: 0.2, th: 120, thd: 0.14, vol: 0.85, dist: 12 })],
+  shot_gl: [0.5, (c, o) => { tone(c, o, 'sine', 160, 60, 0, 0.004, 0.9, 0.18); noiseHit(c, o, 'lowpass', 1200, 200, 1, 0, 0.003, 0.7, 0.2); click(c, o, 0.02, 900, 0.4, 0.05); }],
+  shot_plasma: [0.5, (c, o) => { tone(c, o, 'sawtooth', 1400, 180, 0, 0.003, 0.45, 0.3); tone(c, o, 'sine', 900, 120, 0, 0.003, 0.5, 0.35); noiseHit(c, o, 'highpass', 3000, 6000, 1, 0, 0.002, 0.3, 0.1); }],
+  shot_cryo: [0.4, (c, o) => { noiseHit(c, o, 'highpass', 5000, 2500, 2, 0, 0.004, 0.5, 0.25); tone(c, o, 'triangle', 2600, 1800, 0, 0.002, 0.18, 0.2); }],
+  flame: [0.35, (c, o) => { noiseHit(c, o, 'lowpass', 900, 500, 0.8, 0, 0.03, 0.6, 0.3); noiseHit(c, o, 'bandpass', 300, 260, 1, 0, 0.02, 0.4, 0.3); }],
+  emp: [1.4, (c, o) => { tone(c, o, 'sine', 70, 30, 0, 0.005, 1, 0.9); tone(c, o, 'square', 1800, 80, 0, 0.004, 0.3, 0.8); noiseHit(c, o, 'bandpass', 2400, 400, 3, 0, 0.004, 0.5, 1.0); }],
+  freeze: [0.9, (c, o) => { [2400, 3100, 3800].forEach((f, i) => tone(c, o, 'triangle', f, f * 0.8, i * 0.05, 0.002, 0.18, 0.5)); noiseHit(c, o, 'highpass', 6000, 3000, 1, 0, 0.004, 0.35, 0.6); }],
+  zap: [0.3, (c, o) => { tone(c, o, 'square', 140, 90, 0, 0.002, 0.35, 0.15); noiseHit(c, o, 'bandpass', 3200, 1800, 4, 0, 0.002, 0.5, 0.15); }],
+  laser: [0.5, (c, o) => { tone(c, o, 'sawtooth', 820, 760, 0, 0.02, 0.22, 0.45); tone(c, o, 'sine', 1640, 1600, 0, 0.02, 0.12, 0.45); }],
+  glass: [0.6, (c, o) => { [3200, 4100, 5200, 2700].forEach((f, i) => tone(c, o, 'triangle', f, f * 0.9, i * 0.03, 0.001, 0.2, 0.25)); noiseHit(c, o, 'highpass', 4000, 6000, 1, 0, 0.001, 0.5, 0.35); }],
+  dart: [0.25, (c, o) => noiseHit(c, o, 'bandpass', 1800, 3200, 4, 0, 0.004, 0.5, 0.12)],
+  blade: [0.6, (c, o) => { noiseHit(c, o, 'bandpass', 900, 2600, 2, 0, 0.1, 0.45, 0.4); tone(c, o, 'sawtooth', 220, 260, 0, 0.1, 0.12, 0.4); }],
+  door: [0.9, (c, o) => { tone(c, o, 'sawtooth', 90, 140, 0, 0.2, 0.18, 0.5); noiseHit(c, o, 'lowpass', 600, 1400, 1, 0, 0.2, 0.25, 0.5); click(c, o, 0.75, 900, 0.6, 0.06); }],
+  portal: [1.2, (c, o) => { tone(c, o, 'sine', 220, 660, 0, 0.3, 0.3, 0.8); tone(c, o, 'sine', 330, 990, 0.05, 0.3, 0.22, 0.8); noiseHit(c, o, 'bandpass', 1200, 300, 3, 0, 0.3, 0.2, 0.8); }],
+  crowd: [2.4, (c, o) => { noiseHit(c, o, 'bandpass', 700, 900, 0.6, 0, 0.4, 0.5, 1.9); noiseHit(c, o, 'bandpass', 1300, 1100, 0.8, 0.1, 0.4, 0.3, 1.8); }],
 };
 
 export const SOUND_NAMES = Object.keys(DEFS);
@@ -189,6 +205,9 @@ const AMBIENT = {
   forest: { cut: 760, vol: 0.06, hum: 42, humVol: 0.008, metal: 0 },
   military: { cut: 420, vol: 0.05, hum: 60, humVol: 0.02, metal: 0.01 },
   graveyard: { cut: 220, vol: 0.045, hum: 38, humVol: 0.006, metal: 0.002 },
+  lab: { cut: 520, vol: 0.04, hum: 120, humVol: 0.03, metal: 0.008 },
+  colosseum: { cut: 900, vol: 0.06, hum: 46, humVol: 0.004, metal: 0 },
+  temple: { cut: 260, vol: 0.05, hum: 33, humVol: 0.012, metal: 0.003 },
 };
 
 export class AudioSystem {

@@ -56,6 +56,67 @@ export const GUN_MODELS = {
     [0, -0.07, 0, 0.06, 0.1, 0.07, 0x1a1a1a],
     [0.15, 0.14, 0.05, 0.06, 0.05, 0.03, 0x1a1a1a],
   ],
+  // ---- expansão do arsenal ----
+  lmg: [
+    [0.18, 0.02, 0, 0.44, 0.12, 0.11, 0x3a3c34],
+    [0.42, 0.03, 0, 0.14, 0.1, 0.1, 0x4a4c44],
+    [0.53, 0.03, 0, 0.24, 0.05, 0.05, 0x1e1e1e],
+    [0.66, 0.03, 0, 0.04, 0.08, 0.08, 0x111111],
+    [0.12, -0.12, 0, 0.16, 0.14, 0.1, 0x5a5e3a],
+    [0.12, -0.05, 0.07, 0.1, 0.03, 0.04, 0xe0a830],
+    [0, -0.08, 0, 0.06, 0.1, 0.07, 0x1a1a1a],
+    [-0.16, 0, 0, 0.22, 0.1, 0.07, 0x3a3c34],
+    [0.16, 0.1, 0, 0.14, 0.04, 0.05, 0x1a1a1a],
+    [0.56, -0.08, 0.04, 0.02, 0.12, 0.02, 0x1a1a1a],
+    [0.56, -0.08, -0.04, 0.02, 0.12, 0.02, 0x1a1a1a],
+  ],
+  flamer: [
+    [0.14, 0.02, 0, 0.36, 0.1, 0.1, 0x5a4a3a],
+    [0.42, 0.03, 0, 0.24, 0.06, 0.06, 0x2a2a2a],
+    [0.56, 0.03, 0, 0.05, 0.09, 0.09, 0x1a1a1a],
+    [0.59, 0.03, 0, 0.02, 0.05, 0.05, 0x40a0ff, true],
+    [0.1, -0.13, 0, 0.2, 0.14, 0.14, 0xb03a1a],
+    [0.1, -0.13, 0, 0.21, 0.03, 0.15, 0xe8b020],
+    [0, -0.08, 0, 0.06, 0.1, 0.07, 0x1a1a1a],
+    [-0.12, 0, 0, 0.16, 0.08, 0.07, 0x3a3a3a],
+  ],
+  glauncher: [
+    [0.12, 0.02, 0, 0.3, 0.1, 0.1, 0x4a5236],
+    [0.38, 0.03, 0, 0.24, 0.1, 0.1, 0x3a3e2c],
+    [0.51, 0.03, 0, 0.03, 0.12, 0.12, 0x1a1a1a],
+    [0.14, -0.03, 0, 0.14, 0.16, 0.16, 0x2a2c22],
+    [0.14, -0.03, 0, 0.15, 0.04, 0.17, 0xe8b020],
+    [0, -0.1, 0, 0.06, 0.1, 0.07, 0x1a1a1a],
+    [-0.14, 0, 0, 0.2, 0.09, 0.07, 0x4a5236],
+  ],
+  plasma: [
+    [0.16, 0.02, 0, 0.38, 0.1, 0.1, 0x2a3a4a],
+    [0.42, 0.03, 0, 0.2, 0.07, 0.07, 0x1a2430],
+    [0.54, 0.03, 0, 0.06, 0.09, 0.09, 0x40e0ff, true],
+    [0.2, 0.03, 0.055, 0.26, 0.03, 0.01, 0x40e0ff, true],
+    [0.2, 0.03, -0.055, 0.26, 0.03, 0.01, 0x40e0ff, true],
+    [0.1, -0.11, 0, 0.1, 0.1, 0.06, 0x40e0ff, true],
+    [0, -0.08, 0, 0.06, 0.1, 0.07, 0x1a1a1a],
+    [-0.14, 0, 0, 0.2, 0.09, 0.07, 0x2a3a4a],
+  ],
+  cryo: [
+    [0.14, 0.02, 0, 0.34, 0.11, 0.11, 0x5a7a8a],
+    [0.38, 0.03, 0, 0.18, 0.08, 0.08, 0x3a4a56],
+    [0.49, 0.03, 0, 0.05, 0.12, 0.12, 0xa8ecff, true],
+    [0.12, 0.12, 0, 0.16, 0.08, 0.08, 0xd8f4ff],
+    [0.12, 0.12, 0, 0.17, 0.02, 0.09, 0x3a4a56],
+    [0, -0.08, 0, 0.06, 0.1, 0.07, 0x1a1a1a],
+    [-0.12, 0, 0, 0.18, 0.09, 0.07, 0x5a7a8a],
+  ],
+  acidgun: [
+    [0.12, 0.02, 0, 0.3, 0.1, 0.1, 0x3a5a2a],
+    [0.36, 0.03, 0, 0.2, 0.06, 0.06, 0x2a2a2a],
+    [0.47, 0.03, 0, 0.04, 0.08, 0.08, 0x8aff4a, true],
+    [0.14, 0.13, 0, 0.14, 0.12, 0.12, 0x8aff4a, true],
+    [0.14, 0.13, 0, 0.16, 0.02, 0.13, 0x2a2a2a],
+    [0, -0.08, 0, 0.06, 0.1, 0.07, 0x1a1a1a],
+    [-0.12, 0, 0, 0.18, 0.09, 0.07, 0x3a5a2a],
+  ],
   knife: [
     [0, 0, 0, 0.13, 0.05, 0.05, 0x1a1a1a],
     [-0.02, 0, 0, 0.02, 0.055, 0.055, 0x2e2e32],
@@ -74,6 +135,53 @@ export const GUN_MODELS = {
   ],
 };
 const gunLen = (m) => Math.max(...m.map((p) => p[0] + p[3] / 2)) - Math.min(...m.map((p) => p[0] - p[3] / 2));
+// comprimento de cada arma na mão (armas sem modelo — granadas e estruturas — não aparecem na mão)
+export const GUN_LEN = {};
+for (const id of Object.keys(GUN_MODELS)) if (id !== 'knife' && id !== 'axe') GUN_LEN[id] = +gunLen(GUN_MODELS[id]).toFixed(2);
+
+// ---------------------------------------------------------------- armadilhas e defesas (base fixa + cabeça que gira)
+// Peça: [dx, dy, dz, sx, sy, sz, cor, brilho?] — mesmo formato dos modelos do mundo; frente da cabeça = +z
+const towerBase = (c) => [
+  [0, 0.12, 0, 0.82, 0.24, 0.82, 0x3a3e46], [0, 0.26, 0, 0.66, 0.06, 0.66, c],
+  [0, 0.6, 0, 0.26, 0.66, 0.26, 0x4a4e56], ...[[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([a, b]) => [a * 0.36, 0.06, b * 0.36, 0.14, 0.12, 0.14, 0x1a1a1e]),
+  [0, 0.25, 0.42, 0.3, 0.06, 0.02, 0xe8b020],
+];
+export const TRAP_MODELS = {
+  proxmine: { base: [
+    [0, 0.05, 0, 0.56, 0.1, 0.56, 0x3a3a2a], [0, 0.11, 0, 0.42, 0.04, 0.42, 0x4a4a36], [0.16, 0.2, 0.16, 0.03, 0.2, 0.03, 0x1a1a1a],
+    [0.16, 0.31, 0.16, 0.05, 0.05, 0.05, 0xff3020, true], [0, 0.14, 0, 0.16, 0.03, 0.16, 0x1a1a1a],
+  ] },
+  spikes: { base: [
+    [0, 0.04, 0, 0.94, 0.08, 0.94, 0x3a2e24], [0, 0.09, 0, 0.86, 0.03, 0.12, 0x5a4a3a], [0, 0.09, 0, 0.12, 0.03, 0.86, 0x5a4a3a],
+    ...[-1, 0, 1].flatMap((a) => [-1, 0, 1].map((b) => [a * 0.3, 0.24, b * 0.3, 0.07, 0.34, 0.07, (a + b) % 2 ? 0xb8bcc4 : 0x9aa0a8])),
+    ...[-1, 0, 1].flatMap((a) => [-1, 0, 1].map((b) => [a * 0.3, 0.43, b * 0.3, 0.035, 0.06, 0.035, 0xe8ecf2])),
+  ] },
+  efence: { base: [
+    [-0.42, 0.6, 0, 0.1, 1.2, 0.1, 0x3a3e46], [0.42, 0.6, 0, 0.1, 1.2, 0.1, 0x3a3e46],
+    [-0.42, 0.05, 0, 0.22, 0.1, 0.22, 0x1a1a1e], [0.42, 0.05, 0, 0.22, 0.1, 0.22, 0x1a1a1e],
+    ...[0.35, 0.7, 1.05].map((y) => [0, y, 0, 0.76, 0.025, 0.025, 0xffd84a, true]),
+    ...[0.35, 0.7, 1.05].flatMap((y) => [[-0.36, y, 0, 0.05, 0.06, 0.06, 0xe8e0c8], [0.36, y, 0, 0.05, 0.06, 0.06, 0xe8e0c8]]),
+    [0, 0.85, 0.03, 0.22, 0.16, 0.01, 0xe8b020], [0, 0.85, 0.036, 0.06, 0.1, 0.01, 0x1a1a1a],
+  ] },
+  ltower: { base: towerBase(0xd82020), head: [
+    [0, 1.02, 0, 0.42, 0.26, 0.5, 0x2a2c32], [0, 1.02, 0.3, 0.12, 0.12, 0.18, 0x1a1a1e], [0, 1.02, 0.4, 0.09, 0.09, 0.02, 0xff2a20, true],
+    [0, 1.18, -0.05, 0.3, 0.06, 0.3, 0xd82020], [0.23, 1.02, 0, 0.04, 0.16, 0.3, 0x4a4e56], [-0.23, 1.02, 0, 0.04, 0.16, 0.3, 0x4a4e56],
+  ] },
+  ftower: { base: towerBase(0xe8701a), head: [
+    [0, 1.0, -0.04, 0.38, 0.3, 0.42, 0x5a4a3a], [0, 1.0, 0.28, 0.14, 0.14, 0.24, 0x2a2a2a], [0, 1.0, 0.41, 0.06, 0.06, 0.02, 0x40a0ff, true],
+    [0, 1.22, -0.1, 0.24, 0.14, 0.24, 0xb03a1a], [0, 1.22, -0.1, 0.25, 0.03, 0.25, 0xe8b020],
+  ] },
+  itower: { base: towerBase(0x5ac8ff), head: [
+    [0, 0.98, 0, 0.36, 0.14, 0.36, 0x3a4a56], [0, 1.2, 0, 0.18, 0.36, 0.18, 0xa8ecff, true], [0, 1.2, 0, 0.26, 0.14, 0.1, 0x7ad8ff, true],
+    [0, 1.42, 0, 0.08, 0.12, 0.08, 0xffffff, true], [0, 1.0, 0.22, 0.1, 0.1, 0.12, 0x5a7a8a],
+  ] },
+};
+// granadas especiais: mesmo corpo da granada comum com outras cores e faixa luminosa
+const grenadeLike = (body, band, cap = 0x6a6e72) => [
+  [0, 0, 0, 0.24, 0.27, 0.24, body], [0, 0, 0, 0.29, 0.18, 0.18, body], [0, 0, 0, 0.18, 0.18, 0.29, body],
+  [0, 0.045, 0, 0.3, 0.025, 0.3, band, true], [0, -0.05, 0, 0.3, 0.025, 0.3, band, true],
+  [0, 0.165, 0, 0.1, 0.07, 0.1, cap], [0, 0.1, 0.135, 0.05, 0.17, 0.022, 0x8a8e92], [-0.09, 0.2, 0, 0.08, 0.08, 0.016, 0xc8ccd4],
+];
 
 // ataques corpo a corpo: a faca já vem com todos; o machado substitui a faca quando liberado
 export const MELEE = {
@@ -207,9 +315,32 @@ const MODELS = {
     ...[-1, 0, 1].flatMap((i) => [-0.02, -0.07, -0.12].map((y) => [i * 0.05, y, 0.052, 0.035, 0.03, 0.01, 0x5a5e66])),
     [0, -0.16, 0.052, 0.12, 0.02, 0.01, 0x3a3e46],
   ],
+  egrenade: grenadeLike(0x2a4a8a, 0x40c8ff, 0x3a3e46),
+  igrenade: grenadeLike(0x8a3a1a, 0xff8a20),
+  fgrenade: grenadeLike(0xc8e0ec, 0x40a8ff, 0x8aa8c0),
+  tgrenade: grenadeLike(0x4a6a2a, 0x9aff4a),
+  boots: [
+    ...[-0.11, 0.11].flatMap((x) => [
+      [x, -0.02, 0.02, 0.17, 0.26, 0.2, 0x2a2a2e], [x, -0.17, 0.06, 0.19, 0.08, 0.32, 0x1a1a1e],
+      [x, -0.06, 0.17, 0.17, 0.12, 0.08, 0x2a2a2e], [x + (x > 0 ? 0.09 : -0.09), -0.02, 0.02, 0.01, 0.2, 0.16, 0x40c8ff, true],
+      [x, 0.1, 0.02, 0.18, 0.04, 0.21, 0x3a3a40],
+    ]),
+  ],
+  exo: [
+    [0, 0.12, -0.06, 0.08, 0.5, 0.06, 0x5a5e66], [0, 0.34, -0.04, 0.42, 0.08, 0.1, 0x5a5e66], [0, -0.1, -0.04, 0.36, 0.07, 0.1, 0x5a5e66],
+    [0.2, 0.18, 0.02, 0.06, 0.32, 0.06, 0x8a8e96], [-0.2, 0.18, 0.02, 0.06, 0.32, 0.06, 0x8a8e96],
+    [0.14, -0.3, 0, 0.06, 0.36, 0.06, 0x8a8e96], [-0.14, -0.3, 0, 0.06, 0.36, 0.06, 0x8a8e96],
+    [0, 0.2, 0.02, 0.12, 0.12, 0.03, 0xffc107, true], [0.2, 0.36, 0.02, 0.08, 0.08, 0.08, 0xe8b020], [-0.2, 0.36, 0.02, 0.08, 0.08, 0.08, 0xe8b020],
+  ],
 };
+for (const [id, m] of Object.entries(TRAP_MODELS)) {
+  // catálogo: base + cabeça; centro vertical na origem
+  const all = [...m.base, ...(m.head || [])];
+  const top = Math.max(...all.map((p) => p[1] + p[4] / 2));
+  MODELS[id] = all.map(([x, y, z, ...r]) => [x, y - top / 2, z, ...r]);
+}
 // armas e lâminas deitadas: o modelo da mão vira o modelo do chão (comprimento no eixo x)
-for (const id of ['pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'uzi', 'rocket']) {
+for (const id of ['pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'uzi', 'rocket', 'lmg', 'flamer', 'glauncher', 'plasma', 'cryo', 'acidgun']) {
   const m = GUN_MODELS[id];
   const lo = Math.min(...m.map((p) => p[0] - p[3] / 2));
   const c = lo + gunLen(m) / 2;
@@ -239,9 +370,30 @@ export const ITEMS = {
   binoculars: { name: 'Binóculos', cat: 'util', icon: 'binoculars', ring: 0x3aa8ff, rarity: 'Incomum', desc: 'Marca todos os inimigos e amplia o radar por 15 s (para o time).', get: 'Mapa e caixas de madeira' },
   flashlight: { name: 'Lanterna tática', cat: 'util', icon: 'flashlight', ring: 0xffe060, rarity: 'Incomum', desc: 'Feixe de luz por 45 s: ofusca e deixa 35% mais lento quem estiver nele.', get: 'Mapa (mais comum no cemitério)' },
   radio: { name: 'Rádio comunicador', cat: 'util', icon: 'radio', ring: 0x60ff70, rarity: 'Épica', desc: 'Pede ataque aéreo no maior grupo de inimigos. Sem inimigos, pede suprimentos.', get: 'Mapa a partir da onda 3 e caixas' },
+  // ---- expansão ----
+  uzi: { name: 'Submetralhadora', cat: 'weapon', icon: 'target', ring: 0xa8acb4, rarity: 'Comum', weapon: 'uzi', desc: 'Cadência altíssima e pente de 40. O recuo cresce a cada disparo seguido.', get: 'Multiplicador x2 · munição nas caixas' },
+  rocket: { name: 'Lança-foguetes', cat: 'weapon', icon: 'target', ring: 0x8aa080, rarity: 'Épica', weapon: 'rocket', desc: 'Foguete com dano em área; com a mira travada, persegue o alvo. 2 por carga.', get: 'Multiplicador x14 · munição nas caixas' },
+  lmg: { name: 'Metralhadora pesada', cat: 'weapon', icon: 'target', ring: 0xb0b48a, rarity: 'Épica', weapon: 'lmg', desc: 'Cinto de 100 tiros para segurar hordas. Recuo forte e você anda mais devagar atirando.', get: 'Multiplicador x15 · munição nas caixas' },
+  flamer: { name: 'Lança-chamas', cat: 'weapon', icon: 'flame', ring: 0xff7a30, rarity: 'Épica', weapon: 'flamer', desc: 'Jato de fogo em cone: incendeia inimigos, deixa chamas no chão e detona barris.', get: 'Multiplicador x12 · combustível nas caixas' },
+  glauncher: { name: 'Lança-granadas', cat: 'weapon', icon: 'burst', ring: 0xc8b060, rarity: 'Épica', weapon: 'glauncher', desc: 'Granadas em arco que explodem no impacto e ricocheteiam até 2 vezes nas paredes.', get: 'Multiplicador x17 · munição nas caixas' },
+  plasma: { name: 'Rifle de plasma', cat: 'weapon', icon: 'bolt', ring: 0x40e0ff, rarity: 'Lendária', weapon: 'plasma', desc: 'Disparos de energia que atravessam 2 inimigos e estouram no impacto. Usa células.', get: 'Multiplicador x19 · células nas caixas' },
+  cryo: { name: 'Canhão criogênico', cat: 'weapon', icon: 'snow', ring: 0xa8ecff, rarity: 'Rara', weapon: 'cryo', desc: 'Projéteis congelantes: deixam mais lento e congelam inimigos comuns. Chefões só ficam lentos.', get: 'Multiplicador x9 · munição nas caixas' },
+  acidgun: { name: 'Lança-ácido', cat: 'weapon', icon: 'virus', ring: 0x8aff4a, rarity: 'Rara', weapon: 'acidgun', desc: 'Bolhas químicas: corroem por 4 s, deixam poças e enfraquecem escudos.', get: 'Multiplicador x6 · munição nas caixas' },
+  egrenade: { name: 'Granada EMP', cat: 'supply', icon: 'bolt', ring: 0x40c8ff, rarity: 'Rara', weapon: 'egrenade', desc: 'Pulso eletromagnético: desliga inimigos mecânicos por 4 s e atordoa o resto.', get: 'Multiplicador x13 · pacotes nas caixas' },
+  igrenade: { name: 'Granada incendiária', cat: 'supply', icon: 'flame', ring: 0xff8a20, rarity: 'Incomum', weapon: 'igrenade', desc: 'Espalha fogo por 6 s: queima quem passa e detona barris.', get: 'Multiplicador x5 · pacotes nas caixas' },
+  fgrenade: { name: 'Granada congelante', cat: 'supply', icon: 'snow', ring: 0x7ad8ff, rarity: 'Incomum', weapon: 'fgrenade', desc: 'Congela inimigos comuns na área e deixa os fortes lentos.', get: 'Multiplicador x8 · pacotes nas caixas' },
+  tgrenade: { name: 'Granada tóxica', cat: 'supply', icon: 'spore', ring: 0x9aff4a, rarity: 'Incomum', weapon: 'tgrenade', desc: 'Nuvem venenosa por 8 s que corrói a horda (não fere o time).', get: 'Multiplicador x14 · pacotes nas caixas' },
+  boots: { name: 'Botas de velocidade', cat: 'gear', icon: 'run', ring: 0x40c8ff, rarity: 'Rara', desc: '+15% de velocidade permanente (até cair).', get: 'Mapa e caixas de madeira' },
+  exo: { name: 'Exoesqueleto temporário', cat: 'gear', icon: 'fist', ring: 0xffc107, rarity: 'Épica', desc: 'Por 20 s: -45% de dano recebido, golpes 60% mais fortes e imune a lentidão.', get: 'Caixas de madeira a partir da onda 4' },
+  proxmine: { name: 'Mina de proximidade', cat: 'trap', icon: 'target', ring: 0xff3020, rarity: 'Rara', weapon: 'proxmine', desc: 'Detecta a 2,4 m, apita e explode em área grande (4 m).', get: 'Multiplicador x10 · cargas nas caixas' },
+  spikes: { name: 'Barreira de espinhos', cat: 'trap', icon: 'shield', ring: 0xb8bcc4, rarity: 'Incomum', weapon: 'spikes', desc: 'Andável: fere e atrasa quem passa. Gasta com o uso (durabilidade 240).', get: 'Multiplicador x4 · cargas nas caixas' },
+  efence: { name: 'Cerca elétrica', cat: 'trap', icon: 'bolt', ring: 0xffd84a, rarity: 'Rara', weapon: 'efence', desc: 'Bloqueia a passagem e dá choques que atordoam e atrasam (40 descargas).', get: 'Multiplicador x11 · cargas nas caixas' },
+  ltower: { name: 'Torre de laser', cat: 'trap', icon: 'turret', ring: 0xff3020, rarity: 'Lendária', weapon: 'ltower', desc: 'Feixe contínuo no inimigo à vista a até 9 m. Bateria de 90 s.', get: 'Multiplicador x20' },
+  ftower: { name: 'Torre de fogo', cat: 'trap', icon: 'flame', ring: 0xff7a30, rarity: 'Épica', weapon: 'ftower', desc: 'Lança chamas em quem chega a 4,5 m e incendeia. Bateria de 90 s.', get: 'Multiplicador x18' },
+  itower: { name: 'Torre de gelo', cat: 'trap', icon: 'snow', ring: 0x5ac8ff, rarity: 'Épica', weapon: 'itower', desc: 'Dispara projéteis congelantes a até 8 m. Bateria de 90 s.', get: 'Multiplicador x16' },
 };
-export const ITEM_ORDER = ['medkit', 'ammo', 'drink', 'grenade', 'supply', 'dynamite', 'pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'vest', 'helmet', 'backpack', 'binoculars', 'flashlight', 'radio'];
-export const ITEM_CATS = { supply: 'Suprimento', weapon: 'Arma', gear: 'Proteção', util: 'Utilitário' };
+export const ITEM_ORDER = ['medkit', 'ammo', 'drink', 'grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'supply', 'dynamite', 'pistol', 'uzi', 'rifle', 'lmg', 'shotgun', 'sniper', 'rocket', 'glauncher', 'flamer', 'plasma', 'cryo', 'acidgun', 'axe', 'knife', 'vest', 'helmet', 'boots', 'exo', 'backpack', 'binoculars', 'flashlight', 'radio', 'proxmine', 'spikes', 'efence', 'ltower', 'ftower', 'itower'];
+export const ITEM_CATS = { supply: 'Suprimento', weapon: 'Arma', gear: 'Proteção', util: 'Utilitário', trap: 'Armadilha' };
 for (const id of ITEM_ORDER) {
   const it = ITEMS[id];
   it.id = id;
@@ -292,6 +444,17 @@ export const GEAR = {
   flashlight: [
     ['torso', 0.21, 0.44, 0.2, 0.08, 0.08, 0.14, 0x1c1c1e],
     ['torso', 0.21, 0.44, 0.275, 0.065, 0.065, 0.012, 0xffe060, 0, 0, true],
+  ],
+  boots: [
+    ['legL', 0, -0.36, 0.03, 0.25, 0.2, 0.31, 0x2a2a2e], ['legR', 0, -0.36, 0.03, 0.25, 0.2, 0.31, 0x2a2a2e],
+    ['legL', 0.128, -0.36, 0.03, 0.01, 0.14, 0.22, 0x40c8ff, 0, 0, true], ['legR', -0.128, -0.36, 0.03, 0.01, 0.14, 0.22, 0x40c8ff, 0, 0, true],
+  ],
+  exo: [
+    ['torso', 0, 0.3, -0.2, 0.1, 0.5, 0.06, 0x5a5e66], ['torso', 0, 0.52, -0.18, 0.6, 0.08, 0.1, 0x8a8e96],
+    ['torso', 0, 0.3, 0.19, 0.14, 0.14, 0.03, 0xffc107, 0, 0, true],
+    ['armL', 0.1, -0.2, 0, 0.04, 0.4, 0.06, 0x8a8e96], ['armR', -0.1, -0.2, 0, 0.04, 0.4, 0.06, 0x8a8e96],
+    ['legL', 0.12, -0.2, 0, 0.04, 0.4, 0.06, 0x8a8e96], ['legR', -0.12, -0.2, 0, 0.04, 0.4, 0.06, 0x8a8e96],
+    ['legL', 0.13, -0.02, 0, 0.05, 0.05, 0.05, 0xe8b020], ['legR', -0.13, -0.02, 0, 0.05, 0.05, 0.05, 0xe8b020],
   ],
 };
 

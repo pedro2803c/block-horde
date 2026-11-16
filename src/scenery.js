@@ -9,6 +9,7 @@
 // beh:  static (estático) · destruct (destrutível) · interact (interativo) · cover (cobertura)
 
 import { SCENERY2, TERRAIN_PAINT2, TERRAIN_CODE2, BELT_DIR } from './scenery2.js';
+import { SCENERY3, TERRAIN_PAINT3, TERRAIN_CODE3 } from './scenery3.js';
 
 const R = (r, a, b) => a + (b - a) * r();
 
@@ -382,9 +383,9 @@ export const SCENERY = {
   sandbags: { n: 35, ch: 'Q', name: 'Sacos de areia', cat: 'urban', beh: 'cover', coll: 'low', hp: 300, boomOnly: true, orient: true, desc: 'Cobertura resistente: só explosões desgastam (perde a fileira de cima).', model: sandbags },
 };
 // expansão temática (arenas reconstruídas)
-Object.assign(SCENERY, SCENERY2);
-Object.assign(TERRAIN_CODE, TERRAIN_CODE2);
-Object.assign(TERRAIN_PAINT, TERRAIN_PAINT2);
+Object.assign(SCENERY, SCENERY2, SCENERY3);
+Object.assign(TERRAIN_CODE, TERRAIN_CODE2, TERRAIN_CODE3);
+Object.assign(TERRAIN_PAINT, TERRAIN_PAINT2, TERRAIN_PAINT3);
 export { BELT_DIR };
 // ordem do catálogo (variações escondidas, como as outras direções da esteira, ficam de fora)
 export const SCENERY_ORDER = Object.keys(SCENERY).filter((id) => !SCENERY[id].hidden).sort((a, b) => SCENERY[a].n - SCENERY[b].n);
@@ -393,7 +394,7 @@ for (const id of Object.keys(SCENERY)) {
   SCENERY[id].id = id;
   SCENERY_BY_CHAR[SCENERY[id].ch] = SCENERY[id];
 }
-export const SCENERY_CATS = { terrain: 'Terreno', structure: 'Estrutura', nature: 'Natureza', urban: 'Urbano' };
+export const SCENERY_CATS = { terrain: 'Terreno', structure: 'Estrutura', nature: 'Natureza', urban: 'Urbano', modular: 'Blocos modulares' };
 export const SCENERY_BEH = { static: 'Estático', destruct: 'Destrutível', interact: 'Interativo', cover: 'Cobertura' };
 export { TERRAIN_PAINT };
 

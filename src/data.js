@@ -1,44 +1,113 @@
 // Dados do jogo: armas, desbloqueios por multiplicador, inimigos, sobreviventes e arenas.
 import { makeMap } from './scenery.js';
+import { modCh } from './scenery3.js';
 
-// kind: gun (disparo instantâneo), throw (projétil arremessado), rocket (projétil reto), place (objeto colocado no chão)
+// kind: gun (disparo instantâneo), throw (projétil arremessado), rocket (projétil reto), place (objeto colocado no chão),
+//       flame (jato contínuo em cone), lob (granada lançada em arco), bolt (projétil de energia/gelo), glob (bolha ácida em arco)
+// mag/reload: carregador e tempo de recarga (s); shell: recarrega um cartucho por vez · bloom: dispersão extra por disparo (recuo progressivo)
+// el: elemento aplicado ao acertar (fire, ice, acid, energy) · cat: categoria mostrada no arsenal
 export const WEAPONS = {
-  pistol: { name: 'Pistola', kind: 'gun', dmg: 12, rate: 0.3, spread: 0.035, range: 22, pellets: 1, pierce: 0, start: Infinity, pack: 0, sound: 'shot_pistol', color: 0x3a3a40 },
-  uzi: { name: 'Submetralhadora', kind: 'gun', dmg: 9, rate: 0.085, spread: 0.1, range: 18, pellets: 1, pierce: 0, start: 160, pack: 120, sound: 'shot_smg', color: 0x2a2a2e },
-  grenade: { name: 'Granadas', kind: 'throw', dmg: 130, rate: 0.65, radius: 3.6, start: 6, pack: 5, sound: 'throw', color: 0x3f5a2a },
-  shotgun: { name: 'Escopeta', kind: 'gun', dmg: 10, rate: 0.75, spread: 0.3, range: 11, pellets: 7, pierce: 1, start: 24, pack: 16, sound: 'shot_shotgun', color: 0x5a3a22 },
-  barrel: { name: 'Barril explosivo', kind: 'place', place: 'barrel', rate: 0.5, start: 4, pack: 3, sound: 'crate', color: 0xb02a1a },
-  rifle: { name: 'Fuzil de assalto', kind: 'gun', dmg: 34, rate: 0.13, spread: 0.025, range: 30, pellets: 1, pierce: 3, start: 90, pack: 60, sound: 'shot_rifle', color: 0xc6b289 },
-  sniper: { name: 'Rifle de precisão', kind: 'gun', dmg: 120, rate: 1.05, spread: 0.004, range: 42, pellets: 1, pierce: 4, knock: 3, heavy: true, start: 20, pack: 10, sound: 'shot_sniper', color: 0x4a5a2a },
-  dynamite: { name: 'Dinamite', kind: 'throw', proj: 'dynamite', dmg: 230, rate: 0.9, radius: 5.4, fuse: 2.0, start: 3, pack: 2, sound: 'throw', color: 0xd02a20 },
-  barricade: { name: 'Barricada', kind: 'place', place: 'barricade', rate: 0.4, start: 5, pack: 4, sound: 'crate', color: 0x8a6a3a },
-  mine: { name: 'Minas', kind: 'place', place: 'mine', rate: 0.4, start: 5, pack: 4, sound: 'beep', color: 0x2a2a2a },
-  rocket: { name: 'Lança-foguetes', kind: 'rocket', dmg: 150, rate: 0.95, radius: 3.8, speed: 22, start: 8, pack: 6, sound: 'shot_sniper', color: 0x3a4a3a },
+  pistol: { name: 'Pistola', cat: 'Pistola', kind: 'gun', dmg: 12, rate: 0.3, spread: 0.035, range: 22, pellets: 1, pierce: 0, mag: 12, reload: 1.0, start: Infinity, pack: 0, sound: 'shot_pistol', color: 0x3a3a40 },
+  uzi: { name: 'Submetralhadora', cat: 'Submetralhadora', kind: 'gun', dmg: 9, rate: 0.085, spread: 0.07, bloom: 0.012, bloomMax: 0.12, range: 18, pellets: 1, pierce: 0, mag: 40, reload: 1.6, start: 160, pack: 120, sound: 'shot_smg', color: 0x2a2a2e },
+  grenade: { name: 'Granadas', cat: 'Granada', kind: 'throw', dmg: 130, rate: 0.65, radius: 3.6, start: 6, pack: 5, sound: 'throw', color: 0x3f5a2a },
+  shotgun: { name: 'Escopeta tática', cat: 'Curta distância', kind: 'gun', dmg: 10, rate: 0.75, spread: 0.3, range: 11, pellets: 7, pierce: 1, mag: 6, reload: 0.42, shell: true, start: 24, pack: 16, sound: 'shot_shotgun', color: 0x5a3a22 },
+  barrel: { name: 'Barril explosivo', cat: 'Construção', kind: 'place', place: 'barrel', rate: 0.5, start: 4, pack: 3, sound: 'crate', color: 0xb02a1a },
+  rifle: { name: 'Fuzil de assalto MK-5', cat: 'Rifle de assalto', kind: 'gun', dmg: 34, rate: 0.13, spread: 0.025, bloom: 0.004, bloomMax: 0.04, range: 30, pellets: 1, pierce: 3, mag: 30, reload: 1.8, start: 90, pack: 60, sound: 'shot_rifle', color: 0xc6b289 },
+  sniper: { name: 'Rifle de precisão', cat: 'Sniper', kind: 'gun', dmg: 120, rate: 1.05, spread: 0.004, range: 42, pellets: 1, pierce: 4, knock: 3, heavy: true, mag: 5, reload: 2.4, start: 20, pack: 10, sound: 'shot_sniper', color: 0x4a5a2a },
+  dynamite: { name: 'Dinamite', cat: 'Granada', kind: 'throw', proj: 'dynamite', dmg: 230, rate: 0.9, radius: 5.4, fuse: 2.0, start: 3, pack: 2, sound: 'throw', color: 0xd02a20 },
+  barricade: { name: 'Barricada', cat: 'Construção', kind: 'place', place: 'barricade', rate: 0.4, start: 5, pack: 4, sound: 'crate', color: 0x8a6a3a },
+  mine: { name: 'Minas terrestres', cat: 'Armadilha', kind: 'place', place: 'mine', rate: 0.4, start: 5, pack: 4, sound: 'beep', color: 0x2a2a2a },
+  rocket: { name: 'Lança-foguetes', cat: 'Explosiva', kind: 'rocket', dmg: 150, rate: 0.95, radius: 3.8, speed: 22, mag: 2, reload: 2.0, start: 8, pack: 6, sound: 'shot_sniper', color: 0x3a4a3a },
+  // ---- expansão do arsenal ----
+  lmg: { name: 'Metralhadora pesada', cat: 'Suporte pesado', kind: 'gun', dmg: 20, rate: 0.075, spread: 0.05, bloom: 0.007, bloomMax: 0.1, range: 26, pellets: 1, pierce: 1, knock: 1.4, mag: 100, reload: 3.4, slowFire: 0.55, kick: 0.6, start: 200, pack: 150, sound: 'shot_lmg', color: 0x3a3c34 },
+  flamer: { name: 'Lança-chamas', cat: 'Especial', kind: 'flame', dmg: 7, rate: 0.06, range: 6.2, arc: 0.55, el: 'fire', burn: { dps: 12, t: 3 }, mag: 100, reload: 2.6, start: 300, pack: 200, sound: 'flame', color: 0xb03a1a },
+  glauncher: { name: 'Lança-granadas', cat: 'Explosiva', kind: 'lob', dmg: 110, rate: 0.7, radius: 3.2, speed: 15, bounces: 2, mag: 6, reload: 2.8, start: 12, pack: 8, sound: 'shot_gl', color: 0x4a5236 },
+  plasma: { name: 'Rifle de plasma', cat: 'Energia', kind: 'bolt', dmg: 48, rate: 0.22, speed: 34, pierce: 2, blast: 1.3, el: 'energy', glow: 0x40e0ff, mag: 20, reload: 2.2, start: 60, pack: 40, sound: 'shot_plasma', color: 0x2a3a4a },
+  cryo: { name: 'Canhão criogênico', cat: 'Controle', kind: 'bolt', dmg: 12, rate: 0.16, speed: 26, pierce: 0, el: 'ice', chill: 30, glow: 0xa8ecff, mag: 30, reload: 2.0, start: 90, pack: 60, sound: 'shot_cryo', color: 0x5a7a8a },
+  acidgun: { name: 'Lança-ácido', cat: 'Corrosiva', kind: 'glob', dmg: 16, rate: 0.35, el: 'acid', corrode: { dps: 12, t: 4 }, puddle: { r: 1.2, life: 4, dps: 10 }, mag: 12, reload: 2.2, start: 40, pack: 30, sound: 'spit', color: 0x3a5a2a },
+  egrenade: { name: 'Granada EMP', cat: 'Granada', kind: 'throw', proj: 'g_emp', dmg: 20, rate: 0.65, radius: 5, start: 3, pack: 2, sound: 'throw', color: 0x2a6ad8 },
+  igrenade: { name: 'Granada incendiária', cat: 'Granada', kind: 'throw', proj: 'g_fire', dmg: 40, rate: 0.65, radius: 3, area: { life: 6, dps: 16 }, start: 3, pack: 2, sound: 'throw', color: 0xd85a1a },
+  fgrenade: { name: 'Granada congelante', cat: 'Granada', kind: 'throw', proj: 'g_frost', dmg: 30, rate: 0.65, radius: 3.6, start: 3, pack: 2, sound: 'throw', color: 0x7ad8ff },
+  tgrenade: { name: 'Granada tóxica', cat: 'Granada', kind: 'throw', proj: 'g_toxic', dmg: 10, rate: 0.65, radius: 3, area: { life: 8, dps: 14 }, start: 3, pack: 2, sound: 'throw', color: 0x6ab02a },
+  proxmine: { name: 'Mina de proximidade', cat: 'Armadilha', kind: 'place', place: 'proxmine', rate: 0.4, start: 3, pack: 2, sound: 'beep', color: 0x3a3a2a },
+  spikes: { name: 'Barreira de espinhos', cat: 'Armadilha', kind: 'place', place: 'spikes', rate: 0.4, start: 4, pack: 3, sound: 'crate', color: 0x6a6a70 },
+  efence: { name: 'Cerca elétrica', cat: 'Armadilha', kind: 'place', place: 'efence', rate: 0.4, start: 3, pack: 2, sound: 'crate', color: 0xe8b020 },
+  ltower: { name: 'Torre de laser', cat: 'Defesa', kind: 'place', place: 'ltower', rate: 0.6, start: 1, pack: 1, sound: 'crate', color: 0xd82020 },
+  ftower: { name: 'Torre de fogo', cat: 'Defesa', kind: 'place', place: 'ftower', rate: 0.6, start: 1, pack: 1, sound: 'crate', color: 0xe8701a },
+  itower: { name: 'Torre de gelo', cat: 'Defesa', kind: 'place', place: 'itower', rate: 0.6, start: 1, pack: 1, sound: 'crate', color: 0x5ac8ff },
 };
-export const WEAPON_ORDER = ['pistol', 'uzi', 'grenade', 'shotgun', 'barrel', 'rifle', 'sniper', 'barricade', 'mine', 'dynamite', 'rocket'];
+// Estruturas posicionáveis: hp = durabilidade · block: ocupa a célula (a horda ataca) · life: bateria (s) · range: detecção
+export const TRAPS = {
+  barricade: { hp: 260, block: true },
+  barrel: { hp: 14 },
+  mine: { hp: 14, range: 0.7 },
+  proxmine: { hp: 14, range: 2.4, radius: 4, dmg: 160, delay: 0.5 },
+  spikes: { hp: 240, range: 0.65, dmg: 18, tick: 0.5, slow: 0.5, wear: 8 },
+  efence: { hp: 200, block: true, range: 1.45, dmg: 14, cd: 0.9, stun: 0.4, charges: 40 },
+  ltower: { hp: 220, block: true, range: 9, dps: 34, life: 90 },
+  ftower: { hp: 220, block: true, range: 4.5, dmg: 6, cd: 0.15, arc: 0.7, life: 90 },
+  itower: { hp: 220, block: true, range: 8, cd: 0.7, life: 90 },
+};
+// grupos das teclas 1–9, 0 e -: apertar de novo a mesma tecla alterna entre as armas do grupo
+export const WEAPON_GROUPS = [
+  ['pistol'], ['uzi'], ['shotgun'], ['rifle', 'lmg'], ['sniper', 'plasma'], ['rocket', 'glauncher'], ['flamer', 'cryo', 'acidgun'],
+  ['grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'dynamite'], ['barrel', 'barricade', 'spikes', 'efence'], ['mine', 'proxmine'], ['ltower', 'ftower', 'itower'],
+];
+export const WEAPON_ORDER = WEAPON_GROUPS.flat();
 // teclas de atalho (solo): 1–9, 0 e -
 export const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-'];
 export const SLOT_CODES = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus'];
+// resistências elementais: multiplicador do efeito (dano contínuo, lentidão e congelamento). mech: sensível a EMP
+export const RESIST = {
+  guardian: { fire: 1.6, ice: 0.7 },
+  mechworker: { fire: 0.6, acid: 1.5, mech: true },
+  devourer: { acid: 0.6 },
+  general: { ice: 0.8 },
+  boss: { fire: 0.8 },
+  spore: { acid: 0.4, fire: 1.4 },
+  spitter: { acid: 0.5 },
+  wasp: { acid: 0.5, fire: 1.3 },
+  specter: { fire: 0.5, ice: 0.8, energy: 2.5 },
+  brute: { ice: 0.7 },
+  armored: { acid: 1.4 },
+  bat: { fire: 1.3 },
+};
 
 // Ao alcançar cada nível de multiplicador pela primeira vez, o time ganha o item permanentemente na partida.
 export const UNLOCKS = [
   { level: 2, weapon: 'uzi', text: 'Submetralhadora' },
   { level: 3, weapon: 'grenade', text: 'Granadas' },
-  { level: 4, weapon: 'shotgun', text: 'Escopeta' },
+  { level: 4, weapon: 'shotgun', text: 'Escopeta tática' },
+  { level: 4, weapon: 'spikes', text: 'Barreira de espinhos' },
   { level: 5, weapon: 'barrel', text: 'Barris explosivos' },
+  { level: 5, weapon: 'igrenade', text: 'Granada incendiária' },
   { level: 6, upgrade: 'pistolFast', text: 'Pistola: disparo rápido' },
-  { level: 7, weapon: 'rifle', text: 'Fuzil de assalto' },
+  { level: 6, weapon: 'acidgun', text: 'Lança-ácido' },
+  { level: 7, weapon: 'rifle', text: 'Fuzil de assalto MK-5' },
   { level: 8, weapon: 'barricade', text: 'Barricadas' },
+  { level: 8, weapon: 'fgrenade', text: 'Granada congelante' },
   { level: 9, upgrade: 'uziDmg', text: 'Submetralhadora: +40% de dano' },
-  { level: 10, weapon: 'mine', text: 'Minas' },
+  { level: 9, weapon: 'cryo', text: 'Canhão criogênico' },
+  { level: 10, weapon: 'mine', text: 'Minas terrestres' },
+  { level: 10, weapon: 'proxmine', text: 'Mina de proximidade' },
   { level: 11, weapon: 'sniper', text: 'Rifle de precisão' },
+  { level: 11, weapon: 'efence', text: 'Cerca elétrica' },
   { level: 12, upgrade: 'shotgunPellets', text: 'Escopeta: 11 projéteis' },
+  { level: 12, weapon: 'flamer', text: 'Lança-chamas' },
   { level: 13, weapon: 'dynamite', text: 'Dinamite' },
+  { level: 13, weapon: 'egrenade', text: 'Granada EMP' },
   { level: 14, weapon: 'rocket', text: 'Lança-foguetes' },
+  { level: 14, weapon: 'tgrenade', text: 'Granada tóxica' },
   { level: 15, upgrade: 'axe', wicon: 'axe', text: 'Machado (corpo a corpo)' },
+  { level: 15, weapon: 'lmg', text: 'Metralhadora pesada' },
   { level: 16, upgrade: 'bigBoom', text: 'Explosões maiores' },
+  { level: 16, weapon: 'itower', text: 'Torre de gelo' },
+  { level: 17, weapon: 'glauncher', text: 'Lança-granadas' },
   { level: 18, upgrade: 'rifleRail', text: 'Fuzil de assalto: atravessa 8 inimigos' },
+  { level: 18, weapon: 'ftower', text: 'Torre de fogo' },
+  { level: 19, weapon: 'plasma', text: 'Rifle de plasma' },
   { level: 20, upgrade: 'doubleAmmo', text: 'Caixas de munição em dobro' },
+  { level: 20, weapon: 'ltower', text: 'Torre de laser' },
 ];
 
 // Inimigos. body: forma do modelo (monsters.js). from: onda em que começa a aparecer; weight: frequência.
@@ -230,7 +299,7 @@ export const matchXp = (score, wave) => Math.round(score / 10 + wave * 20);
 export const ARENAS = [
   {
     id: 'praca', name: 'Cidade Abandonada', desc: 'Zona de quarentena: ruas rachadas, prédios tomados e carros abandonados.', floor: 'concrete',
-    theme: 'city', ambient: 'city', weather: 'hordealarm', boss: 'devourer', unlock: 1,
+    theme: 'city', ambient: 'city', weather: 'hordealarm', boss: 'devourer', unlock: 1, particles: ['dust', 'ash'],
     diff: { label: 'Média', tier: 1, hp: 1, speed: 1, count: 1 }, eventName: 'Alarme de horda',
     tip: 'Atire de longe nos carros, use as marquises (+alcance) e ligue o gerador para iluminar as ruas.', lampI: 14, lampsOff: true,
     light: { sky: 0x2e3a34, fog: 0x2e3a34, sun: 0xffe8c0, sunI: 2.2, hemi: 1.4 },
@@ -275,7 +344,7 @@ export const ARENAS = [
   },
   {
     id: 'armazem', name: 'Complexo Industrial', desc: 'Fábrica dos Mortos: esteiras, prensas, vapor e piso elétrico.', floor: 'industrial',
-    theme: 'factory', ambient: 'factory', weather: 'overload', boss: 'mechworker', unlock: 5,
+    theme: 'factory', ambient: 'factory', weather: 'overload', boss: 'mechworker', unlock: 5, particles: ['sparks', 'steam'],
     diff: { label: 'Alta', tier: 2, hp: 1.15, speed: 1.05, count: 1.1 }, eventName: 'Sobrecarga das máquinas',
     tip: 'Atraia a horda para prensas, vapor e piso elétrico. Cuidado com as esteiras.', lampI: 12,
     light: { sky: 0x221a13, fog: 0x2e2219, sun: 0xffb060, sunI: 1.85, hemi: 1.15 },
@@ -317,7 +386,7 @@ export const ARENAS = [
   },
   {
     id: 'vale', name: 'Floresta Sombria', desc: 'Território infectado: neblina, cogumelos luminosos e lagoa tóxica.', floor: 'wild',
-    theme: 'forest', ambient: 'forest', weather: 'toxicfog', boss: 'guardian', unlock: 10,
+    theme: 'forest', ambient: 'forest', weather: 'toxicfog', boss: 'guardian', unlock: 10, particles: ['spores'],
     diff: { label: 'Muito alta', tier: 3, hp: 1.28, speed: 1.08, count: 1.2 }, eventName: 'Névoa tóxica',
     shelters: [[6, 5, 9, 8], [35, 5, 38, 7]],
     tip: 'Na névoa tóxica, abrigue-se nas ruínas ou na cabana. A vegetação esconde emboscadas.', lampI: 8,
@@ -356,7 +425,7 @@ export const ARENAS = [
   },
   {
     id: 'distrito', name: 'Base Militar', desc: 'Última Resistência: muros, portões, holofotes e blindados.', floor: 'concrete',
-    theme: 'military', ambient: 'military', weather: 'alarm', boss: 'general', unlock: 15,
+    theme: 'military', ambient: 'military', weather: 'alarm', boss: 'general', unlock: 15, particles: ['dust'],
     diff: { label: 'Extrema', tier: 4, hp: 1.42, speed: 1.12, count: 1.3 }, eventName: 'Ataque de reforços',
     tip: 'Ligue o gerador, feche os portões e suba nas plataformas. Os reforços trocam de entrada.', lampI: 18,
     light: { sky: 0x141a18, fog: 0x161c1a, sun: 0xc8d8ff, sunI: 1.6, hemi: 1.0 },
@@ -393,7 +462,7 @@ export const ARENAS = [
   },
   {
     id: 'cemiterio', name: 'Necrópole', desc: 'Cemitério Velho elevado a necrópole: capela, criptas e covas que vomitam mortos.', floor: 'graveyard',
-    theme: 'graveyard', ambient: 'graveyard', weather: 'fog', boss: 'boss', unlock: 1,
+    theme: 'graveyard', ambient: 'graveyard', weather: 'fog', boss: 'boss', unlock: 1, particles: ['ash', 'motes'],
     diff: { label: 'Alta', tier: 2, hp: 1.12, speed: 1.04, count: 1.1 }, eventName: 'Neblina densa',
     tip: 'As covas vomitam mortos: não fique parado perto delas.', lampI: 6,
     light: { sky: 0x10141f, fog: 0x10141f, sun: 0x9ab0e0, sunI: 1.3, hemi: 1.0 },
@@ -427,6 +496,131 @@ export const ARENAS = [
       for (const [x, y] of [[15, 14], [30, 14], [8, 14], [37, 14]]) m.put(x, y, 'u');
     }),
   },
+  // ---------------------------------------------------------------- arenas da expansão
+  {
+    id: 'coliseu', name: 'Coliseu da Arena', desc: 'Areia, arquibancadas lotadas, portões monumentais e túneis por onde a horda sobe.', floor: 'colosseum',
+    theme: 'colosseum', ambient: 'colosseum', weather: 'trial', boss: 'boss', unlock: 3, spawnShare: 0.45,
+    diff: { label: 'Alta', tier: 2, hp: 1.15, speed: 1.05, count: 1.1 }, eventName: 'Prova de sobrevivência',
+    particles: ['sand', 'dust'],
+    tip: 'Fique de olho nas luzes vermelhas: os espinhos sobem. Na prova, cada abate vale o dobro.',
+    light: { sky: 0x8a9ab0, fog: 0xa89878, sun: 0xffe8c0, sunI: 2.3, hemi: 1.45 },
+    map: makeMap(46, 32, '#', [[21, 0, 4, 'h'], [21, 31, 4, 'h'], [0, 14, 4, 'v'], [45, 14, 4, 'v']], (m) => {
+      m.rect(1, 1, 44, 30, 'a');
+      // arquibancadas em volta de toda a arena, com cantos arredondados
+      m.rect(1, 1, 44, 2, 'Ø'); m.rect(1, 29, 44, 30, 'Ø'); m.rect(1, 3, 2, 28, 'Ø'); m.rect(43, 3, 44, 28, 'Ø');
+      for (const [x, y] of [[3, 3], [42, 3], [3, 28], [42, 28], [4, 3], [41, 3], [4, 28], [41, 28], [3, 4], [42, 4], [3, 27], [42, 27]]) m.put(x, y, 'Ø');
+      // passagens dos quatro portões monumentais (a grade sobe quando a horda entra)
+      m.rect(21, 1, 24, 1, 'a'); m.rect(21, 30, 24, 30, 'a'); m.rect(1, 14, 1, 17, 'a'); m.rect(44, 14, 44, 17, 'a');
+      for (let k = 21; k <= 24; k++) { m.put(k, 2, 'Ÿ'); m.put(k, 29, 'Ÿ'); }
+      for (let k = 14; k <= 17; k++) { m.put(2, k, 'Ÿ'); m.put(43, k, 'Ÿ'); }
+      // centro em mosaico, aberto para o chefão
+      m.rect(17, 11, 28, 20, 'ù');
+      // colunas romanas e estátuas de gladiadores
+      for (const [x, y] of [[8, 6], [15, 5], [30, 5], [37, 6], [8, 25], [15, 26], [30, 26], [37, 25], [6, 11], [6, 20], [39, 11], [39, 20]]) m.put(x, y, 'Ñ');
+      for (const [x, y] of [[12, 9], [33, 9], [12, 22], [33, 22]]) m.put(x, y, 'Æ');
+      // bandeiras na frente das arquibancadas
+      for (const [x, y] of [[7, 3], [13, 3], [32, 3], [38, 3], [7, 28], [13, 28], [32, 28], [38, 28]]) m.put(x, y, 'ß');
+      // armadilhas de espinhos em anel e túneis subterrâneos
+      for (const [x, y] of [[17, 10], [28, 10], [17, 21], [28, 21], [22, 8], [23, 23], [13, 15], [32, 16], [10, 12], [35, 19]]) m.put(x, y, 'Œ');
+      for (const [x, y] of [[9, 16], [36, 15], [20, 6], [25, 25]]) m.put(x, y, 'Þ');
+      // ruínas de pedra (blocos modulares: inteiro, danificado e destruído) como cobertura
+      const sw = modCh('stone', 'wall'); const sd = modCh('stone', 'dmg'); const sr = modCh('stone', 'ruin');
+      m.put(15, 9, sw); m.put(16, 9, sd); m.put(30, 22, sw); m.put(29, 22, sd);
+      for (const [x, y] of [[10, 19], [35, 12], [19, 24], [26, 7]]) m.put(x, y, sr);
+      // barris, caixas e o totem médico
+      for (const [x, y] of [[5, 8], [40, 23]]) m.put(x, y, 'x');
+      for (const [x, y] of [[5, 23], [40, 8], [19, 27], [26, 4]]) m.put(x, y, 'X');
+      m.put(14, 18, 'Ú'); m.put(31, 13, 'Ú');
+    }),
+  },
+  {
+    id: 'lab', name: 'Laboratório de Pesquisa', desc: 'Salas de contenção, tanques biológicos e portas automáticas: os experimentos fugiram.', floor: 'lab',
+    theme: 'lab', ambient: 'lab', weather: 'breach', boss: 'devourer', unlock: 7, spawnShare: 0.25, maxLights: 8, lightMul: 1,
+    diff: { label: 'Muito alta', tier: 3, hp: 1.25, speed: 1.07, count: 1.18 }, eventName: 'Quebra de contenção',
+    particles: ['sparks', 'steam'],
+    tip: 'Na quebra de contenção, segure o painel holográfico do átrio: tranca as portas e sela as cápsulas.', lampI: 10,
+    light: { sky: 0x141c22, fog: 0x1a262c, sun: 0xd0e8ff, sunI: 1.45, hemi: 1.05 },
+    map: makeMap(46, 32, '#', [[21, 0, 4, 'h'], [21, 31, 4, 'h'], [0, 14, 4, 'v'], [45, 14, 4, 'v']], (m) => {
+      m.rect(1, 1, 44, 30, 'ò');
+      const W = 'Ë';
+      const room = (x0, y0, x1, y1) => { m.rect(x0, y0, x1, y0, W); m.rect(x0, y1, x1, y1, W); m.rect(x0, y0, x0, y1, W); m.rect(x1, y0, x1, y1, W); };
+      // quatro salas de pesquisa nos cantos, cada uma com duas portas automáticas
+      room(2, 2, 12, 9); room(33, 2, 43, 9); room(2, 22, 12, 29); room(33, 22, 43, 29);
+      for (const [x, y] of [[7, 9], [12, 5], [38, 9], [33, 5], [7, 22], [12, 26], [38, 22], [33, 26]]) m.put(x, y, 'Í');
+      // NO: tanques biológicos e bancadas
+      for (const x of [4, 6, 8, 10]) m.put(x, 3, 'Ö');
+      m.put(5, 6, 'Î'); m.put(9, 6, 'Î');
+      // NE: cápsulas de contenção
+      for (const x of [35, 37, 39, 41]) m.put(x, 3, 'Ü');
+      m.put(36, 6, 'Î'); m.put(40, 6, 'Î');
+      // SO: almoxarifado químico com vazamento
+      for (const [x, y] of [[4, 24], [4, 27], [10, 27]]) m.put(x, y, '@');
+      m.rect(6, 25, 8, 26, '~');
+      m.put(10, 24, 'Î');
+      // SE: cápsulas e tanques
+      for (const x of [35, 39]) m.put(x, 23, 'Ü');
+      for (const x of [37, 41]) m.put(x, 28, 'Ö');
+      m.put(36, 26, 'Î');
+      // corredores técnicos com tubulação e divisórias de vidro (blocos modulares)
+      const gw = modCh('glass', 'wall'); const gd = modCh('glass', 'dmg');
+      for (const x of [15, 16, 29, 30]) { m.put(x, 9, 'Ï'); m.put(x, 22, 'Ï'); }
+      for (const [x, y] of [[18, 9], [19, 9], [26, 9], [27, 9], [18, 22], [19, 22], [26, 22], [27, 22]]) m.put(x, y, gw);
+      m.put(20, 9, gd); m.put(25, 22, gd);
+      // átrio: painel holográfico (contenção), totem médico, colunas e plataformas com rampa
+      m.put(22, 15, 'Ì'); m.put(24, 17, 'Ú');
+      const mc = modCh('metal', 'col'); const mp = modCh('metal', 'plat'); const mr = modCh('metal', 'ramp');
+      for (const [x, y] of [[17, 12], [28, 12], [17, 19], [28, 19]]) m.put(x, y, mc);
+      m.rect(14, 12, 15, 13, mp); m.put(14, 14, mr); m.rect(30, 18, 31, 19, mp); m.put(31, 17, mr);
+      // cobertura: bancadas, concreto danificado e entulho
+      for (const [x, y] of [[20, 13], [25, 18], [9, 15], [36, 16]]) m.put(x, y, 'Î');
+      m.put(19, 17, modCh('concrete', 'dmg')); m.put(26, 14, modCh('concrete', 'ruin'));
+      // portais de onda (experimento de teletransporte) e tanques químicos no corredor
+      m.put(5, 15, 'Ô'); m.put(40, 16, 'Ô');
+      m.put(13, 18, '@'); m.put(32, 13, '@');
+    }),
+  },
+  {
+    id: 'templo', name: 'Templo Antigo', desc: 'Pedra, hieróglifos e armadilhas: dardos, lâminas, portais mágicos e uma câmara escondida.', floor: 'temple',
+    theme: 'temple', ambient: 'temple', weather: 'curse', boss: 'guardian', unlock: 12, spawnShare: 0.3, maxLights: 8,
+    diff: { label: 'Extrema', tier: 4, hp: 1.38, speed: 1.1, count: 1.28 }, eventName: 'Maldição do templo',
+    particles: ['motes', 'embers'],
+    tip: 'Atraia a horda para as placas de pressão e as lâminas. A alavanca abre a câmara do desafio ao norte.', lampI: 8,
+    light: { sky: 0x18120c, fog: 0x2a2016, sun: 0xffc890, sunI: 1.25, hemi: 0.9 },
+    map: makeMap(46, 32, '#', [[6, 0, 3, 'h'], [37, 0, 3, 'h'], [21, 31, 4, 'h'], [0, 14, 4, 'v'], [45, 14, 4, 'v']], (m) => {
+      m.rect(1, 1, 44, 30, 'ð');
+      // câmara de desafio ao norte, atrás das portas secretas
+      m.rect(17, 1, 17, 5, 'Ð'); m.rect(28, 1, 28, 5, 'Ð'); m.rect(17, 5, 28, 5, 'Ð');
+      m.put(22, 5, 'Ä'); m.put(23, 5, 'Ä');
+      m.put(22, 2, 'À');
+      m.put(19, 2, 'X'); m.put(26, 2, 'X'); m.put(20, 3, 'Õ'); m.put(25, 3, 'Õ');
+      m.put(18, 4, 'ê'); m.put(27, 4, 'ê');
+      // santuário: muros de arenito com faixas de hieróglifos e quatro entradas
+      m.rect(12, 8, 33, 8, 'Ð'); m.rect(12, 24, 33, 24, 'Ð'); m.rect(12, 8, 12, 24, 'Ð'); m.rect(33, 8, 33, 24, 'Ð');
+      for (const x of [13, 14, 31, 32]) { m.put(x, 8, 'Ê'); m.put(x, 24, 'Ê'); }
+      m.rect(21, 8, 24, 8, 'ð'); m.rect(21, 24, 24, 24, 'ð'); m.rect(12, 14, 12, 17, 'ð'); m.rect(33, 14, 33, 17, 'ð');
+      // lançadores de dardos na parede norte (atiram para dentro) e placas de pressão na linha de tiro
+      for (const x of [16, 19, 26, 29]) m.put(x, 8, 'Å');
+      for (const [x, y] of [[16, 12], [19, 14], [26, 14], [29, 12]]) m.put(x, y, 'Ç');
+      // pilares, sarcófagos e lâminas giratórias
+      for (const [x, y] of [[15, 10], [30, 10], [15, 22], [30, 22], [19, 18], [26, 18]]) m.put(x, y, 'Ó');
+      for (const [x, y] of [[16, 20], [29, 20], [22, 21]]) m.put(x, y, 'Õ');
+      for (const [x, y] of [[22, 11], [14, 16], [31, 15]]) m.put(x, y, 'Ý');
+      // corredor do norte guardado por lâminas e a alavanca das portas secretas
+      m.put(19, 6, 'Ý'); m.put(26, 7, 'Ý');
+      m.put(14, 6, 'Â');
+      // pátio externo: obeliscos, portais mágicos (par), portais de onda e ruínas modulares de arenito
+      for (const [x, y] of [[8, 9], [37, 9], [8, 22], [37, 22]]) m.put(x, y, 'Ò');
+      m.put(5, 16, 'Ã'); m.put(40, 15, 'Ã');
+      for (const [x, y] of [[9, 4], [36, 27], [9, 27]]) m.put(x, y, 'Ô');
+      const sw = modCh('sand', 'wall'); const sd = modCh('sand', 'dmg'); const sr = modCh('sand', 'ruin'); const sc = modCh('sand', 'col');
+      for (const [x, y] of [[4, 7], [41, 7], [4, 24], [41, 24]]) m.put(x, y, sc);
+      m.put(3, 11, sw); m.put(3, 12, sd); m.put(42, 19, sw); m.put(42, 20, sd);
+      for (const [x, y] of [[10, 20], [35, 11], [6, 28], [39, 3]]) m.put(x, y, sr);
+      // tochas nos corredores
+      for (const [x, y] of [[20, 9], [25, 9], [11, 13], [34, 13], [11, 18], [34, 18], [20, 23], [25, 23]]) m.put(x, y, 'ê');
+      for (const [x, y] of [[6, 12], [39, 19]]) m.put(x, y, 'X');
+    }),
+  },
 ];
 
 export const TIPS = [
@@ -446,4 +640,10 @@ export const TIPS = [
   'O rádio chama um ataque aéreo no maior grupo: fique fora do círculo vermelho!',
   'A lanterna ofusca: quem está no feixe anda 35% mais devagar.',
   'Itens que você não pode usar (vida cheia, já equipado) ficam no chão para o parceiro.',
+  'G recarrega a arma (J2: H). Trocar de arma cancela a recarga; a escopeta carrega cartucho por cartucho e você pode atirar no meio.',
+  'Aperte de novo a mesma tecla numérica para alternar entre as armas do grupo: 7 = lança-chamas, criogênico e ácido.',
+  'Gelo congela inimigos comuns; chefões só ficam mais lentos. Ácido derrete o escudo do Blindado.',
+  'A granada EMP desliga o Operário Mutante por 4 s e tira a blindagem dele.',
+  'Torres posicionáveis têm bateria de 90 s: coloque onde a horda vai passar.',
+  'O fogo detona barris e queima caixas de madeira: cuidado onde você aponta o lança-chamas.',
 ];

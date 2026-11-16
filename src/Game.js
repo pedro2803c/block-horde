@@ -6,20 +6,22 @@ import { BARREL_MODEL } from './scenery.js';
 import { ACTIVES, ULTIMATES, PASSIVES, BRANCHES, MAX_LEVEL, NODE_REQ, ULT_REQ, levelCost, xpNeed, loadLoadouts, ABILITY_KEYS } from './abilities.js';
 import { Input } from './Input.js';
 import { UI } from './UI.js';
-import { WEAPONS, WEAPON_ORDER, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS, profileNeed, matchXp } from './data.js';
+import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, TRAPS, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS, profileNeed, matchXp } from './data.js';
 import { enemyLook, drawEnemy } from './monsters.js';
-import { ITEMS, GUN_MODELS, MELEE, GEAR, drawItem, rollTable } from './items.js';
+import { ITEMS, GUN_MODELS, GUN_LEN, MELEE, GEAR, drawItem, rollTable } from './items.js';
+import { ArsenalMixin, WALK_TRAPS } from './arsenal.js';
+import { WorldMixin } from './world.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
 const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
-const GUN_LEN = { pistol: 0.24, uzi: 0.32, shotgun: 0.56, rifle: 0.62, sniper: 0.88, rocket: 0.72 };
 const ENERGY_T = 10; // bebida energética
 const SCOUT_T = 15; // binóculos
 const LIGHT_T = 45; // bateria da lanterna
 const MAX_ARMOR = 50;
 const MEDKIT_HEAL = 0.6;
+const EXO_T = 20; // exoesqueleto temporário
 const BLOOD = [0x8a0a0a, 0xa31212, 0x6a0606];
 const PLAYER_COLORS = [0x3aa0ff, 0xff8a2a];
 const SETTINGS_KEY = 'blockhorde_settings_v1';
@@ -35,9 +37,9 @@ const compact = (arr, keep) => {
 };
 
 const CONTROLS = {
-  solo: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], mouse: true },
-  p1: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'] },
-  p2: { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['Enter', 'NumpadEnter', 'Numpad0', 'KeyL'], next: ['ShiftRight', 'Period'], prev: ['Comma'], melee: ['KeyK', 'Slash', 'NumpadDecimal', 'Numpad1'] },
+  solo: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], reload: ['KeyG'], mouse: true },
+  p1: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], reload: ['KeyG'] },
+  p2: { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['Enter', 'NumpadEnter', 'Numpad0', 'KeyL'], next: ['ShiftRight', 'Period'], prev: ['Comma'], melee: ['KeyK', 'Slash', 'NumpadDecimal', 'Numpad1'], reload: ['KeyH', 'Numpad3'] },
 };
 
 // avisos dos eventos climáticos de cada arena
@@ -49,6 +51,9 @@ const EVENT_INFO = {
   blackout: { title: 'APAGÃO NA FÁBRICA!', kind: 'wave', sfx: 'siren', rate: 0.8 },
   fog: { title: 'NEBLINA DENSA!', kind: 'wave', sfx: 'wave', rate: 0.7 },
   alarm: { title: 'ATAQUE DE REFORÇOS!', kind: 'bad', sfx: 'siren', rate: 1 },
+  breach: { title: 'QUEBRA DE CONTENÇÃO!', kind: 'bad', sfx: 'siren', rate: 1.4 },
+  trial: { title: 'PROVA DE SOBREVIVÊNCIA!', kind: 'wave', sfx: 'crowd', rate: 1 },
+  curse: { title: 'MALDIÇÃO DO TEMPLO!', kind: 'bad', sfx: 'portal', rate: 0.5 },
 };
 
 export class Game {
@@ -238,6 +243,7 @@ export class Game {
     this.corpses = [];
     this.projectiles = [];
     this.clouds = [];
+    this.hazards = []; // fogo, poças ácidas, nuvens tóxicas e gelo criados pelo time
     this.placeables = [];
     this.pickups = [];
     this.strikes = [];
@@ -267,6 +273,7 @@ export class Game {
       arena.setPropBlock(gp, false);
     }
     this.gatesClosed = false;
+    this.initWorldObjects();
     this.power = !['military'].includes(arenaDef.theme); // base militar precisa do gerador
     this.genOn = false;
     for (const pr of arena.props) if (pr.def.id === 'generator') pr.on = false;
@@ -350,6 +357,12 @@ export class Game {
       alive: true,
       weapon: 'pistol',
       ammo: { pistol: Infinity },
+      clip: { pistol: WEAPONS.pistol.mag }, // carregador atual de cada arma
+      reloadT: 0,
+      reloadMax: 1,
+      reloadW: null,
+      bloom: 0,
+      groupSel: {},
       fireCd: 0,
       recoil: 0,
       hurtT: 0,
@@ -363,6 +376,8 @@ export class Game {
       maxArmor: MAX_ARMOR,
       helmet: false,
       pack: false,
+      boots: false,
+      exoT: 0,
       energyT: 0,
       lightT: 0,
       meleeCd: 0,
@@ -470,22 +485,54 @@ export class Game {
     for (let k = 0; k < owned.length; k++) {
       i = (i + dir + owned.length) % owned.length;
       const id = owned[i];
-      if (id === 'pistol' || (p.ammo[id] || 0) > 0) {
-        p.weapon = id;
-        this.audio.play('reload_out', { volume: 0.4, rate: 1.3 });
+      if (this.usable(p, id)) {
+        this.selectWeapon(p, id);
         return;
       }
     }
+  }
+  selectWeapon(p, id) {
+    if (p.weapon === id) return;
+    p.weapon = id;
+    p.reloadT = 0; // trocar de arma cancela a recarga
+    p.bloom = 0;
+    const g = WEAPON_GROUPS.findIndex((grp) => grp.includes(id));
+    if (g >= 0) p.groupSel[g] = id;
+    this.audio.play('reload_out', { volume: 0.4, rate: 1.3 });
+    // arma com carregador vazio recarrega sozinha ao ser sacada
+    if (WEAPONS[id].mag && !(p.clip[id] > 0)) this.startReload(p);
+  }
+  // tecla do grupo: saca a última arma usada do grupo; apertar de novo alterna entre as do grupo
+  selectGroup(p, g) {
+    const list = WEAPON_GROUPS[g].filter((id) => this.unlocked.has(id) && this.usable(p, id));
+    if (!list.length) return;
+    const cur = list.indexOf(p.weapon);
+    const id = cur >= 0 ? list[(cur + 1) % list.length] : list.includes(p.groupSel[g]) ? p.groupSel[g] : list[0];
+    this.selectWeapon(p, id);
   }
 
   fire(p) {
     const w = this.wstat(p.weapon);
     // plataforma elevada: rifles e sniper ganham alcance e dano
-    if (p.onPlat && (w.kind === 'gun' || w.kind === 'rocket')) {
+    if (p.onPlat && (w.kind === 'gun' || w.kind === 'rocket' || w.kind === 'bolt')) {
       w.range *= 1.4;
       w.dmg *= 1.2;
     }
-    if (p.weapon !== 'pistol' && !(p.ammo[p.weapon] > 0)) {
+    if (w.mag) {
+      // carregador: atirar interrompe a recarga cartucho a cartucho; o pente vazio recarrega sozinho
+      if (p.reloadT > 0) {
+        if (w.shell && p.clip[p.weapon] > 0) p.reloadT = 0;
+        else return;
+      }
+      if (!(p.clip[p.weapon] > 0)) {
+        if (!this.startReload(p)) {
+          this.audio.play('empty', { volume: 0.5 });
+          p.fireCd = 0.25;
+          this.cycleWeapon(p, -1);
+        }
+        return;
+      }
+    } else if (!(p.ammo[p.weapon] > 0)) {
       this.audio.play('empty', { volume: 0.5 });
       p.fireCd = 0.25;
       this.cycleWeapon(p, -1);
@@ -498,25 +545,43 @@ export class Game {
       if (best) ang = Math.atan2(best.pos.x - p.pos.x, best.pos.z - p.pos.z);
     }
     // mira: as marcações abrem a cada disparo
-    p.cxKick = Math.min(1.2, (p.cxKick || 0) + (w.heavy ? 1 : w.pellets > 1 ? 0.8 : w.kind === 'gun' ? 0.3 : 0.5));
+    p.cxKick = Math.min(1.2, (p.cxKick || 0) + (w.heavy ? 1 : w.pellets > 1 ? 0.8 : w.kind === 'gun' ? 0.3 + (w.bloom ? p.bloom * 4 : 0) : w.kind === 'flame' ? 0.1 : 0.5));
     p.facing = ang;
     p.fireCd = w.rate * (p.energyT > 0 ? 0.7 : 1) * (p.furyT > 0 ? 0.75 : 1);
     p.firingT = 0.6;
-    p.recoil = 1;
-    if (p.weapon !== 'pistol') p.ammo[p.weapon]--;
+    p.recoil = w.kind === 'flame' ? 0.3 : 1;
+    if (w.mag) p.clip[p.weapon]--;
+    else p.ammo[p.weapon]--;
     this.stats.shots++;
     const dx = Math.sin(ang);
     const dz = Math.cos(ang);
     const mx = p.pos.x + dx * 0.75 - Math.cos(ang) * 0.3;
     const mz = p.pos.z + dz * 0.75 + Math.sin(ang) * 0.3;
-    this.audio.play(w.sound, { volume: 0.55, pos: p.pos, rate: rand(0.95, 1.05) });
+    if (w.kind !== 'flame') this.audio.play(w.sound, { volume: 0.55, pos: p.pos, rate: rand(0.95, 1.05) });
     if (w.kind === 'gun') {
       this.flashes.push({ x: mx, z: mz, life: 0.05 });
-      // Precisão reduz a dispersão; Multitiro dá chance de um projétil extra
-      const spread = w.spread * (1 - this.pv(p, 'precision') / 100);
+      // Precisão reduz a dispersão; Multitiro dá chance de um projétil extra; rajadas abrem o recuo (bloom)
+      const spread = w.spread * (1 - this.pv(p, 'precision') / 100) + (w.bloom ? p.bloom : 0);
+      if (w.bloom) p.bloom = Math.min(w.bloomMax, p.bloom + w.bloom);
       const extra = Math.random() < this.pv(p, 'multishot') / 100 ? 1 : 0;
       for (let k = 0; k < w.pellets + extra; k++) this.hitscan(p, mx, mz, ang + gauss() * spread + (k >= w.pellets ? rand(-0.06, 0.06) : 0), w);
-      this.noiseShake(w.heavy ? 0.35 : w.pellets > 1 ? 0.25 : 0.06);
+      this.noiseShake(w.heavy ? 0.35 : w.pellets > 1 ? 0.25 : w.kick ? 0.12 : 0.06);
+      // metralhadora pesada: o coice empurra o atirador para trás
+      if (w.kick && !(p.exoT > 0)) {
+        p.vel.x -= dx * w.kick;
+        p.vel.z -= dz * w.kick;
+      }
+    } else if (w.kind === 'flame') {
+      this.fireFlame(p, ang, w, mx, mz);
+    } else if (w.kind === 'bolt') {
+      this.flashes.push({ x: mx, z: mz, life: 0.06 });
+      this.projectiles.push({ kind: 'bolt', x: mx, y: 1.0, z: mz, vx: dx * w.speed, vz: dz * w.speed, ang, t: 0, w, owner: p, hit: new Set(), pierced: 0 });
+    } else if (w.kind === 'glob') {
+      this.projectiles.push({ kind: 'glob', x: mx, y: 1.1, z: mz, vx: dx * 11, vy: 4.2, vz: dz * 11, t: 0, w, owner: p });
+    } else if (w.kind === 'lob') {
+      this.flashes.push({ x: mx, z: mz, life: 0.07 });
+      this.projectiles.push({ kind: 'lobgren', x: mx, y: 1.05, z: mz, vx: dx * w.speed, vy: 5.2, vz: dz * w.speed, t: 0, w, owner: p, bounces: w.bounces });
+      this.noiseShake(0.15);
     } else if (w.kind === 'throw') {
       const dyn = w.proj === 'dynamite';
       this.projectiles.push({ kind: w.proj || 'grenade', x: mx, y: 1.1, z: mz, vx: dx * (dyn ? 9.5 : 11), vy: dyn ? 5.5 : 5, vz: dz * (dyn ? 9.5 : 11), t: 0, fuse: w.fuse || 1.4, w, owner: p });
@@ -535,7 +600,9 @@ export class Game {
         p.fireCd = 0.2;
       }
     }
-    if (p.weapon !== 'pistol' && p.ammo[p.weapon] <= 0) this.cycleWeapon(p, -1);
+    if (w.mag) {
+      if (!(p.clip[p.weapon] > 0) && !this.startReload(p) && !this.usable(p, p.weapon)) this.cycleWeapon(p, -1);
+    } else if (p.ammo[p.weapon] <= 0) this.cycleWeapon(p, -1);
   }
 
   // inimigo que a assistência de mira escolhe (teclado): o mais próximo num cone estreito à frente
@@ -635,15 +702,21 @@ export class Game {
     const j = Math.floor(tz);
     if (!A.inb(i, j) || A.block[A.idx(i, j)] || A.dyn[A.idx(i, j)]) return false;
     if (this.placeables.some((b) => !b.dead && b.i === i && b.j === j)) return false;
+    // local válido: nada sobre lava ou lago tóxico
+    const ter = A.terrain[A.idx(i, j)];
+    if (ter === 7 || ter === 14) return false;
     const x = i + 0.5;
     const z = j + 0.5;
-    if (kind !== 'mine') {
+    const T = TRAPS[kind] || {};
+    if (!WALK_TRAPS.has(kind)) {
       for (const e of [...this.players.filter((q) => q.alive), ...this.zombies.filter((q) => q.alive)])
         if (Math.abs(e.pos.x - x) < 0.5 + e.radius && Math.abs(e.pos.z - z) < 0.5 + e.radius) return false;
-      A.dyn[A.idx(i, j)] = kind === 'barricade' ? 1 : 2;
+      // 1 = bloqueio que a horda ataca (barricada, cerca, torres); 2 = barril
+      A.dyn[A.idx(i, j)] = T.block ? 1 : 2;
       this.flowT = 0;
     }
-    this.placeables.push({ kind, i, j, x, z, hp: kind === 'barricade' ? 260 : 14, maxHp: 260, armT: 0.7, dead: false, owner: p });
+    this.placeables.push({ kind, i, j, x, z, hp: T.hp || 14, maxHp: T.hp || 260, armT: 0.7, dead: false, owner: p, life: T.life, charges: T.charges, ang: p.aim, block: !!T.block });
+    if (T.life) this.audio.play('generator', { volume: 0.4, pos: { x, z }, rate: 1.8 });
     return true;
   }
 
@@ -691,7 +764,7 @@ export class Game {
     const n = Math.min(m.max, list.length);
     for (let k = 0; k < n; k++) {
       const { z, d } = list[k];
-      this.damageZombie(z, m.dmg, (z.pos.x - p.pos.x) / (d || 1), (z.pos.z - p.pos.z) / (d || 1), p, m.knock);
+      this.damageZombie(z, m.dmg * (p.exoT > 0 ? 1.6 : 1), (z.pos.x - p.pos.x) / (d || 1), (z.pos.z - p.pos.z) / (d || 1), p, m.knock * (p.exoT > 0 ? 1.5 : 1));
     }
     // lâmina quebra objetos do cenário à frente
     for (const pr of this.arena.props) {
@@ -715,7 +788,8 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ dano
-  damageZombie(z, dmg, dx, dz, src, knock = 0.8) {
+  // quiet: dano contínuo (fogo, ácido, laser) sem som de impacto nem jorro de sangue
+  damageZombie(z, dmg, dx, dz, src, knock = 0.8, quiet = false) {
     if (!z.alive) return;
     // passivas de quem causou o dano: Dano aumentado, Fúria total e Crítico
     if (src && src.ctl) {
@@ -727,20 +801,21 @@ export class Game {
     }
     const hy = z.def.fly ? (z.flyY || 1.4) + 0.2 : 0.9 * z.scale;
     // blindagem do Operário Mutante: tiros e lâminas perdem parte do dano
-    if (z.def.plating && src) dmg *= z.def.plating;
+    // EMP desliga a blindagem; ácido corrói metade dela
+    if (z.def.plating && src && !(z.empT > 0)) dmg *= z.corrodeT > 0 ? (1 + z.def.plating) / 2 : z.def.plating;
     // escudo do Blindado: tiro que chega pela frente perde quase todo o dano
-    if (z.def.shield && dx * Math.sin(z.facing) + dz * Math.cos(z.facing) < -0.45) {
-      dmg *= z.def.shield;
+    if (z.def.shield && !quiet && dx * Math.sin(z.facing) + dz * Math.cos(z.facing) < -0.45) {
+      dmg *= z.corrodeT > 0 ? 0.6 : z.def.shield; // ácido derrete o escudo
       knock *= 0.2;
       for (let k = 0; k < 3; k++) this.parts.spawn(z.pos.x - dx * 0.6, 0.9, z.pos.z - dz * 0.6, -dx * rand(1, 3) + rand(-2, 2), rand(1, 3), -dz * rand(1, 3) + rand(-2, 2), 0.06, 0xffd27a, 0.25, 10, 2);
       this.audio.play('hit_armor', { volume: 0.35, pos: z.pos, rate: rand(0.9, 1.2) });
-    } else this.audio.play('hit_flesh', { volume: 0.35, pos: z.pos, rate: rand(0.9, 1.15) });
+    } else if (!quiet) this.audio.play('hit_flesh', { volume: 0.35, pos: z.pos, rate: rand(0.9, 1.15) });
     z.hp -= dmg;
     z.hurtT = 0.08;
     if (src && src.ctl) src.hitT = 0.14; // marcador de acerto na mira
     z.kx += dx * knock * (z.def.boss ? 0.1 : 1);
     z.kz += dz * knock * (z.def.boss ? 0.1 : 1);
-    const n = Math.min(8, 2 + Math.floor(dmg / 8));
+    const n = quiet ? (Math.random() < 0.3 ? 1 : 0) : Math.min(8, 2 + Math.floor(dmg / 8));
     const blood = z.def.blood || BLOOD;
     const bk = z.def.blood ? 0 : 1;
     for (let k = 0; k < n; k++) this.parts.spawn(z.pos.x, hy, z.pos.z, dx * rand(1, 4) + rand(-1.5, 1.5), rand(1, 4), dz * rand(1, 4) + rand(-1.5, 1.5), rand(0.07, 0.14), pick(blood), 1.2, 16, bk);
@@ -767,8 +842,14 @@ export class Game {
     if (!this.demo) {
       this.stats.kills++;
       if (src && src.kills !== undefined) src.kills++;
-      this.stats.score += z.def.score * this.mult;
+      this.stats.score += z.def.score * this.mult * (this.event === 'trial' ? 2 : 1);
+      if (this.event === 'trial') this.trialKills++;
       this.addMeter(z.def.boss ? 3 : 1);
+    }
+    // congelado estilhaça em cubos de gelo
+    if (z.frozenT > 0) {
+      for (let k = 0; k < 16; k++) this.parts.spawn(z.pos.x, rand(0.3, 1.6) * z.scale, z.pos.z, rand(-4, 4), rand(2, 5), rand(-4, 4), rand(0.08, 0.18), pick([0xc8f0ff, 0x8ad8ff, 0xffffff]), 0.9, 18, 2);
+      this.audio.play('glass', { volume: 0.5, pos: z.pos });
     }
     if (z.def.explode) {
       const e = z.def.explode;
@@ -801,6 +882,11 @@ export class Game {
     // Blindagem, Fúria total e Campo de sobrevivência reduzem o dano
     dmg *= (1 - this.pv(p, 'armor') / 100) * (p.furyT > 0 ? 0.5 : 1) * (this.inHaven(p) ? 0.4 : 1);
     if (special && p.helmet) dmg *= 0.6;
+    // exoesqueleto: -45% de dano e não é empurrado
+    if (p.exoT > 0) {
+      dmg *= 0.55;
+      knock = 0;
+    }
     let absorbed = 0;
     if (p.armor > 0) {
       absorbed = Math.min(p.armor, dmg);
@@ -833,6 +919,9 @@ export class Game {
       p.armor = 0;
       p.helmet = false;
       p.pack = false;
+      p.boots = false;
+      p.exoT = 0;
+      p.reloadT = 0;
       p.energyT = 0;
       p.lightT = 0;
       p.meleeT = 0;
@@ -874,6 +963,7 @@ export class Game {
     A.clearProp(pr);
     if (pr.def.coll !== 'none') this.flowT = 0;
     // efeitos próprios de cada cenário
+    this.onPropDestroyed(pr, by);
     if (pr.def.id === 'glowshroom') this.addCloud(pr.x, pr.z, { radius: 2.6, dps: 10, life: 5 });
     if (pr.def.id === 'acar') this.later(0.12, () => this.explosion(pr.x, pr.z, 3.6, 150, by));
     // destroços com as cores do próprio modelo
@@ -881,7 +971,7 @@ export class Game {
       const q = pr.parts[Math.floor(Math.random() * pr.parts.length)];
       this.parts.spawn(pr.x + rand(-0.4, 0.4), rand(0.2, Math.min(2.4, q[1] + 0.3)), pr.z + rand(-0.4, 0.4), rand(-4, 4), rand(2, 5), rand(-4, 4), rand(0.08, 0.22), q[6], rand(0.8, 1.5), 18, 0);
     }
-    const metal = ['lamp', 'traffic', 'billboard', 'barrel'].includes(pr.def.id);
+    const metal = ['lamp', 'traffic', 'billboard', 'barrel', 'chemtank'].includes(pr.def.id) || pr.def.mat === 'metal';
     this.audio.play(metal ? 'hit_armor' : 'crate', { volume: 0.8, pos: pr, rate: metal ? 0.6 : 0.85 });
     if (pr.def.light) {
       // vidro da lâmpada estoura
@@ -1128,6 +1218,8 @@ export class Game {
       }
       for (const z of this.zombies) if (z.alive && !z.def.fly && Math.hypot(z.pos.x - (pr.x + dx), z.pos.z - (pr.z + dz)) < 1.8) this.damageZombie(z, 80, 0, 0, null, 0);
     }
+    // objetos interativos da expansão (laboratório, coliseu, templo e comuns)
+    this.updateWorldObjects(dt);
   }
   startGenerator(pr, p) {
     this.genOn = true;
@@ -1221,7 +1313,7 @@ export class Game {
     let evI = 0;
     let evC = 0xff3020;
     // cor da névoa e do fundo acompanham o evento (neblina lava, apagão escurece)
-    const MIST = { forest: 0x74877c, graveyard: 0x77809c, city: 0x8a949e, factory: 0x6a6a6a, military: 0x8a93a0 };
+    const MIST = { forest: 0x74877c, graveyard: 0x77809c, city: 0x8a949e, factory: 0x6a6a6a, military: 0x8a93a0, lab: 0x8aa8b0, colosseum: 0xc8b898, temple: 0x8a7a5a };
     let fogHex = this.baseLight.fogC.getHex();
     if (this.event === 'blackout') {
       sunT *= 0.24;
@@ -1272,6 +1364,24 @@ export class Game {
       hemiT *= 0.88;
       evI = 34 + Math.sin(this.time * 9) * 26;
       evC = 0xff3020;
+    } else if (this.event === 'breach') {
+      // luz de emergência do laboratório
+      sunT *= 0.55;
+      hemiT *= 0.7;
+      evI = 30 + Math.sin(this.time * 8) * 24;
+      evC = 0xff2a20;
+    } else if (this.event === 'trial') {
+      sunT *= 1.15;
+      evI = 14 + Math.sin(this.time * 3) * 6;
+      evC = 0xffb040;
+    } else if (this.event === 'curse') {
+      sunT *= 0.35;
+      hemiT *= 0.55;
+      fogN = 12;
+      fogF = 40;
+      fogHex = 0x2a1a3a;
+      evI = 18 + Math.sin(this.time * 2) * 8;
+      evC = 0x40e0c0;
     }
     const k = 1 - Math.exp(-dt * 1.7);
     this.sun.intensity += (sunT - this.sun.intensity) * k;
@@ -1310,6 +1420,7 @@ export class Game {
     if ((theme === 'forest' || theme === 'graveyard' || this.event === 'fog' || toxic) && Math.random() < dt * (toxic ? 30 : 12)) {
       for (let n = 0; n < 2; n++) this.parts.spawn(cx + rand(-13, 13), rand(0.1, 0.9), cz + rand(-13, 13), rand(-0.4, 0.4), rand(-0.1, 0.25), rand(-0.4, 0.4), rand(0.16, 0.38), toxic ? pick([0x8aa04a, 0x9a6ac0]) : 0x9aa8a4, rand(2.4, 4.2), -0.05, 2);
     }
+    this.updateAmbientParticles(dt);
     // camadas de áudio do clima seguem o estado (sem reenviar todo quadro)
     const wRain = this.rainOn || storm;
     const wFog = this.event === 'fog' || this.event === 'toxicfog';
@@ -1382,6 +1493,8 @@ export class Game {
           if (p.fogExp === 3) this.ui.toast(p.id, 'A névoa corrói! Abrigue-se nas ruínas ou na cabana', 'warning');
         }
       }
+    } else if (ev === 'breach' || ev === 'trial' || ev === 'curse') {
+      this.updateWorldEvent(ev, dt);
     } else if (ev === 'overload') {
       // faíscas saltando das máquinas
       for (const pr of A.props) {
@@ -1405,6 +1518,7 @@ export class Game {
       this.alarmSpawnT = 1.2;
       this.lastSide = null;
     }
+    this.startWorldEvent(kind);
     if (kind === 'hordealarm') {
       // dispara até 3 carros de uma vez
       this.alarmSpawnT = 1;
@@ -1422,6 +1536,7 @@ export class Game {
     this._wFog = kind === 'fog' || kind === 'toxicfog';
   }
   endEvent() {
+    if (this.event) this.endWorldEvent(this.event);
     for (const pr of this.arena.props) pr.evAlarm = false;
     this.event = null;
     this.eventLeft = 0;
@@ -1949,7 +2064,7 @@ export class Game {
   removePlaceable(b) {
     b.dead = true;
     const A = this.arena;
-    if (b.kind !== 'mine') {
+    if (!WALK_TRAPS.has(b.kind)) {
       A.dyn[A.idx(b.i, b.j)] = 0;
       this.flowT = 0;
     }
@@ -1982,7 +2097,9 @@ export class Game {
       } else if (b.kind === 'barricade') {
         b.hp -= dmg * 0.4;
         if (b.hp <= 0) this.removePlaceable(b);
-      }
+      } else if (b.kind === 'proxmine' && b.armT <= 0 && b.trig === undefined) {
+        b.trig = 0.12; // detona em cadeia
+      } else if (TRAPS[b.kind] && b.kind !== 'mine' && b.kind !== 'proxmine') this.damageTrap(b, dmg * 0.4);
     }
     for (const c of this.pickups) if (c.type === 'supply' && !c.taken && Math.hypot(c.x - x, c.z - z) < radius) this.openSupply(c, owner);
     // cenário: cones voam, o resto leva dano (sacos de areia e pallets só se desgastam com explosões)
@@ -2031,7 +2148,10 @@ export class Game {
   unlock(u) {
     if (u.weapon) {
       this.unlocked.add(u.weapon);
-      for (const p of this.players) p.ammo[u.weapon] = (p.ammo[u.weapon] || 0) + Math.round(WEAPONS[u.weapon].start * (1 + this.pv(p, 'ammo') / 100));
+      for (const p of this.players) {
+        p.ammo[u.weapon] = (p.ammo[u.weapon] || 0) + Math.round(WEAPONS[u.weapon].start * (1 + this.pv(p, 'ammo') / 100));
+        this.fillClip(p, u.weapon);
+      }
     } else this.upg[u.upgrade] = true;
     this.ui.unlockBanner(u.text);
     this.audio.play('levelup', { volume: 0.8, priority: true });
@@ -2194,14 +2314,16 @@ export class Game {
       const gates = this.arena.gates.filter((g) => this.players.every((p) => !p.alive || Math.hypot(p.pos.x - g.x, p.pos.z - g.z) > 7));
       let sx;
       let sz;
-      const graves = this.arena.graves;
-      if (graves.length && Math.random() < 0.3) {
-        // as covas da necrópole também vomitam mortos
+      // covas, portais, portões monumentais e túneis (longe dos jogadores) também trazem a horda
+      const graves = this.arena.graves.filter((g) => this.players.every((p) => !p.alive || Math.hypot(p.pos.x - g.x, p.pos.z - g.z) > 4));
+      if (graves.length && Math.random() < (this.arena.def.spawnShare ?? 0.3)) {
         const gv = pick(graves);
         sx = gv.x + rand(-0.2, 0.2);
         sz = gv.z + rand(-0.2, 0.2);
-        for (let k = 0; k < 10; k++) this.parts.spawn(gv.x, 0.2, gv.z, rand(-1.5, 1.5), rand(1, 3), rand(-1.5, 1.5), rand(0.08, 0.16), pick([0x5a4a3a, 0x2a2a24]), 0.7, 8, 0);
-        this.audio.play('groan1', { volume: 0.4, pos: { x: gv.x, z: gv.z }, rate: rand(0.7, 0.95) });
+        if (!this.onSpawnPoint(gv)) {
+          for (let k = 0; k < 10; k++) this.parts.spawn(gv.x, 0.2, gv.z, rand(-1.5, 1.5), rand(1, 3), rand(-1.5, 1.5), rand(0.08, 0.16), pick([0x5a4a3a, 0x2a2a24]), 0.7, 8, 0);
+          this.audio.play('groan1', { volume: 0.4, pos: { x: gv.x, z: gv.z }, rate: rand(0.7, 0.95) });
+        }
       } else {
         const g = pick(gates.length ? gates : this.arena.gates);
         sx = g.x + rand(-0.3, 0.3);
@@ -2251,6 +2373,7 @@ export class Game {
       ['binoculars', 5],
       ['flashlight', this.arenaDef?.id === 'cemiterio' ? 12 : 4],
       ['radio', w >= 3 ? 4 : 0],
+      ['boots', 4],
     ]);
   }
   // conteúdo das caixas de madeira (armas só dão munição se já foram liberadas)
@@ -2273,6 +2396,10 @@ export class Game {
       ['rifle', has('rifle') ? 5 : 0],
       ['sniper', has('sniper') ? 6 : 0],
       ['axe', !axeOut && this.wave >= 4 ? 3 : 0],
+      ['boots', 5],
+      ['exo', this.wave >= 4 ? 4 : 0],
+      // munição e cargas do arsenal novo (só do que já foi liberado)
+      ...['uzi', 'rocket', 'lmg', 'flamer', 'glauncher', 'plasma', 'cryo', 'acidgun', 'egrenade', 'igrenade', 'fgrenade', 'tgrenade', 'proxmine', 'spikes', 'efence', 'ltower', 'ftower', 'itower'].map((id) => [id, has(id) ? (WEAPONS[id].kind === 'place' && TRAPS[id]?.life ? 2 : 4) : 0]),
     ]);
   }
 
@@ -2342,7 +2469,7 @@ export class Game {
       case 'ammo': {
         let got = 0;
         for (const id of this.unlocked) {
-          if (id === 'pistol') continue;
+          if (id === 'pistol' || TRAPS[id]?.life) continue; // torres só vêm em caixas de madeira
           p.ammo[id] = (p.ammo[id] || 0) + Math.round(WEAPONS[id].pack * packMul);
           got++;
         }
@@ -2397,6 +2524,18 @@ export class Game {
         msg = this.callRadio(p);
         sound = 'beep';
         break;
+      case 'boots':
+        if (p.boots) return false;
+        p.boots = true;
+        msg = 'Botas: +15% de velocidade';
+        sound = 'levelup';
+        break;
+      case 'exo':
+        p.exoT = EXO_T;
+        msg = `Exoesqueleto ativo por ${EXO_T} s`;
+        sound = 'generator';
+        for (let k = 0; k < 14; k++) this.parts.spawn(p.pos.x + rand(-0.4, 0.4), rand(0.3, 1.4), p.pos.z + rand(-0.4, 0.4), rand(-1, 1), rand(1, 2.5), rand(-1, 1), 0.08, pick([0xffc107, 0xffffff]), 0.6, -1, 2);
+        break;
       case 'axe':
         if (this.upg.axe) return false;
         this.upg.axe = true;
@@ -2409,6 +2548,7 @@ export class Game {
         if (it.weapon) {
           const n = Math.round((c.type === 'grenade' ? 3 : WEAPONS[it.weapon].pack) * packMul);
           p.ammo[it.weapon] = (p.ammo[it.weapon] || 0) + n;
+          if (p.weapon === it.weapon && WEAPONS[it.weapon].mag && !(p.clip[it.weapon] > 0)) this.startReload(p);
           msg = `${WEAPONS[it.weapon].name} +${n}`;
           ic = 'ammo';
           sound = 'ammo';
@@ -2570,6 +2710,7 @@ export class Game {
     compact(this.corpses, (z) => z.deadT < 4);
     this.updateProjectiles(dt);
     this.updateClouds(dt);
+    this.updateHazards(dt);
     this.updatePlaceables(dt);
     this.updateScenery(dt);
     this.updateAbilities(dt);
@@ -2594,6 +2735,8 @@ export class Game {
     p.cxKick = Math.max(0, (p.cxKick || 0) - dt * 4);
     p.hitT = Math.max(0, (p.hitT || 0) - dt);
     p.killT = Math.max(0, (p.killT || 0) - dt);
+    p.bloom = Math.max(0, (p.bloom || 0) - dt * (p.firingT > 0.45 ? 0.05 : 0.3));
+    this.updateReload(p, dt);
     this.updatePlayerAbilities(p, dt);
     if (!p.alive) {
       p.deadT += dt;
@@ -2612,6 +2755,10 @@ export class Game {
       p.lightT = Math.max(0, p.lightT - dt);
       if (p.lightT === 0) this.ui.toast(p.id, 'Lanterna sem bateria', 'flashlight', 'bad');
     }
+    if (p.exoT > 0) {
+      p.exoT = Math.max(0, p.exoT - dt);
+      if (p.exoT === 0) this.ui.toast(p.id, 'Exoesqueleto desligado', 'fist', 'bad');
+    }
     const c = p.ctl;
     let mx = 0;
     let mz = 0;
@@ -2621,7 +2768,15 @@ export class Game {
     if (inp.any(c.right)) mx += 1;
     const len = Math.hypot(mx, mz);
     const ter = this.arena.terrainAt(p.pos.x, p.pos.z);
-    let speed = 4.7 * (p.energyT > 0 ? 1.3 : 1) * (ter === T_WATER ? 0.6 : ter === T_BUSH ? 0.7 : 1) * (1 + this.pv(p, 'agility') / 100) * (p.furyT > 0 ? 1.3 : 1);
+    let speed = 4.7 * (p.energyT > 0 ? 1.3 : 1) * (ter === T_WATER ? 0.6 : ter === T_BUSH ? 0.7 : 1) * (1 + this.pv(p, 'agility') / 100) * (p.furyT > 0 ? 1.3 : 1) * (p.boots ? 1.15 : 1);
+    // metralhadora pesada atirando: passos curtos
+    const cw = WEAPONS[p.weapon];
+    if (cw.slowFire && p.firingT > 0.3 && !(p.exoT > 0)) speed *= cw.slowFire;
+    // exoesqueleto: imune a raízes e lentidão
+    if (p.exoT > 0) {
+      p.rootT = 0;
+      p.slowT = 0;
+    }
     // terreno contaminado, piso elétrico e efeitos de chefe
     if (ter === T_TOXIC) speed *= 0.65;
     if (this.elecOn && ter === T_ELEC) speed *= 0.8;
@@ -2686,10 +2841,11 @@ export class Game {
     if (inp.anyHit(c.prev)) this.cycleWeapon(p, -1);
     if (c.mouse) {
       if (inp.mouse.wheel) this.cycleWeapon(p, inp.mouse.wheel > 0 ? 1 : -1);
-      WEAPON_ORDER.forEach((id, i) => {
-        if (inp.hit(SLOT_CODES[i]) && this.unlocked.has(id) && (id === 'pistol' || p.ammo[id] > 0)) p.weapon = id;
+      WEAPON_GROUPS.forEach((grp, g) => {
+        if (inp.hit(SLOT_CODES[g])) this.selectGroup(p, g);
       });
     }
+    if (c.reload && inp.anyHit(c.reload)) this.startReload(p);
     p.fireCd -= dt;
     const wantMelee = inp.any(c.melee) || (c.mouse && inp.mouse.right);
     if (wantMelee && p.meleeCd <= 0 && p.meleeT <= 0) this.melee(p);
@@ -2733,7 +2889,7 @@ export class Game {
       } else if (A.flowDir(z.pos.x, z.pos.z, out)) {
         vx = out.x;
         vz = out.z;
-        if (A.dyn[A.idx(out.i, out.j)] === 1) blockedBy = this.placeables.find((b) => !b.dead && b.kind === 'barricade' && b.i === out.i && b.j === out.j);
+        if (A.dyn[A.idx(out.i, out.j)] === 1) blockedBy = this.placeables.find((b) => !b.dead && b.block && b.i === out.i && b.j === out.j);
       } else {
         vx = dx / td;
         vz = dz / td;
@@ -2835,10 +2991,12 @@ export class Game {
         if (z.attackCd <= 0) {
           z.attackCd = def.rate;
           z.attackT = 0.35;
-          blockedBy.hp -= Math.max(6, def.dmg);
           this.audio.play('melee_hit', { pos: z.pos, volume: 0.4, rate: 0.7 });
-          for (let k = 0; k < 3; k++) this.parts.spawn(blockedBy.x, 0.7, blockedBy.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.08, 0x8a6a3a, 0.8, 16, 0);
-          if (blockedBy.hp <= 0) this.removePlaceable(blockedBy);
+          if (blockedBy.kind === 'barricade') {
+            blockedBy.hp -= Math.max(6, def.dmg);
+            for (let k = 0; k < 3; k++) this.parts.spawn(blockedBy.x, 0.7, blockedBy.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.08, 0x8a6a3a, 0.8, 16, 0);
+            if (blockedBy.hp <= 0) this.removePlaceable(blockedBy);
+          } else this.damageTrap(blockedBy, Math.max(6, def.dmg)); // cerca e torres também apanham
         }
       }
       if (z.state === 'move' && (vx || vz)) {
@@ -2862,6 +3020,10 @@ export class Game {
       z.shockT -= dt;
       speed *= 0.65;
     }
+    // efeitos elementais: queima, corrosão, gelo, EMP e espinhos
+    const sm = this.updateStatus(z, dt);
+    if (sm < 0) return;
+    speed *= sm;
     // terreno: água e arbusto atrasam, lava queima, contaminação corrói (voadores passam por cima)
     if (!def.fly) {
       const ter = A.terrainAt(z.pos.x, z.pos.z);
@@ -3194,7 +3356,11 @@ export class Game {
     const A = this.arena;
     for (const pr of this.projectiles) {
       pr.t += dt;
-      if (pr.kind === 'grenade' || pr.kind === 'dynamite' || pr.kind === 'sgrenade') {
+      if (pr.kind === 'bolt' || pr.kind === 'glob' || pr.kind === 'lobgren' || pr.kind === 'dart') {
+        if (this.updateNewProjectile(pr, dt)) pr.dead = true;
+        continue;
+      }
+      if (pr.kind === 'grenade' || pr.kind === 'dynamite' || pr.kind === 'sgrenade' || pr.kind.startsWith('g_')) {
         if (pr.kind === 'sgrenade' && Math.random() < dt * 30) this.parts.spawn(pr.x, pr.y, pr.z, rand(-0.5, 0.5), rand(0, 1), rand(-0.5, 0.5), 0.06, pick([0x9adcff, 0xffffff]), 0.3, 0, 2);
         const dyn = pr.kind === 'dynamite';
         // pavio aceso soltando faíscas
@@ -3217,6 +3383,7 @@ export class Game {
         if (pr.t > pr.fuse) {
           pr.dead = true;
           if (pr.kind === 'sgrenade') this.specialBlast(pr);
+          else if (pr.kind.startsWith('g_')) this.elementBlast(pr);
           else this.explosion(pr.x, pr.z, pr.w.radius, pr.w.dmg, pr.owner);
         }
       } else if (pr.kind === 'rocket') {
@@ -3234,7 +3401,7 @@ export class Game {
         this.parts.spawn(pr.x, pr.y, pr.z, rand(-0.4, 0.4), rand(0.3, 0.8), rand(-0.4, 0.4), rand(0.15, 0.25), 0x8a8a8a, 0.6, -1, 0);
         let hit = A.tallAt(pr.x, pr.z) || pr.t > 1.6;
         if (!hit) for (const z of this.zombies) if (z.alive && Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z) < z.radius + 0.2) hit = true;
-        if (!hit) for (const b of this.placeables) if (!b.dead && b.kind !== 'mine' && Math.hypot(b.x - pr.x, b.z - pr.z) < 0.55) hit = true;
+        if (!hit) for (const b of this.placeables) if (!b.dead && !WALK_TRAPS.has(b.kind) && Math.hypot(b.x - pr.x, b.z - pr.z) < 0.55) hit = true;
         if (hit) {
           pr.dead = true;
           this.explosion(pr.x - pr.vx * dt, pr.z - pr.vz * dt, pr.w.radius, pr.w.dmg, pr.owner);
@@ -3298,6 +3465,7 @@ export class Game {
           }
       }
     }
+    this.updateTraps(dt);
     compact(this.placeables, (b) => !b.dead);
   }
 
@@ -3421,6 +3589,8 @@ export class Game {
       if (p.pack) gear.push(...GEAR.backpack);
       if (p.helmet) gear.push(...GEAR.helmet);
       if (p.lightT > 0) gear.push(...GEAR.flashlight);
+      if (p.boots) gear.push(...GEAR.boots);
+      if (p.exoT > 0 && (p.exoT > 3 || Math.sin(this.time * 14) > 0)) gear.push(...GEAR.exo);
       const m = p.meleeT > 0 ? MELEE[p.meleeKind] : null;
       // camuflado: desenhado como holograma ciano (lote emissivo, sem sombra), piscando
       const cloak = p.cloakT > 0;
@@ -3428,12 +3598,22 @@ export class Game {
         const look = cloak ? p.holoLook || (p.holoLook = holoLook(p.look)) : p.look;
         drawCharacter(cloak ? G : B, p.pos.x, 0, p.pos.z, p.facing, 0.95, look, {
           walk: p.walk, swing: Math.min(1, hs / 4) * 0.8, aim: p.firingT > 0 || this.mode === 'solo', recoil: p.recoil, hurt: cloak ? 0 : p.hurtT,
+          reload: p.reloadT > 0 ? 1 - p.reloadT / p.reloadMax : 0,
           gun: gl ? { len: gl, color: WEAPONS[p.weapon].color, model: GUN_MODELS[p.weapon] } : null, G,
           melee: m ? { model: GUN_MODELS[m.id], k: 1 - p.meleeT / p.meleeDur, a0: m.a0, a1: m.a1 } : null,
           gear: gear.length && !cloak ? gear : null,
         });
       }
       this.drawPlayerFx(B, G, p);
+      // recarga: anel que se completa em volta do jogador
+      if (p.reloadT > 0) {
+        const f = 1 - p.reloadT / p.reloadMax;
+        const seg = Math.ceil(f * 12);
+        for (let k = 0; k < 12; k++) {
+          const a = (k / 12) * Math.PI * 2;
+          G.box(p.pos.x + Math.sin(a) * 0.62, 0.05, p.pos.z + Math.cos(a) * 0.62, 0.2, 0.02, 0.06, k < seg ? 0xffc107 : 0x2e3440, a + Math.PI / 2);
+        }
+      }
       // marcador do jogador no chão
       const c = p.color;
       G.box(p.pos.x, 0.03, p.pos.z - 0.48, 0.9, 0.02, 0.06, c);
@@ -3447,6 +3627,7 @@ export class Game {
     for (const z of this.zombies) {
       drawEnemy(B, G, z, this.time);
       if (!z.alive) continue;
+      this.drawStatus(G, z);
       // binóculos: marcador vermelho sobre cada inimigo
       if (scout) {
         const top = z.def.fly ? (z.flyY || 1.4) + 0.75 : 2.05 * z.scale;
@@ -3470,6 +3651,7 @@ export class Game {
       }
       ring(G, c.x, c.z, c.r, 0x9a4ae0, this.time);
     }
+    this.drawHazards(G, this.time);
     // rádio: alvo do ataque aéreo (anel que fecha) e sinalizador
     for (const s of this.strikes) {
       const f = 1 - s.t / s.max;
@@ -3478,6 +3660,7 @@ export class Game {
       if (Math.sin(this.time * 18) > 0) G.box(s.x, 0.15, s.z, 0.18, 0.3, 0.18, 0xff3020);
     }
     for (const pr of this.projectiles) {
+      if (this.drawNewProjectile(B, G, pr, drawItem)) continue;
       if (pr.kind === 'grenade') drawItem(B, G, 'grenade', pr.x, pr.y, pr.z, pr.t * 8, 0.85);
       else if (pr.kind === 'sgrenade') {
         drawItem(B, G, 'grenade', pr.x, pr.y, pr.z, pr.t * 10, 0.9);
@@ -3521,6 +3704,7 @@ export class Game {
     }
     this.drawAbilities(B, G);
     for (const b of this.placeables) {
+      if (this.drawTrap(B, G, b, this.time)) continue;
       if (b.kind === 'barrel') {
         for (const q of BARREL_MODEL) B.box(b.x + q[0], q[1], b.z + q[2], q[3], q[4], q[5], q[6]);
       } else if (b.kind === 'barricade') {
@@ -3622,3 +3806,6 @@ function rayCircle(ox, oz, dx, dz, cx, cz, r) {
   if (t >= 0) return t;
   return -b + s >= 0 ? 0 : -1;
 }
+
+// expansão do arsenal: carregador, elementos, áreas no chão, projéteis novos e armadilhas
+Object.assign(Game.prototype, ArsenalMixin, WorldMixin);

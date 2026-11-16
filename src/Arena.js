@@ -24,7 +24,7 @@ const _s = new THREE.Vector3();
 const _c = new THREE.Color();
 const _up = new THREE.Vector3(0, 1, 0);
 
-const WALL = { grass: [0x8a5a44, 0x7a4e3a], concrete: [0x5a6068, 0x4e545c], graveyard: [0x6a6a70, 0x5a5a62], industrial: [0x5a6068, 0x4e545c], wild: [0x6a6c70, 0x5e6064] };
+const WALL = { grass: [0x8a5a44, 0x7a4e3a], concrete: [0x5a6068, 0x4e545c], graveyard: [0x6a6a70, 0x5a5a62], industrial: [0x5a6068, 0x4e545c], wild: [0x6a6c70, 0x5e6064], lab: [0xd8dde2, 0xc8ced4], colosseum: [0xc8bca0, 0xb8ac90], temple: [0xc8a868, 0xb89858] };
 const CONTAINERS = [0xa83a2a, 0x2a5a8a, 0x3a7a3a, 0xc08a2a];
 
 // Arena em grade de 1 m: colisão, linha de tiro, campo de fluxo (Dijkstra) e chão com sangue persistente.
@@ -156,7 +156,12 @@ export class Arena {
       return;
     }
     if (sd.id === 'bush') this.terrain[k] = T_BUSH;
-    if (sd.spawn) this.graves.push({ x, z, i, j });
+    if (sd.spawn) this.graves.push({ x, z, i, j, id: sd.id });
+    // plataforma modular: o piso embaixo vale como plataforma elevada
+    if (sd.platform) {
+      this.terrain[k] = T_PLATFORM;
+      this.platformCells.push(k);
+    }
     // células ocupadas (objetos grandes ocupam w×d a partir da âncora)
     const [sw, sdp] = sd.span || [1, 1];
     const cells = [];
@@ -170,7 +175,7 @@ export class Arena {
       const same = (a, b) => map[b]?.[a] === sd.ch;
       if ((same(i, j - 1) || same(i, j + 1)) && !same(i - 1, j) && !same(i + 1, j)) rot = Math.PI / 2;
     } else if (sd.faceOpen) {
-      const open = (a, b) => { const c = map[b]?.[a]; return c !== undefined && !'#BKMWYJ$ã%[CT0-2'.includes(c); };
+      const open = (a, b) => { const c = map[b]?.[a]; return c !== undefined && c !== '#' && !'CT'.includes(c) && SCENERY_BY_CHAR[c]?.coll !== 'tall'; };
       rot = open(i, j + 1) ? 0 : open(i, j - 1) ? Math.PI : open(i + 1, j) ? Math.PI / 2 : open(i - 1, j) ? -Math.PI / 2 : 0;
     } else if (!sd.span && (sd.coll === 'none' || sd.id === 'deadtree' || sd.id === 'bigrock' || sd.id === 'forklift')) rot = Math.floor(rng() * 4) * (Math.PI / 2);
     const edge = i === 0 || j === 0 || i === this.W - 1 || j === this.D - 1;
@@ -289,6 +294,20 @@ export class Arena {
         // animações por marca: pilão da prensa, sino balançando
         if (tag === 'ram') qy = p.ramY ?? q[1];
         if (tag === 'bell') qx += Math.sin(t * 9) * (p.swingT || 0) * 0.3;
+        // expansão: portas que abrem, espinhos que sobem, grades, placas, alavancas e lâminas
+        if (tag === 'door' && p.open) continue;
+        if (tag === 'spike') qy = q[1] - 0.52 * (1 - (p.spikeK ?? 0));
+        if (tag === 'bars') qy = q[1] + (p.barsY ?? 0);
+        if (tag === 'plate' && p.pressT > 0) qy -= 0.03;
+        if (tag === 'lever') qx += (p.leverOn ? 0.18 : -0.18) * (qy - 0.55);
+        if (tag === 'holo') qy += Math.sin(t * 2 + p.seed) * 0.04;
+        let qz = q[2];
+        if (tag === 'blade') {
+          const ba = p.bladeA || 0;
+          const bx = qx * Math.cos(ba) + qz * Math.sin(ba);
+          qz = -qx * Math.sin(ba) + qz * Math.cos(ba);
+          qx = bx;
+        }
         // árvore retorcida tombando: gira as peças em torno da base
         if (p.fallA) {
           const fa = Math.cos(p.fallA);
@@ -297,8 +316,9 @@ export class Arena {
           qx = ox * fa - qy * fb;
           qy = ox * fb + qy * fa;
         }
-        const wx = x + qx * c + q[2] * s;
-        const wz = z - qx * s + q[2] * c;
+        const wx = x + qx * c + qz * s;
+        const wz = z - qx * s + qz * c;
+        const qry = (q[7] || 0) + (tag === 'blade' ? p.bladeA || 0 : 0);
         if (q[8]) {
           // brilho ligado/desligado conforme o estado do objeto
           let on = !phase || tag === phase;
@@ -308,14 +328,23 @@ export class Arena {
           if (tag === 'cap') on = !(p.spentT > 0);
           if (tag === 'gl') on = !!p.closed;
           if (tag === 'beacon') on = p.on !== false && Math.sin(t * 6 + p.seed) > -0.2;
+          if (tag === 'liquid') on = !p.broken;
+          if (tag === 'glyph') on = !!p.glyph || p.def.id === 'pplate' || p.def.id === 'tportal';
+          if (tag === 'portal') on = p.on !== false;
+          if (tag === 'holo') on = p.on !== false && Math.random() > 0.03;
           let col = q[6];
           let sy = q[4];
+          if (tag === 'state') {
+            col = p.stateCol ?? q[6];
+            on = col !== 0x3a3a3a;
+          }
+          if (tag === 'portal') sy *= 0.85 + Math.sin(t * 5 + p.seed) * 0.15 + (p.flashT > 0 ? 0.4 : 0);
           if (tag === 'fire' || tag === 'flame') {
             sy *= 0.75 + Math.random() * 0.5;
             col = Math.random() < 0.3 ? 0xffd060 : q[6];
           }
-          (on ? G : B).box(wx, qy, wz, q[3], sy, q[5], on ? col : 0x2a2a2a, (q[7] || 0) + p.rot);
-        } else B.box(wx, qy, wz, q[3], q[4], q[5], flash ? 0xffffff : q[6], (q[7] || 0) + p.rot);
+          (on ? G : B).box(wx, qy, wz, q[3], sy, q[5], on ? col : 0x2a2a2a, qry + p.rot);
+        } else B.box(wx, qy, wz, q[3], q[4], q[5], flash ? 0xffffff : q[6], qry + p.rot);
       }
       // giroflex: facho girando
       if (p.def.id === 'beacon' && p.on !== false) {

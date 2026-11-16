@@ -1,4 +1,4 @@
-import { WEAPONS, WEAPON_ORDER, SLOT_KEYS, UNLOCKS, SURVIVORS, ARENAS, TIPS, ENEMIES, ENEMY_ORDER, profileNeed } from './data.js';
+import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, SLOT_KEYS, UNLOCKS, SURVIVORS, ARENAS, TIPS, ENEMIES, ENEMY_ORDER, profileNeed } from './data.js';
 import { ITEMS, ITEM_ORDER, ITEM_CATS, MELEE } from './items.js';
 import { SCENERY, SCENERY_ORDER, SCENERY_CATS, SCENERY_BEH } from './scenery.js';
 import { CROSSHAIRS, CROSSHAIR_ORDER, WEAPON_CROSSHAIR, CROSS_COLORS, crosshairSvg } from './crosshairs.js';
@@ -345,9 +345,9 @@ export class UI {
 
   scr_controls({ back, tab = 0 }) {
     const sets = [
-      { ic: 'user', name: 'Solo', rows: [['W · A · S · D', 'Mover'], ['Mouse', 'Mirar'], ['Clique · Espaço', 'Atirar'], ['F · botão direito', 'Faca / machado'], ['Z · X · C', 'Habilidades ativas'], ['R', 'Ultimate'], ['Tab', 'Árvore de habilidades'], ['Q · E · roda', 'Trocar arma'], ['1 – 9 · 0 · -', 'Escolher arma'], ['P · ESC', 'Pausar']] },
-      { ic: 'users', name: 'Jogador 1', rows: [['W · A · S · D', 'Mover e mirar'], ['Espaço', 'Atirar'], ['F', 'Faca / machado'], ['Z · X · C', 'Habilidades ativas'], ['R', 'Ultimate'], ['Tab', 'Árvore de habilidades'], ['Q · E', 'Trocar arma'], ['P · ESC', 'Pausar']] },
-      { ic: 'users', name: 'Jogador 2', rows: [['↑ · ↓ · ← · →', 'Mover e mirar'], ['Enter · Num 0 · L', 'Atirar'], ['K · / · Num 1', 'Faca / machado'], ['U · I · O (Num 4 5 6)', 'Habilidades ativas'], ['J · Num 8', 'Ultimate'], [', · .', 'Trocar arma'], ['Shift direito', 'Próxima arma']] },
+      { ic: 'user', name: 'Solo', rows: [['W · A · S · D', 'Mover'], ['Mouse', 'Mirar'], ['Clique · Espaço', 'Atirar'], ['F · botão direito', 'Faca / machado'], ['Z · X · C', 'Habilidades ativas'], ['R', 'Ultimate'], ['Tab', 'Árvore de habilidades'], ['G', 'Recarregar'], ['Q · E · roda', 'Trocar arma'], ['1 – 9 · 0 · -', 'Grupo de armas (repita para alternar)'], ['P · ESC', 'Pausar']] },
+      { ic: 'users', name: 'Jogador 1', rows: [['W · A · S · D', 'Mover e mirar'], ['Espaço', 'Atirar'], ['F', 'Faca / machado'], ['Z · X · C', 'Habilidades ativas'], ['R', 'Ultimate'], ['Tab', 'Árvore de habilidades'], ['G', 'Recarregar'], ['Q · E', 'Trocar arma'], ['P · ESC', 'Pausar']] },
+      { ic: 'users', name: 'Jogador 2', rows: [['↑ · ↓ · ← · →', 'Mover e mirar'], ['Enter · Num 0 · L', 'Atirar'], ['K · / · Num 1', 'Faca / machado'], ['U · I · O (Num 4 5 6)', 'Habilidades ativas'], ['J · Num 8', 'Ultimate'], ['H · Num 3', 'Recarregar'], [', · .', 'Trocar arma'], ['Shift direito', 'Próxima arma']] },
     ];
     const s = sets[tab];
     const keys = (k) => k.split(' · ').map((x) => h('kbd', {}, x));
@@ -356,7 +356,7 @@ export class UI {
     return this.win('controls', 'Controles', () => this.showScreen(back),
       tabs,
       h('div', { class: 'table-wrap' }, h('table', { class: 'keys' }, h('tbody', {}, s.rows.map(([k, v]) => h('tr', {}, h('td', {}, keys(k)), h('td', {}, v)))))),
-      h('p', { class: 'muted' }, 'No teclado, a mira segue a direção do movimento e corrige levemente para o zumbi mais próximo à frente. Itens são coletados ao encostar; os que não servem no momento ficam no chão.'),
+      h('p', { class: 'muted' }, 'No teclado, a mira segue a direção do movimento e corrige levemente para o zumbi mais próximo à frente. O carregador vazio recarrega sozinho. Objetos interativos (geradores, painéis, totens, alavancas e altares) funcionam ficando ao lado deles. Itens são coletados ao encostar; os que não servem no momento ficam no chão.'),
       h('div', { class: 'row end' }, btn('primary back', 'check', 'Ok', () => this.showScreen(back))));
   }
 
@@ -676,7 +676,7 @@ export class UI {
       cats.map(([c, name]) => h('button', { class: 'tab', role: 'tab', 'aria-selected': c === cat ? 'true' : 'false', 'data-focus': c === cat ? '' : undefined, onclick: () => this.showScreen('scenery', { cat: c }) }, name)));
     this.runPreviews(items, 'scenery', (pv, it, t) => pv.scenery(it.canvas, it.id, it.angle, t, it.active));
     return this.win('enemies items', 'Cenário', () => this.showScreen('menu'),
-      h('p', { class: 'muted', style: 'margin:0 0 0.8rem' }, 'Biblioteca modular usada nas arenas Distrito Industrial e Vale Selvagem. Cada elemento ocupa 1 bloco do mapa e tem um símbolo para montar arenas novas.'),
+      h('p', { class: 'muted', style: 'margin:0 0 0.8rem' }, `Biblioteca de cenário de todas as arenas (${SCENERY_ORDER.length} elementos). Cada elemento ocupa 1 bloco do mapa e tem um símbolo para montar arenas novas; os blocos modulares vêm em 7 materiais × 8 variações.`),
       tabs,
       h('ul', { class: 'beast-grid' }, ids.map(card)),
       h('div', { class: 'row end' }, btn('primary back', 'check', 'Ok', () => this.showScreen('menu'))));
@@ -783,6 +783,7 @@ export class UI {
           (el.armorLine = h('div', { class: 'bar-line armor-line hidden' }, icon('vest', 'vest'), el.armor.el)),
           (el.buffs = h('div', { class: 'buffs' })),
           h('div', { class: 'pp-weapon' }, (el.wicon = h('span')), (el.wname = h('span', {})), (el.ammo = h('b', {}))),
+          (el.reload = h('div', { class: 'reload-line hidden', role: 'status' }, icon('reload'), h('span', {}, 'Recarregando'), h('i', {}, h('b')))),
           (el.slots = h('div', { class: 'slots' })),
           (el.abil = h('div', { class: 'abil' }))),
         (el.toast = h('div', { class: 'toast' })));
@@ -1007,32 +1008,44 @@ export class UI {
     if (p.energyT > 0) buffs.push(['drink', Math.ceil(p.energyT) + 's', p.energyT < 3]);
     if (p.lightT > 0) buffs.push(['flashlight', Math.ceil(p.lightT) + 's', p.lightT < 5]);
     if (g.scoutT > 0) buffs.push(['binoculars', Math.ceil(g.scoutT) + 's', g.scoutT < 3]);
+    if (p.exoT > 0) buffs.push(['exo', Math.ceil(p.exoT) + 's', p.exoT < 4]);
     if (p.helmet) buffs.push(['helmet', '', false]);
+    if (p.boots) buffs.push(['boots', '', false]);
     if (p.pack) buffs.push(['backpack', '', false]);
     buffs.push([g.upg.axe ? 'axe' : 'knife', '', false, true]);
     const bkey = buffs.map((b) => b.join(':')).join('|');
     if (bkey !== el.buffKey) {
       el.buffKey = bkey;
       el.buffs.replaceChildren(...buffs.map(([ic, t, ending, w]) =>
-        h('span', { class: 'buff' + (ending ? ' ending' : '') + (w ? ' melee' : ''), title: w ? MELEE[ic].name : ITEMS[ic].name }, w ? weaponIcon(ic) : icon(ic), t ? h('b', {}, t) : null)));
+        h('span', { class: 'buff' + (ending ? ' ending' : '') + (w ? ' melee' : ''), title: w ? MELEE[ic].name : ITEMS[ic].name }, w ? weaponIcon(ic) : icon(ITEMS[ic].icon || ic), t ? h('b', {}, t) : null)));
     }
     if (el.weaponKey !== p.weapon) {
       el.weaponKey = p.weapon;
       el.wicon.replaceChildren(weaponIcon(p.weapon));
       el.wname.textContent = WEAPONS[p.weapon].name;
     }
-    const ammo = p.weapon === 'pistol' ? '∞' : String(p.ammo[p.weapon] || 0);
+    // munição: carregador / reserva; pente quase vazio fica em vermelho
+    const cw = WEAPONS[p.weapon];
+    const ammo = g.ammoText(p, p.weapon);
     if (el.ammo.lastChild?.textContent !== ammo) el.ammo.replaceChildren(icon('ammo'), ammo);
+    tog(el.ammo, 'low', !!cw.mag && (p.clip[p.weapon] || 0) <= Math.ceil(cw.mag * 0.25));
+    const reloading = p.reloadT > 0;
+    tog(el.reload, 'hidden', !reloading);
+    if (reloading) el.reload.lastChild.firstChild.style.width = `${Math.round((1 - p.reloadT / p.reloadMax) * 100)}%`;
+    // teclas 1–9, 0 e -: um espaço por grupo; mostra a arma escolhida do grupo e quantas ele tem
     const owned = WEAPON_ORDER.filter((id) => g.unlocked.has(id));
-    const key = owned.join() + '|' + p.weapon + '|' + owned.map((id) => (id === 'pistol' || p.ammo[id] > 0 ? 1 : 0)).join('');
+    const key = owned.join() + '|' + p.weapon + '|' + owned.map((id) => (g.usable(p, id) ? 1 : 0)).join('') + '|' + Object.values(p.groupSel).join();
     if (key !== el.slotKey) {
       el.slotKey = key;
-      el.slots.replaceChildren(...WEAPON_ORDER.map((id, i) => {
-        const own = g.unlocked.has(id);
+      el.slots.replaceChildren(...WEAPON_GROUPS.map((grp, i) => {
+        const mine = grp.filter((id) => g.unlocked.has(id));
+        const own = mine.length > 0;
+        const id = grp.includes(p.weapon) ? p.weapon : mine.includes(p.groupSel[i]) ? p.groupSel[i] : mine[0] || grp[0];
+        const usable = mine.some((q) => g.usable(p, q));
         return h('span', {
-          class: 'slot' + (own ? ' own' : '') + (id === p.weapon ? ' cur' : '') + (own && id !== 'pistol' && !(p.ammo[id] > 0) ? ' empty' : ''),
-          title: own ? WEAPONS[id].name : 'Bloqueado',
-        }, g.players.length === 1 ? h('span', { class: 'n' }, SLOT_KEYS[i]) : null, own ? weaponIcon(id) : icon('lock'));
+          class: 'slot' + (own ? ' own' : '') + (grp.includes(p.weapon) ? ' cur' : '') + (own && !usable ? ' empty' : ''),
+          title: own ? mine.map((q) => WEAPONS[q].name).join(' · ') : 'Bloqueado',
+        }, g.players.length === 1 ? h('span', { class: 'n' }, SLOT_KEYS[i]) : null, own ? weaponIcon(id) : icon('lock'), mine.length > 1 ? h('span', { class: 'cnt' }, String(mine.length)) : null);
       }));
     }
   }

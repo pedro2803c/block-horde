@@ -169,6 +169,12 @@ export function drawCharacter(B, x, y, z, ry, scale, look, pose) {
     const a = k < 0.3 ? lerp(-1.3, m.a0, k / 0.3) : k < 0.55 ? lerp(m.a0, m.a1, (k - 0.3) / 0.25) : lerp(m.a1, -1.3, (k - 0.55) / 0.45);
     armR = bone(BONES.armR, base, -0.34, shY, 0, a, -0.15);
     armL = bone(BONES.armL, base, 0.34, shY, 0, -0.5, 0.25);
+  } else if (pose.reload > 0 && pose.gun) {
+    // recarga: arma inclinada para baixo, mão de apoio busca o carregador e volta
+    const k = pose.reload;
+    const reach = Math.sin(Math.min(1, k) * Math.PI);
+    armR = bone(BONES.armR, base, -0.34, shY, 0, -1.0 + reach * 0.15, 0.25);
+    armL = bone(BONES.armL, base, 0.34, shY, 0, -0.55 - reach * 0.55, -0.55 + reach * 0.25);
   } else {
     const aimR = pose.aim ? -1.5 + (pose.recoil || 0) * 0.35 : -0.25 - s * 0.6;
     const twoHands = pose.aim && !look.oneHanded;
