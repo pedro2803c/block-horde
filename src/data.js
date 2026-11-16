@@ -336,31 +336,21 @@ export const SURVIVORS = [
     skin: 0xf2f2f2, shirt: 0xffd600, pants: 0x3a3a3a, sleeve: 0xffd600, hands: 0x161616, boots: 0x161616, noFace: true,
     extras: [
       // ---------- cabeça de pato branca ----------
-      ['head', 0, 0.42, 0.42, 0.5, 0.5, 0.5, 0xf2f2f2],         // cabeça
-      // ---------- bico laranja ----------
-      ['head', 0, 0.06, 0.56, 0.3, 0.16, 0.09, 0xff9800],     // bico principal (maior e para frente)
-      ['head', 0, -0.02, 0.6, 0.24, 0.1, 0.04, 0xe67e00],     // parte inferior do bico
-      ['head', 0, -0.06, 0.62, 0.1, 0.04, 0.02, 0x0a0a0a],   // narinas/fenda do bico
-      // ---------- olhos expressivos ----------
-      ...mirror(['head', 0.18, 0.28, 0.18, 0.09, 0.09, 0.03, 0xf57c00]),  // íris
-      ...mirror(['head', 0.18, 0.28, 0.2, 0.045, 0.045, 0.03, 0x0a0a0a]), // pupilas
-      // ---------- sobrancelhas agressivas ----------
-      ...mirror(['head', 0.22, 0.34, 0.14, 0.14, 0.04, 0.03, 0x0a0a0a]),
+      ['head', 0, 0.44, 0.42, 0.52, 0.52, 0.52, 0xf2f2f2],         // cabeça mais redonda
+      // ---------- bico laranja proeminente ----------
+      ['head', 0, 0.06, 0.6, 0.34, 0.18, 0.11, 0xff9800],     // bico principal maior
+      ['head', 0, -0.02, 0.64, 0.28, 0.12, 0.05, 0xe67e00],     // parte inferior do bico
+      ['head', 0, -0.06, 0.66, 0.12, 0.05, 0.03, 0x0a0a0a],   // narinas/fenda do bico
+      // ---------- olhos de pato (mais laterais e característicos) ----------
+      ...mirror(['head', 0.26, 0.24, 0.16, 0.08, 0.08, 0.03, 0xf57c00]),  // íris
+      ...mirror(['head', 0.26, 0.24, 0.18, 0.04, 0.04, 0.03, 0x0a0a0a]), // pupilas
+      // ---------- sobrancelhas ----------
+      ...mirror(['head', 0.3, 0.3, 0.12, 0.12, 0.04, 0.03, 0x0a0a0a]),
       // ---------- boné amarelo para trás ----------
-      ['head', 0, 0.62, -0.1, 0.66, 0.16, 0.66, 0xffd600],     // aba/corpo do boné
-      ['head', 0, 0.72, -0.14, 0.5, 0.06, 0.5, 0xd4a800],     // aba atrás
-      // ---------- óculos tecnológicos ----------
-      ['head', 0, 0.38, 0.18, 0.58, 0.06, 0.62, 0x161616],    // armação
-      ...mirror(['head', 0.22, 0.38, 0.18, 0.16, 0.14, 0.03, 0x4dd0ff]), // lente esquerda
-      ...mirror(['head', -0.22, 0.38, 0.18, 0.16, 0.14, 0.03, 0x4dd0ff]), // lente direita
-      ['head', 0, 0.28, 0.18, 0.04, 0.12, 0.03, 0x161616],   // ponte do óculo
-      // ---------- headset tático ----------
-      ['head', 0, 0.58, -0.28, 0.68, 0.14, 0.68, 0x161616],   // arco do headset
-      ...mirror(['head', 0.34, 0.34, -0.22, 0.14, 0.18, 0.14, 0x161616]), // fone direito
-      ...mirror(['head', -0.34, 0.34, -0.22, 0.14, 0.18, 0.14, 0x161616]), // fone esquerdo
-      ...mirror(['head', 0.36, 0.26, -0.24, 0.1, 0.12, 0.02, 0xffd600]), // símbolo pato no fone
-      // ---------- listras na cabeça (peto do pato) ----------
-      ...mirror(['head', 0.24, 0.18, 0.2, 0.03, 0.24, 0.02, 0x0a0a0a]),
+      ['head', 0, 0.64, -0.12, 0.68, 0.18, 0.68, 0xffd600],     // boné
+      ['head', 0, 0.74, -0.16, 0.52, 0.07, 0.52, 0xd4a800],     // aba atrás
+      // ---------- listras na cabeça ----------
+      ...mirror(['head', 0.26, 0.16, 0.2, 0.03, 0.26, 0.02, 0x0a0a0a]),
       // ---------- torso: camiseta amarela ----------
       ['torso', 0, 0.32, 0, 0.64, 0.56, 0.46, 0xffd600],       // camiseta
       ['torso', 0, 0.04, 0, 0.06, 0.46, 0.03, 0x0a0a0a],       // zíper central
@@ -378,7 +368,7 @@ export const SURVIVORS = [
       ...mirror(['armL', 0.02, -0.08, 0, 0.2, 0.16, 0.2, 0xffd600]),
       ...mirror(['armL', 0, -0.4, 0, 0.22, 0.18, 0.22, 0x161616]), // luva preta
       ...mirror(['armL', 0, -0.52, 0, 0.18, 0.14, 0.18, 0x3a3a3a]),   // braçadeira
-      // rifle futurista na mão direita
+      // rifle na mão direita
       ['armR', 0, -0.55, 0.04, 0.07, 0.55, 0.07, 0x2a2a2a],
       // ---------- pernas ----------
       ...mirror(['legL', 0, -0.18, 0.1, 0.22, 0.16, 0.1, 0x3a3a3a]),   // coxa escura
