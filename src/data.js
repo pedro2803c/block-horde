@@ -288,6 +288,51 @@ export const SURVIVORS = [
       ...CROSS('armL', -0.043, -0.66, 0.04, 0.14, 0xffffff),
     ],
   },
+  {
+    id: 'gatito', name: 'Gatito', role: 'Assalto',
+    skin: 0xff8a00, shirt: 0xff8a00, pants: 0x1a1a1a, sleeve: 0xff8a00, hands: 0x2a2a2a, boots: 0x1a1a1a, noFace: true,
+    extras: [
+      // orelhas de tigre
+      ['head', 0.24, 0.64, -0.05, 0.16, 0.28, 0.16, 0xff8a00],
+      ['head', -0.24, 0.64, -0.05, 0.16, 0.28, 0.16, 0xff8a00],
+      ['head', 0.24, 0.64, -0.01, 0.07, 0.15, 0.07, 0xf0a8a8],
+      ['head', -0.24, 0.64, -0.01, 0.07, 0.15, 0.07, 0xf0a8a8],
+      // focinho branco volumoso e olhos amarelos
+      ['head', 0, 0.28, 0.34, 0.52, 0.32, 0.07, 0xf0f0f0],
+      ['head', 0, 0.16, 0.38, 0.16, 0.14, 0.02, 0x000000],
+      ['head', 0.16, 0.48, 0.16, 0.09, 0.09, 0.02, 0xffd700],
+      ['head', -0.16, 0.48, 0.16, 0.09, 0.09, 0.02, 0xffd700],
+      ['head', 0.16, 0.48, 0.18, 0.045, 0.045, 0.02, 0x000000],
+      ['head', -0.16, 0.48, 0.18, 0.045, 0.045, 0.02, 0x000000],
+      // listras na testa e bochechas
+      ['head', 0.14, 0.58, 0.1, 0.03, 0.2, 0.02, 0x000000],
+      ['head', -0.14, 0.58, 0.1, 0.03, 0.2, 0.02, 0x000000],
+      ['head', 0.22, 0.32, 0.22, 0.03, 0.14, 0.02, 0x000000],
+      ['head', -0.22, 0.32, 0.22, 0.03, 0.14, 0.02, 0x000000],
+      // capuz vermelho sobre a cabeça
+      ['head', 0, 0.56, 0.02, 0.6, 0.2, 0.6, 0xd41f1f],
+      // jaqueta tática vermelha
+      ['torso', 0, 0.28, 0, 0.64, 0.52, 0.42, 0xd41f1f],
+      ['torso', 0, 0.025, 0, 0.07, 0.42, 0.03, 0x000000],
+      // listras pretas na jaqueta
+      ['torso', 0.28, 0.28, 0, 0.05, 0.42, 0.02, 0x000000],
+      ['torso', -0.28, 0.28, 0, 0.05, 0.42, 0.02, 0x000000],
+      // colete preto com símbolo de caveira branca
+      ['torso', 0, 0.14, 0.2, 0.52, 0.42, 0.14, 0x161616],
+      ['torso', 0, 0.14, 0.22, 0.16, 0.14, 0.02, 0xf2f2f2],
+      ['torso', 0, 0.07, 0.22, 0.1, 0.06, 0.02, 0x000000],
+      ['torso', 0.08, 0.2, 0.22, 0.05, 0.08, 0.02, 0xf2f2f2],
+      ['torso', -0.08, 0.2, 0.22, 0.05, 0.08, 0.02, 0xf2f2f2],
+      ['torso', 0.04, 0.08, 0.22, 0.05, 0.05, 0.02, 0xf2f2f2],
+      ['torso', -0.04, 0.08, 0.22, 0.05, 0.05, 0.02, 0xf2f2f2],
+      // braçadeira vermelha no braço esquerdo
+      ['armL', 0, -0.32, 0, 0.17, 0.14, 0.2, 0xd41f1f],
+      // joelheiras e calça militar preta
+      ...mirror(['legL', 0, -0.18, 0.06, 0.19, 0.13, 0.1, 0x2a2a2a]),
+      ...mirror(['legL', 0.1, -0.06, 0, 0.05, 0.12, 0.02, 0x000000]),
+      ...mirror(['legL', -0.1, -0.06, 0, 0.05, 0.12, 0.02, 0x000000]),
+    ],
+  },
 ];
 
 // Arenas reconstruídas. Cada caractere é um bloco de 1 m; símbolos em SCENERY/SCENERY2.

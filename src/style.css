@@ -756,7 +756,8 @@ body.touch .mult .bar { height: 15px; font-size: 0.72rem; }
   .menu-box .logo { font-size: clamp(2.2rem, 7vh, 3.2rem); }
   .menu-buttons { flex: 1 1 0; min-width: 0; gap: 0.35rem; }
   .menu-buttons button { min-height: 40px; }
-  .menu-buttons button.lg { min-height: 48px; }
+  .menu-buttons button.lg,
+  .menu-buttons button.tree-btn { min-height: 48px; }
   .menu-duo { grid-template-columns: 1fr 1fr; gap: 0.35rem; }
   .menu-duo button { font-size: 0.85rem; padding-left: 0.6rem; padding-right: 0.5rem; gap: 0.45rem; }
   .menu-buttons > button:not(.lg) { justify-content: flex-start; }
@@ -790,7 +791,8 @@ body.touch .overlay.pause .menu-buttons .tree-btn { grid-column: 1 / -1; }
 body.touch .overlay.pause .menu-buttons button { min-height: 46px; font-size: 0.85rem; padding-left: 0.6rem; padding-right: 0.55rem; gap: 0.45rem; }
 body.touch .overlay.pause .menu-buttons .lg,
 body.touch .overlay.pause .menu-buttons .tree-btn { min-height: 52px; }
-body.touch .overlay.pause .menu-buttons .lg { font-size: 1.35rem; }
+body.touch .overlay.pause .menu-buttons .lg,
+body.touch .overlay.pause .menu-buttons .tree-btn { font-size: 1.35rem; }
 
 /* árvore no celular: botões grandes, cartões legíveis e retorno sempre à vista */
 body.touch .overlay.tree .win-head .close { width: 52px; height: 52px; min-height: 52px; }
