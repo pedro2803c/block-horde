@@ -618,7 +618,7 @@ body.touch, body.touch #game-canvas { touch-action: none; overscroll-behavior: n
 .touch::before, .touch::after { content: ''; position: absolute; bottom: 26px; width: 92px; height: 92px; border-radius: 50%; border: 2px dashed rgba(255, 255, 255, 0.16); pointer-events: none; }
 .touch::before { left: 34px; }
 .touch::after { right: 262px; border-color: rgba(255, 120, 100, 0.22); }
-.tbtns { position: absolute; right: 14px; bottom: 14px; width: 236px; height: 136px; pointer-events: none; }
+.tbtns { position: absolute; right: 14px; bottom: 14px; width: 260px; height: 130px; pointer-events: none; }
 .tb { position: absolute; display: grid; place-items: center; width: 58px; height: 58px; padding: 0; border-radius: 50%; border: 2px solid var(--c, rgba(255, 255, 255, 0.45)); background: rgba(14, 17, 24, 0.62); color: #fff; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5); pointer-events: auto; touch-action: none; overflow: hidden; }
 .tb .ic, .tb svg { width: 28px; height: 28px; }
 .tb.pressed { transform: scale(0.92); background: rgba(40, 46, 60, 0.85); }
@@ -626,36 +626,46 @@ body.touch, body.touch #game-canvas { touch-action: none; overscroll-behavior: n
 .tb .ico { display: grid; place-items: center; color: var(--c, #fff); }
 .tb .cd { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(rgba(0, 0, 0, 0.62) calc(var(--f, 0) * 360deg), transparent 0); pointer-events: none; }
 .tb .cdn { position: absolute; inset: 0; display: grid; place-items: center; font: 400 1.3rem/1 var(--display); color: #fff; text-shadow: 0 2px 0 #000; pointer-events: none; }
-/* habilidades em 2×2 no canto; arma, recarga e faca à esquerda delas */
+/* habilidades em 2×2 no canto; arma, faca e recarga em arco à esquerda delas (sem se tocar) */
 .tb.ab:nth-child(1) { right: 70px; bottom: 0; }
 .tb.ab:nth-child(2) { right: 0; bottom: 0; }
 .tb.ab:nth-child(3) { right: 70px; bottom: 70px; }
 .tb.ab.ult { right: 0; bottom: 70px; border-color: var(--primary); }
-.tb.wpn { right: 146px; bottom: 0; width: 66px; height: 66px; border-color: var(--primary); }
+.tb.wpn { right: 142px; bottom: 0; width: 66px; height: 66px; border-color: var(--primary); }
 .tb.wpn .ico svg { width: 46px; height: 22px; }
-.tb.rel { right: 152px; bottom: 76px; width: 48px; height: 48px; }
-.tb.rel .ic { width: 22px; height: 22px; }
-.tb.mel { right: 208px; bottom: 34px; width: 48px; height: 48px; }
+.tb.mel { right: 150px; bottom: 80px; width: 50px; height: 50px; }
 .tb.mel .ic { width: 24px; height: 24px; }
+.tb.rel { right: 214px; bottom: 28px; width: 46px; height: 46px; }
+.tb.rel .ic { width: 22px; height: 22px; }
 
-/* HUD compacto no modo toque: painel do jogador no alto à esquerda, sem slots/habilidades (os botões fazem isso) */
-body.touch .players { top: 10px; bottom: auto; left: 10px; right: auto; transform: scale(0.66); transform-origin: left top; }
+/* HUD do celular (só deitado): zonas fixas que não se cruzam
+   ┌ jogador ┐ ┌── contadores + multiplicador ──┐ [pausa]
+   │ avisos  │ └────── chefão ──────┘           (radar)
+   (andar)            dica do tutorial        [botões]            */
+body.touch { --sl: env(safe-area-inset-left, 0px); --sr: env(safe-area-inset-right, 0px); --sb: env(safe-area-inset-bottom, 0px); }
+body.touch .players { top: 8px; bottom: auto; left: calc(8px + var(--sl)); right: auto; transform: scale(0.62); transform-origin: left top; }
+body.touch .players .pp { max-width: 290px; }
 body.touch .players .pp + .pp { display: none; }
 body.touch .pp .slots, body.touch .pp .abil { display: none; }
-body.touch .top { left: auto; right: 64px; justify-content: flex-end; padding-right: 0; top: 10px; max-width: calc(100% - 330px); }
+body.touch .top { top: 8px; left: calc(200px + var(--sl)); right: calc(96px + var(--sr)); padding-right: 0; max-width: none; justify-content: center; gap: 0.35rem; }
 body.touch .top .chip small { display: none; }
-body.touch .top .chip { padding: 0.2rem 0.5rem; }
-body.touch .top .chip b { font-size: 1.2rem; }
-body.touch .mult { min-width: 180px; }
-body.touch .radar { top: 64px; right: 10px; width: 78px; height: 78px; }
-body.touch .pause-btn { top: 10px; right: 10px; }
-body.touch .alerts { top: 150px; right: 10px; width: min(260px, 40vw); }
-body.touch .boss { top: 64px; }
-body.touch .tutorial { top: 58px; bottom: auto; max-width: min(46vw, 26rem); font-size: 0.85rem; padding: 0.4rem 0.6rem; }
+body.touch .top .chip { padding: 0.15rem 0.45rem; }
+body.touch .top .chip b { font-size: 1.1rem; }
+body.touch .mult { min-width: 0; flex: 1 1 100%; max-width: 420px; padding: 0.2rem 0.6rem; gap: 0.5rem; }
+body.touch .pause-btn { top: 8px; right: calc(8px + var(--sr)); }
+body.touch .radar { top: 62px; right: calc(8px + var(--sr)); width: 76px; height: 76px; }
+body.touch .boss { top: 100px; left: calc(200px + var(--sl)); right: calc(96px + var(--sr)); transform: none; width: auto; max-width: 420px; margin: 0 auto; }
+body.touch .boss .boss-name { font-size: 1rem; }
+body.touch .alerts { top: 100px; left: calc(8px + var(--sl)); right: auto; width: min(240px, 28vw); }
+body.touch .alerts .alert { font-size: 0.74rem; padding: 0.15rem 0.1rem 0.15rem 0.5rem; gap: 0.4rem; }
+body.touch .alerts .alert > .ic { width: 16px; height: 16px; }
+body.touch .alerts { gap: 4px; }
+body.touch .tutorial { top: 100px; bottom: auto; left: calc(200px + var(--sl)); right: calc(96px + var(--sr)); transform: none; max-width: 26rem; margin: 0 auto; font-size: 0.8rem; padding: 0.35rem 0.55rem; z-index: 4; }
+body.touch .tutorial .btn { pointer-events: auto; }
 body.touch .xh { display: none; }
-@media (max-height: 420px) {
-  body.touch .banner { top: 34%; font-size: 2.4rem; }
-}
+body.touch .banner { top: 34%; font-size: clamp(1.6rem, 5vw, 2.4rem); }
+/* janela aberta durante a partida (pausa, árvore, fim): só ela aparece */
+body.screen-open .hud { visibility: hidden; }
 
 /* celular deitado (pouca altura): menu em duas colunas, logo menor */
 @media (max-height: 520px) and (orientation: landscape) {
@@ -663,28 +673,18 @@ body.touch .xh { display: none; }
   .menu-box > div:first-child { flex: 0 0 auto; }
   .menu-box .logo { font-size: 3.2rem; }
   .menu-buttons { flex: 1 1 320px; gap: 0.4rem; }
-  .menu-buttons button { min-height: 40px; padding-top: 0.35rem; padding-bottom: 0.35rem; }
+  .menu-buttons button { min-height: 44px; padding-top: 0.35rem; padding-bottom: 0.35rem; }
   .menu-buttons button.lg { min-height: 50px; }
   .menu .tip { display: none; }
   .menu-duo { gap: 0.4rem; }
 }
 
 body.touch .coop-btn { display: none; } /* co-op é no mesmo teclado */
-
-/* celular em pé: contadores numa linha abaixo do painel do jogador */
-@media (max-width: 600px) {
-  body.touch .top { left: 10px; right: 96px; top: 92px; max-width: none; justify-content: flex-start; gap: 0.35rem; }
-  body.touch .mult { min-width: 0; flex: 1 1 100%; }
-  body.touch .radar { top: 64px; }
-  body.touch .tutorial { top: 176px; bottom: auto; left: 12px; right: 12px; transform: none; max-width: none; }
-  body.touch .alerts { top: 200px; }
-  body.touch .boss { top: 200px; left: 10px; right: 10px; width: auto; transform: none; }
-  .touch::after { display: none; }
-}
+.touch::after { display: none; } /* o tiro é automático: sem círculo de mira fixo */
 
 /* ---------- celular: usabilidade ---------- */
 /* tamanho dos botões (Configurações → Celular) e áreas seguras (entalhe, barra de gestos) */
-.tbtns { transform: scale(var(--ts, 1)); transform-origin: right bottom; right: calc(14px + env(safe-area-inset-right)); bottom: calc(14px + env(safe-area-inset-bottom)); }
+.tbtns { transform: scale(var(--ts, 1)); transform-origin: right bottom; right: calc(12px + env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom)); }
 body.touch .players { left: calc(10px + env(safe-area-inset-left)); }
 body.touch .pause-btn { right: calc(10px + env(safe-area-inset-right)); }
 .touch .stick { transform: scale(var(--ts, 1)); }
@@ -716,3 +716,50 @@ body.touch .pause-btn { right: calc(10px + env(safe-area-inset-right)); }
 @keyframes rot-phone { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
 body.portrait-lock .rotate-lock { display: flex; }
 .tb { overflow: visible; }
+
+/* telas baixas (celular deitado): janelas mais compactas e a linha de ações sempre à vista */
+@media (max-height: 520px) {
+  .overlay { padding: 6px calc(8px + env(safe-area-inset-right, 0px)) 6px calc(8px + env(safe-area-inset-left, 0px)); }
+  .panel { max-height: 100%; padding: 0 14px; }
+  .panel > :last-child:not(.row) { margin-bottom: 12px; }
+  .win-head { padding: 8px 0 6px; margin-bottom: 8px; }
+  .win-head .title { font-size: 1.6rem; }
+  .win-head .close { width: 40px; height: 40px; min-height: 40px; }
+  .panel > .row:last-child { margin-top: 0.6rem; padding: 8px 0 10px; }
+  .panel > .row:last-child .btn.lg { min-height: 46px; }
+}
+
+/* a linha de ações das janelas fica sempre à vista; o conteúdo rola por baixo dela */
+.panel > .row:last-child { position: sticky; bottom: 0; z-index: 2; padding-bottom: 4px; background: linear-gradient(0deg, #161a22 75%, rgba(22, 26, 34, 0)); }
+.panel { padding-bottom: 0; }
+.panel > :last-child:not(.row) { margin-bottom: clamp(16px, 3vw, 26px); }
+/* com uma janela aberta, o botão de pausa do HUD não fica por cima do X dela */
+body.screen-open .hud .pause-btn { visibility: hidden; }
+/* avisos: botão de fechar do tamanho de um dedo */
+body.touch .alerts .alert button { width: 40px; height: 40px; min-height: 40px; }
+body.touch .mult-num { font-size: 1.8rem; }
+body.touch .mult-next { font-size: 0.68rem; margin-bottom: 3px; }
+body.touch .mult .bar { height: 15px; font-size: 0.72rem; }
+/* pausa no celular deitado: ações à esquerda, desbloqueios à direita */
+@media (max-height: 520px) and (min-width: 620px) {
+  .pause-cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; }
+  .pause-cols .chips { flex-wrap: wrap; }
+  .pause-cols .menu-buttons { margin-top: 0.6rem; }
+}
+/* menu no celular deitado: logo à esquerda, botões em 2 colunas à direita; se não couber, rola a partir do topo */
+.overlay.menu { align-items: flex-start; }
+.menu-box { margin-block: auto; }
+@media (max-height: 520px) and (orientation: landscape) {
+  .overlay.menu { padding: 10px calc(12px + env(safe-area-inset-right, 0px)) 10px calc(16px + env(safe-area-inset-left, 0px)); }
+  .menu-box { flex-wrap: nowrap; width: 100%; max-width: 760px; gap: 1rem 1.4rem; }
+  .menu-box > div:first-child { flex: 0 1 180px; min-width: 0; }
+  .menu-box .logo { font-size: clamp(2.2rem, 7vh, 3.2rem); }
+  .menu-buttons { flex: 1 1 0; min-width: 0; gap: 0.35rem; }
+  .menu-buttons button { min-height: 40px; }
+  .menu-buttons button.lg { min-height: 48px; }
+  .menu-duo { grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+  .menu-duo button { font-size: 0.85rem; padding-left: 0.6rem; padding-right: 0.5rem; gap: 0.45rem; }
+  .menu-buttons > button:not(.lg) { justify-content: flex-start; }
+  .menu-duo .wide { grid-column: auto; }
+  .version { display: none; }
+}

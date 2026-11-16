@@ -159,6 +159,7 @@ export class UI {
   // ------------------------------------------------------------ telas
   showScreen(name, data = {}) {
     this.screen = name;
+    document.body.classList.toggle('screen-open', !!name);
     this.screenEl.replaceChildren();
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
     if (!name) return;

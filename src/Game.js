@@ -133,9 +133,16 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ configurações
+  // no celular a resolução interna se ajusta ao FPS (adaptRes); os efeitos continuam iguais
+  pixelRatio() {
+    const q = this.settings.quality;
+    const k = this.input?.touchMode && this.adapt ? this.adapt.scale : 1;
+    return Math.min(window.devicePixelRatio || 1, q === 'low' ? 0.8 : q === 'high' ? 2 : 1.25) * k;
+  }
+
   applyQuality() {
     const q = this.settings.quality;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q === 'low' ? 0.8 : q === 'high' ? 2 : 1.25));
+    this.renderer.setPixelRatio(this.pixelRatio());
     this.renderer.shadowMap.enabled = q !== 'low';
     if (this.sun) {
       const shadows = q !== 'low';
@@ -2783,7 +2790,27 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ atualização
+  // celular: se o FPS cair durante a partida, baixa a resolução interna aos poucos; sobe de novo quando sobra folga
+  adaptRes(raw) {
+    if (!this.input.touchMode || this.state !== 'playing' || !(raw > 0) || raw > 0.5) return;
+    const a = this.adapt || (this.adapt = { t: 0, n: 0, scale: 1 });
+    a.t += raw;
+    a.n++;
+    if (a.t < 3) return;
+    const fps = a.n / a.t;
+    a.t = 0;
+    a.n = 0;
+    const prev = a.scale;
+    if (fps < 42) a.scale = Math.max(0.6, a.scale - 0.15);
+    else if (fps > 57) a.scale = Math.min(1, a.scale + 0.1);
+    if (a.scale !== prev) {
+      this.renderer.setPixelRatio(this.pixelRatio());
+      this.resize();
+    }
+  }
+
   frame(now) {
+    this.adaptRes((now - this.last) / 1000);
     const dt = Math.min(0.05, (now - this.last) / 1000 || 0.016);
     this.last = now;
     if (!this.scene) return;
