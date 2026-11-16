@@ -596,9 +596,88 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
   position: absolute; left: 50%; top: 8.2rem; transform: translateX(-50%);
   display: flex; align-items: center; gap: 0.8rem; max-width: min(92vw, 34rem);
   padding: 0.6rem 0.8rem 0.6rem 1rem; border: 1px solid rgba(255, 255, 255, 0.18); border-left: 3px solid #3aa0ff;
-  background: rgba(8, 10, 16, 0.82); color: #fff; font-weight: 600; pointer-events: auto; z-index: 5;
+  background: rgba(8, 10, 16, 0.82); color: #fff; font-weight: 600; pointer-events: none; z-index: 5;
 }
 .tutorial svg { width: 1.3rem; height: 1.3rem; flex: none; color: #3aa0ff; }
 .tutorial small { display: block; color: #8fb8e8; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .tutorial .btn { margin-left: auto; flex: none; }
 .tutorial.hidden { display: none; }
+
+/* ==========================================================================
+   Celular: controles de toque (touch.js)
+   ========================================================================== */
+body.touch, body.touch #game-canvas { touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.touch { position: absolute; inset: 0; pointer-events: auto; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.touch.hidden { display: none; }
+.touch .stick { position: absolute; width: 116px; height: 116px; margin: -58px 0 0 -58px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.28); background: radial-gradient(circle, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.14)); opacity: 0; transition: opacity 0.12s; pointer-events: none; }
+.touch .stick.on { opacity: 1; }
+.touch .stick i { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; border-radius: 50%; transform: translate(-50%, -50%); background: rgba(255, 255, 255, 0.55); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+.touch .stick.s-aim { border-color: rgba(255, 120, 100, 0.5); }
+.touch .stick.s-aim i { background: rgba(255, 110, 90, 0.7); }
+/* dicas fixas de onde tocar (somem quando o direcional aparece) */
+.touch::before, .touch::after { content: ''; position: absolute; bottom: 26px; width: 92px; height: 92px; border-radius: 50%; border: 2px dashed rgba(255, 255, 255, 0.16); pointer-events: none; }
+.touch::before { left: 34px; }
+.touch::after { right: 262px; border-color: rgba(255, 120, 100, 0.22); }
+.tbtns { position: absolute; right: 14px; bottom: 14px; width: 236px; height: 136px; pointer-events: none; }
+.tb { position: absolute; display: grid; place-items: center; width: 58px; height: 58px; padding: 0; border-radius: 50%; border: 2px solid var(--c, rgba(255, 255, 255, 0.45)); background: rgba(14, 17, 24, 0.62); color: #fff; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5); pointer-events: auto; touch-action: none; overflow: hidden; }
+.tb .ic, .tb svg { width: 28px; height: 28px; }
+.tb.pressed { transform: scale(0.92); background: rgba(40, 46, 60, 0.85); }
+.tb.dim .ico { opacity: 0.45; }
+.tb .ico { display: grid; place-items: center; color: var(--c, #fff); }
+.tb .cd { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(rgba(0, 0, 0, 0.62) calc(var(--f, 0) * 360deg), transparent 0); pointer-events: none; }
+.tb .cdn { position: absolute; inset: 0; display: grid; place-items: center; font: 400 1.3rem/1 var(--display); color: #fff; text-shadow: 0 2px 0 #000; pointer-events: none; }
+/* habilidades em 2×2 no canto; arma, recarga e faca à esquerda delas */
+.tb.ab:nth-child(1) { right: 70px; bottom: 0; }
+.tb.ab:nth-child(2) { right: 0; bottom: 0; }
+.tb.ab:nth-child(3) { right: 70px; bottom: 70px; }
+.tb.ab.ult { right: 0; bottom: 70px; border-color: var(--primary); }
+.tb.wpn { right: 146px; bottom: 0; width: 66px; height: 66px; border-color: var(--primary); }
+.tb.wpn .ico svg { width: 46px; height: 22px; }
+.tb.rel { right: 152px; bottom: 76px; width: 48px; height: 48px; }
+.tb.rel .ic { width: 22px; height: 22px; }
+.tb.mel { right: 208px; bottom: 34px; width: 48px; height: 48px; }
+.tb.mel .ic { width: 24px; height: 24px; }
+
+/* HUD compacto no modo toque: painel do jogador no alto à esquerda, sem slots/habilidades (os botões fazem isso) */
+body.touch .players { top: 10px; bottom: auto; left: 10px; right: auto; transform: scale(0.66); transform-origin: left top; }
+body.touch .players .pp + .pp { display: none; }
+body.touch .pp .slots, body.touch .pp .abil { display: none; }
+body.touch .top { left: auto; right: 64px; justify-content: flex-end; padding-right: 0; top: 10px; max-width: calc(100% - 330px); }
+body.touch .top .chip small { display: none; }
+body.touch .top .chip { padding: 0.2rem 0.5rem; }
+body.touch .top .chip b { font-size: 1.2rem; }
+body.touch .mult { min-width: 180px; }
+body.touch .radar { top: 64px; right: 10px; width: 78px; height: 78px; }
+body.touch .pause-btn { top: 10px; right: 10px; }
+body.touch .alerts { top: 150px; right: 10px; width: min(260px, 40vw); }
+body.touch .boss { top: 64px; }
+body.touch .tutorial { top: 58px; bottom: auto; max-width: min(46vw, 26rem); font-size: 0.85rem; padding: 0.4rem 0.6rem; }
+body.touch .xh { display: none; }
+@media (max-height: 420px) {
+  body.touch .banner { top: 34%; font-size: 2.4rem; }
+}
+
+/* celular deitado (pouca altura): menu em duas colunas, logo menor */
+@media (max-height: 520px) and (orientation: landscape) {
+  .menu-box { flex-direction: row; flex-wrap: wrap; align-items: center; width: min(780px, 100%); gap: 0.8rem 1.6rem; }
+  .menu-box > div:first-child { flex: 0 0 auto; }
+  .menu-box .logo { font-size: 3.2rem; }
+  .menu-buttons { flex: 1 1 320px; gap: 0.4rem; }
+  .menu-buttons button { min-height: 40px; padding-top: 0.35rem; padding-bottom: 0.35rem; }
+  .menu-buttons button.lg { min-height: 50px; }
+  .menu .tip { display: none; }
+  .menu-duo { gap: 0.4rem; }
+}
+
+body.touch .coop-btn { display: none; } /* co-op é no mesmo teclado */
+
+/* celular em pé: contadores numa linha abaixo do painel do jogador */
+@media (max-width: 600px) {
+  body.touch .top { left: 10px; right: 96px; top: 92px; max-width: none; justify-content: flex-start; gap: 0.35rem; }
+  body.touch .mult { min-width: 0; flex: 1 1 100%; }
+  body.touch .radar { top: 64px; }
+  body.touch .tutorial { top: 176px; bottom: auto; left: 12px; right: 12px; transform: none; max-width: none; }
+  body.touch .alerts { top: 200px; }
+  body.touch .boss { top: 200px; left: 10px; right: 10px; width: auto; transform: none; }
+  .touch::after { display: none; }
+}

@@ -24,6 +24,7 @@ Depois disso, compacte o **conteúdo** de `crazygames/build` (não a pasta).
 
 - **Inglês automático.** O jogo usa o idioma da conta na CrazyGames (ou do navegador). Português aparece em português; qualquer outro idioma aparece em inglês. Para forçar, use `?lang=en` ou `?lang=pt`.
 - **Jogar agora.** É o primeiro botão do menu e leva à partida com 1 clique, na Cidade Abandonada. A escolha de arena e sobrevivente continua no botão de baixo.
+- **Controles de celular.** Arraste no lado esquerdo para andar e segure no lado direito para atirar, com mira automática (arraste para mirar você mesmo). Botões redondos fazem 3 habilidades, ultimate, troca de arma, recarga e faca. O modo toque liga sozinho no primeiro toque, e o HUD fica compacto em pé e deitado. O co-op (2 jogadores no mesmo teclado) some no celular.
 - **Tutorial curto.** Aparece só na primeira partida solo, com 4 dicas dentro do jogo (mover, atirar, itens e armas, habilidades e pausa). Cada dica avança sozinha quando você faz a ação, e o botão "Pular" fecha tudo.
 - **SDK da CrazyGames v3.** Só carrega nesta versão; o site no Vercel e o arquivo portátil não mudam.
   - O jogo avisa a plataforma do carregamento (loading start/stop) e de quando você está jogando ou não: pausa, árvore de habilidades, fim de partida e menu.
@@ -53,7 +54,7 @@ Isso foi testado com o SDK em modo local (`?useLocalSdk=true`), com anúncios si
 
 - **Nome:** Block Horde
 - **Gênero/tags:** Shooting, Zombie, Survival, Top-down, Voxel, 2 Player
-- **Plataforma:** Desktop (o jogo usa teclado e mouse; não tem controles de toque)
+- **Plataforma:** Desktop e Mobile (no celular aparecem direcionais virtuais; melhor deitado)
 - **Orientação:** Horizontal
 - **Classificação:** PEGI 12 (violência fantasiosa contra zumbis de blocos)
 - **Progress Save:** Sim (o jogo usa o módulo de dados do SDK)
@@ -63,6 +64,7 @@ Isso foi testado com o SDK em modo local (`?useLocalSdk=true`), com anúncios si
 - **Controles (EN):**
   > WASD: move · Mouse: aim · Click/Space: shoot · F/Right click: melee · 1-9: weapons · Z/X/C: abilities · R: ultimate · G: reload · Tab: skill tree · P: pause
   > Player 2 (co-op): arrows to move, Enter to shoot, U/I/O abilities, J ultimate
+  > Mobile: drag on the left side to move · hold on the right side to shoot (auto-aim, drag to aim) · round buttons: abilities, weapon, reload and knife
 
 ## Depois do envio
 

@@ -185,7 +185,7 @@ export class UI {
         h('div', { class: 'menu-buttons' },
           btn('primary lg', 'play', 'Jogar agora', () => this.g.quickStart()),
           btn('', 'map', 'Escolher arena e sobrevivente', () => this.showScreen('pick', { mode: 'solo' })),
-          btn('', 'users', 'Co-op · 2 jogadores, 1 teclado', () => this.showScreen('pick', { mode: 'coop' })),
+          btn('coop-btn', 'users', 'Co-op · 2 jogadores, 1 teclado', () => this.showScreen('pick', { mode: 'coop' })),
           h('div', { class: 'menu-duo' },
             btn('wide', 'bolt', 'Habilidades e builds', () => this.showScreen('skills')),
             btn('', 'skull', 'Inimigos', () => this.showScreen('enemies')),
@@ -1180,7 +1180,12 @@ export class UI {
         h('button', { class: 'btn sm', onclick: () => this.g.skipTutorial() }, 'Pular'));
       this.hudEl.append(this.tutEl);
     }
-    const steps = [
+    const steps = this.g.input.touchMode ? [
+      'Arraste no lado esquerdo da tela para andar',
+      'Segure no lado direito para atirar (arraste para mirar)',
+      'Encoste nos itens para pegar. O botão da arma troca de arma',
+      'Os botões redondos usam habilidades; o de cadeado é a ultimate',
+    ] : [
       'Mova-se com W A S D',
       'Mire com o mouse e clique (ou Espaço) para atirar',
       'Encoste nos itens para pegar. Teclas 1–9 trocam de arma',

@@ -49,6 +49,8 @@ Em todas as versões:
 - **Menu:** o primeiro botão é "Jogar agora".
 - **Primeira partida solo:** aparecem 4 dicas curtas, que podem ser puladas.
 
+No celular e no tablet, o jogo mostra controles de toque (`src/touch.js`): direcional de andar à esquerda, toque para atirar à direita com mira automática e botões de habilidades, arma, recarga e faca.
+
 Para testar o SDK localmente, use `?useLocalSdk=true`.
 
 ## Como iniciar (desenvolvimento)

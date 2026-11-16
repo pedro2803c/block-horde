@@ -12,6 +12,7 @@ import { ITEMS, GUN_MODELS, GUN_LEN, MELEE, GEAR, drawItem, rollTable } from './
 import { ArsenalMixin, WALK_TRAPS } from './arsenal.js';
 import { WorldMixin } from './world.js';
 import { platform } from './platform.js';
+import { TouchControls } from './touch.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -83,6 +84,7 @@ export class Game {
     this.applyVolumes();
     platform.onMute(() => this.applyVolumes());
     this.ui = new UI(this, uiRoot);
+    this.touch = new TouchControls(this, uiRoot);
     this.raycaster = new THREE.Raycaster();
     this.aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
     this.mouseWorld = new THREE.Vector3();
@@ -671,7 +673,7 @@ export class Game {
     }
     let ang = p.aim;
     // assistência de mira para quem joga só no teclado
-    if (!p.ctl.mouse || this.input.mouseIdle) {
+    if ((!p.ctl.mouse || this.input.mouseIdle) && !(p.ctl.mouse && this.input.touchAim)) {
       const best = this.aimTarget(p);
       if (best) ang = Math.atan2(best.pos.x - p.pos.x, best.pos.z - p.pos.z);
     }
@@ -862,7 +864,7 @@ export class Game {
     p.firingT = Math.max(p.firingT, 0.4);
     let ang = p.aim;
     // sem mouse: vira para o inimigo mais próximo à frente
-    if (!p.ctl.mouse || this.input.mouseIdle) {
+    if ((!p.ctl.mouse || this.input.mouseIdle) && !(p.ctl.mouse && this.input.touchAim)) {
       let bd = m.range + 1.6;
       for (const z of this.zombies) {
         if (!z.alive) continue;
@@ -1803,6 +1805,7 @@ export class Game {
     if (this[`cast_${id}`](p, def) === false) return;
     const cd = def.cd * (1 - this.pv(p, 'cooldown') / 100);
     p.cds[i] = cd;
+    (p.cdMax || (p.cdMax = []))[i] = cd;
     p.cdMax[i] = cd;
   }
   cast_dash(p) {
@@ -2365,7 +2368,7 @@ export class Game {
     this.zombies.push(zb);
     if (def.boss) {
       this.boss = zb;
-      this.ui.banner(`${def.name.toUpperCase()} SURGIU!`, 'bad');
+      if (this.state === 'playing') this.ui.banner(`${def.name.toUpperCase()} SURGIU!`, 'bad'); // a partida de fundo do menu não avisa
       this.audio.play('boss_roar', { volume: 1, priority: true });
       this.audio.setMusic('boss');
     }
@@ -2777,6 +2780,7 @@ export class Game {
     this.draw(dt);
     this.renderer.render(this.scene, this.camera);
     this.ui.fps(dt);
+    this.touch.update();
     this.input.endFrame();
   }
 
@@ -2902,6 +2906,11 @@ export class Game {
     if (inp.any(c.down)) mz += 1;
     if (inp.any(c.left)) mx -= 1;
     if (inp.any(c.right)) mx += 1;
+    // direcional virtual (celular)
+    if (c.mouse && inp.touchMove) {
+      mx += inp.touchMove.x;
+      mz += inp.touchMove.z;
+    }
     const len = Math.hypot(mx, mz);
     const ter = this.arena.terrainAt(p.pos.x, p.pos.z);
     let speed = 4.7 * (p.energyT > 0 ? 1.3 : 1) * (ter === T_WATER ? 0.6 : ter === T_BUSH ? 0.7 : 1) * (1 + this.pv(p, 'agility') / 100) * (p.furyT > 0 ? 1.3 : 1) * (p.boots ? 1.15 : 1);
@@ -2968,7 +2977,8 @@ export class Game {
     }
     p.walk += hs * dt * 2.6;
     // direção da mira
-    if (c.mouse && !inp.mouseIdle) p.aim = Math.atan2(this.mouseWorld.x - p.pos.x, this.mouseWorld.z - p.pos.z);
+    if (c.mouse && inp.touchAim) p.aim = Math.atan2(inp.touchAim.x, inp.touchAim.z);
+    else if (c.mouse && !inp.mouseIdle) p.aim = Math.atan2(this.mouseWorld.x - p.pos.x, this.mouseWorld.z - p.pos.z);
     else if (len) p.aim = Math.atan2(mx, mz);
     const target = p.firingT > 0 || c.mouse ? p.aim : len ? Math.atan2(mx, mz) : p.facing;
     p.facing += angDiff(p.facing, target) * Math.min(1, dt * 18);
@@ -3631,6 +3641,8 @@ export class Game {
   gameOver() {
     if (this.state !== 'playing') return;
     this.state = 'gameover';
+    this.tut = null; // as dicas voltam na próxima partida (só somem de vez com "Pular" ou ao terminar)
+    this.ui.tutorial(-1);
     this.audio.setMusic(null);
     this.audio.play('gameover', { volume: 0.9, priority: true });
     const pf = this.profile(); // antes de gravar o recorde, para não creditar esta partida duas vezes
