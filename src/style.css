@@ -841,3 +841,36 @@ body.touch .overlay.tree .panel > .row:last-child { background: #161a22; border-
   body.touch .overlay.pause .menu-buttons .lg,
   body.touch .overlay.pause .menu-buttons .tree-btn { min-height: 46px; }
 }
+
+/* ---------- controle (gamepad): diagnóstico, ajustes e foco nos menus ---------- */
+.pad-focus { outline: none; border-color: var(--primary) !important; box-shadow: 0 0 0 2px var(--primary), 0 0 18px rgba(255, 193, 7, 0.75) !important; }
+.gamepad .panel { width: min(980px, 96vw); }
+.pad-empty { text-align: center; padding: 1rem 1rem 0.5rem; }
+.pad-empty > .ic { width: 64px; height: 64px; color: var(--primary); }
+.pad-empty p { max-width: 640px; margin: 0.5rem auto; }
+.pad-info { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.5rem; margin-bottom: 1rem; }
+.pad-info > div { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.5rem 0.7rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-sm); min-width: 0; }
+.pad-info span { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.pad-info b { font-size: 0.92rem; overflow-wrap: anywhere; }
+.pad-test { display: flex; flex-direction: column; gap: 1rem; }
+.pad-sticks { display: flex; flex-wrap: wrap; gap: 1.2rem; align-items: center; }
+.pad-stick { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; font-size: 0.85rem; }
+.pad-stick small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.pad-stick .well { position: relative; width: 112px; height: 112px; border-radius: 50%; background: radial-gradient(circle, #232834, var(--bg)); border: 2px solid var(--border-hi); box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.6); }
+.pad-stick .dz { position: absolute; left: 50%; top: 50%; width: var(--dz); height: var(--dz); transform: translate(-50%, -50%); border-radius: 50%; border: 1px dashed var(--action); }
+.pad-stick .dot { position: absolute; left: calc(50% - 10px); top: calc(50% - 10px); width: 20px; height: 20px; border-radius: 50%; background: var(--border-hi); border: 2px solid var(--text); }
+.pad-stick .dot.on { background: var(--primary); box-shadow: 0 0 12px var(--primary); }
+.pad-trigs { display: flex; flex-direction: column; gap: 0.7rem; flex: 1; min-width: 200px; }
+.pad-trig { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; }
+.pad-trig .bar { height: 14px; border-radius: 7px; background: var(--bg); border: 1px solid var(--border-hi); overflow: hidden; }
+.pad-trig .bar i { display: block; height: 100%; width: 0; background: var(--info); }
+.pad-trig .bar i.on { background: var(--primary); }
+.pad-btns { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.pad-b { display: inline-flex; align-items: center; justify-content: center; min-width: 46px; height: 40px; padding: 0 0.5rem; border-radius: var(--r-sm); font: 700 0.9rem/1 var(--body); color: var(--text); background: linear-gradient(180deg, #3a4150, #262b36); border: 1px solid #555e70; border-bottom-width: 3px; transition: transform 0.06s, background 0.06s; }
+.pad-b.ok { color: var(--success); } .pad-b.bad { color: var(--action-hi); } .pad-b.info { color: var(--info); } .pad-b.act { color: var(--primary); }
+.pad-b.on { background: var(--primary); color: var(--primary-ink); border-color: var(--primary-hi); transform: translateY(2px); border-bottom-width: 1px; box-shadow: 0 0 14px rgba(255, 193, 7, 0.7); }
+.pad-axes { font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.pad-map td:last-child { text-align: right; }
+.pad-map button { min-height: 40px; }
+.bad-tag { display: inline-flex; margin-left: 0.4rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: rgba(229, 57, 53, 0.18); color: var(--action-hi); font-weight: 700; font-size: 0.75rem; }
+@media (max-width: 700px) { .pad-stick .well { width: 88px; height: 88px; } }

@@ -13,6 +13,7 @@ import { ArsenalMixin, WALK_TRAPS } from './arsenal.js';
 import { WorldMixin } from './world.js';
 import { platform } from './platform.js';
 import { TouchControls } from './touch.js';
+import { ControllerManager } from './gamepad.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -87,6 +88,8 @@ export class Game {
     platform.onMute(() => this.applyVolumes());
     this.ui = new UI(this, uiRoot);
     this.touch = new TouchControls(this, uiRoot);
+    this.pad = new ControllerManager(this); // Xbox, PlayStation, Nintendo, 8BitDo, Logitech e genéricos
+    this.input.onDevice = () => this.pad.setUsing(false);
     this.raycaster = new THREE.Raycaster();
     this.aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
     this.mouseWorld = new THREE.Vector3();
@@ -586,6 +589,7 @@ export class Game {
     i.mouse.left = false;
     i.mouse.right = false;
     i.mouse.wheel = 0;
+    i.vdown.clear();
     this.touch.reset();
   }
   pause() {
@@ -1073,6 +1077,7 @@ export class Game {
     }
     p.hp -= dmg;
     p.hurtT = 0.15;
+    if (dmg > 0) this.pad.rumble(this.players.indexOf(p), Math.min(1, 0.35 + dmg / 30), 140);
     if (knock) {
       const d = Math.hypot(p.pos.x - fx, p.pos.z - fz) || 1;
       p.vel.x += ((p.pos.x - fx) / d) * knock;
@@ -1776,7 +1781,7 @@ export class Game {
       p.lv++;
       p.pts++;
       this.audio.play('levelup', { volume: 0.7, priority: true });
-      this.ui.toast(p.id, `Nível ${p.lv}! +1 ponto (Tab)`, 'tree');
+      this.ui.toast(p.id, `Nível ${p.lv}! +1 ponto (${this.ui.treeKey()})`, 'tree');
       for (let k = 0; k < 16; k++) this.parts.spawn(p.pos.x + rand(-0.4, 0.4), rand(0.2, 1.6), p.pos.z + rand(-0.4, 0.4), 0, rand(1.5, 3.5), 0, 0.09, pick([0xffe060, 0xffffff]), 0.8, -1, 2);
     }
   }
@@ -1839,7 +1844,7 @@ export class Game {
     if (!def) return;
     if (ult && !p.ultOn) {
       this.audio.play('empty', { volume: 0.5 });
-      this.ui.toast(p.id, `Ultimate bloqueada: libere na árvore (Tab, nível ${ULT_REQ.level})`, 'lock', 'bad');
+      this.ui.toast(p.id, `Ultimate bloqueada: libere na árvore (${this.ui.treeKey()}, nível ${ULT_REQ.level})`, 'lock', 'bad');
       return;
     }
     if (p.cds[i] > 0 || p.dashT > 0) {
@@ -2835,6 +2840,7 @@ export class Game {
     if (!this.scene) return;
     this.input.capture = this.state === 'playing'; // Espaço/setas/Enter não rolam a página nem clicam botões
     platform.setPlaying(this.state === 'playing');
+    this.pad.update(dt);
     if (this.state === 'playing') {
       this.update(dt);
       this.updateTutorial(dt);
@@ -3042,7 +3048,7 @@ export class Game {
     p.walk += hs * dt * 2.6;
     // direção da mira
     // celular: sem mira manual, o sobrevivente encara o zumbi mais próximo ao alcance
-    const tt = c.mouse && inp.touchMode && !inp.touchAim ? this.touchTarget(p) : null;
+    const tt = c.mouse && (inp.touchMode || (inp.padActive && this.settings.aimMode !== 0)) && !inp.touchAim ? this.touchTarget(p) : null;
     if (c.mouse && inp.touchAim) p.aim = Math.atan2(inp.touchAim.x, inp.touchAim.z);
     else if (tt) p.aim = Math.atan2(tt.pos.x - p.pos.x, tt.pos.z - p.pos.z);
     else if (c.mouse && !inp.mouseIdle) p.aim = Math.atan2(this.mouseWorld.x - p.pos.x, this.mouseWorld.z - p.pos.z);
@@ -3062,7 +3068,7 @@ export class Game {
     p.fireCd -= dt;
     const wantMelee = inp.any(c.melee) || (c.mouse && inp.mouse.right);
     if (wantMelee && p.meleeCd <= 0 && p.meleeT <= 0) this.melee(p);
-    const wantFire = inp.any(c.fire) || (c.mouse && inp.mouse.left) || (tt && this.settings.touchAuto !== false && AUTO_FIRE.has(WEAPONS[p.weapon].kind));
+    const wantFire = inp.any(c.fire) || (c.mouse && inp.mouse.left) || (tt && inp.touchMode && this.settings.touchAuto !== false && AUTO_FIRE.has(WEAPONS[p.weapon].kind));
     if (wantFire && p.fireCd <= 0 && p.meleeT <= 0) this.fire(p);
     if (p.energyT > 0 && hs > 1 && Math.random() < dt * 25) this.parts.spawn(p.pos.x + rand(-0.2, 0.2), 0.15, p.pos.z + rand(-0.2, 0.2), -p.vel.x * 0.2, rand(0.5, 1.5), -p.vel.z * 0.2, 0.08, pick([0x40c8ff, 0xffffff]), 0.35, 0, 2);
     // passos

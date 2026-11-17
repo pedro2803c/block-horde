@@ -4,6 +4,9 @@ import * as THREE from 'three';
 export class Input {
   constructor(canvas) {
     this.down = new Set();
+    this.vdown = new Set(); // teclas virtuais geradas pelo controle (gamepad.js)
+    this.padActive = false;
+    this.onDevice = null; // avisa quando teclado/mouse voltam a ser usados
     this.pressed = new Set();
     this.mouse = { left: false, right: false, wheel: 0 };
     this.mouseNdc = new THREE.Vector2();
@@ -16,6 +19,7 @@ export class Input {
     window.addEventListener('keydown', (e) => {
       if (this.capture && GAME_KEYS.has(e.code)) e.preventDefault();
       if (!this.down.has(e.code)) this.pressed.add(e.code);
+      if (!e.synthetic) this.onDevice?.();
       this.down.add(e.code);
     });
     window.addEventListener('keyup', (e) => this.down.delete(e.code));
@@ -31,6 +35,7 @@ export class Input {
       this.mouseClient.y = e.clientY;
       this.mouseNdc.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
       this.mouseIdle = false;
+      this.onDevice?.();
     });
     canvas.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'touch') return;
@@ -51,7 +56,7 @@ export class Input {
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   }
   any(codes) {
-    for (const c of codes) if (this.down.has(c)) return true;
+    for (const c of codes) if (this.down.has(c) || this.vdown.has(c)) return true;
     return false;
   }
   hit(code) {
