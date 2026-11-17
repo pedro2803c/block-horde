@@ -605,70 +605,92 @@ const IMPERIAL = 0x2a4aa0;
 const BANDAGE = 0xd8cba0;
 const BANDAGE_D = 0xb3a57a;
 const JACKAL = 0x22222a;
+// toucado de faraó (nemes) listrado azul e dourado, com abas caindo sobre o peito
+const nemes = (c1 = IMPERIAL, c2 = GOLD) => [
+  ['head', 0, 0.56, -0.02, 0.64, 0.12, 0.64, c2],
+  ['head', 0, 0.49, 0.3, 0.62, 0.07, 0.02, c2],
+  ['head', 0, 0.66, 0.26, 0.08, 0.14, 0.06, c2],
+  ['head', 0, 0.3, -0.31, 0.62, 0.52, 0.06, c1],
+  ...[0.44, 0.28, 0.12].map((y) => ['head', 0, y, -0.345, 0.62, 0.05, 0.012, c2]),
+  ...mirror(
+    ['head', 0.31, 0.3, -0.04, 0.06, 0.52, 0.52, c1],
+    ['head', 0.345, 0.4, -0.04, 0.012, 0.05, 0.52, c2],
+    ['head', 0.345, 0.24, -0.04, 0.012, 0.05, 0.52, c2],
+    ['torso', 0.2, 0.36, 0.17, 0.13, 0.34, 0.03, c1],
+    ['torso', 0.2, 0.42, 0.188, 0.13, 0.04, 0.012, c2],
+    ['torso', 0.2, 0.28, 0.188, 0.13, 0.04, 0.012, c2],
+  ),
+];
+// rosto de criatura: olhos vermelhos brilhando, boca aberta com presas
+const fiend = (brow = 0x1a1210) => face(0xff2a1a, { brow, mouth: 0x3a0606, open: 0.17, fangs: true });
+const bandStripes = (c = BANDAGE_D) => [
+  ['head', 0, 0.42, 0.278, 0.58, 0.035, 0.02, c, 0, 0.1],
+  ['torso', 0, 0.14, 0.166, 0.56, 0.04, 0.012, c, 0, 0.2],
+  ['torso', 0, 0.3, 0.166, 0.56, 0.04, 0.012, c, 0, -0.18],
+  ...mirror(['legL', 0, -0.15, 0.121, 0.2, 0.04, 0.012, c, 0, 0.25], ['legL', 0, -0.32, 0.121, 0.2, 0.04, 0.012, c, 0, -0.2], ['armL', 0, -0.2, 0.096, 0.18, 0.035, 0.012, c, 0, 0.3]),
+];
 Object.assign(HUMANS, {
-  // Múmia Guerreira: bandagens, armadura danificada, olhos vermelhos e detalhes dourados
+  // Múmia Guerreira: bandagens, toucado listrado, boca aberta, braceletes azul e dourado
   mummy: {
-    skin: BANDAGE, shirt: BANDAGE, sleeve: BANDAGE, hands: BANDAGE_D, pants: BANDAGE, boots: 0x7a6a4a, noFace: true, arms: 'reach',
+    skin: BANDAGE, shirt: BANDAGE, sleeve: BANDAGE, hands: BANDAGE_D, pants: BANDAGE, boots: 0x8a7a5a, noFace: true, arms: 'reach',
     extras: [
-      ...face(0xff3a2a, { brow: BANDAGE_D, mouth: 0x2a1a0a, open: 0.06, fangs: false }),
-      // faixas cruzadas na cabeça, no tronco e nas pernas
-      ['head', 0, 0.48, 0.278, 0.58, 0.04, 0.02, BANDAGE_D, 0, 0.12],
-      ['head', 0, 0.22, 0.278, 0.58, 0.04, 0.02, BANDAGE_D, 0, -0.1],
-      ['torso', 0, 0.12, 0.166, 0.56, 0.04, 0.012, BANDAGE_D, 0, 0.2],
-      ['torso', 0, 0.3, 0.166, 0.56, 0.04, 0.012, BANDAGE_D, 0, -0.18],
-      ...mirror(['legL', 0, -0.15, 0.121, 0.2, 0.04, 0.012, BANDAGE_D, 0, 0.25], ['armL', 0, -0.2, 0.096, 0.18, 0.035, 0.012, BANDAGE_D, 0, 0.3]),
-      // colar e cinto dourados, armadura danificada no ombro
-      ['torso', 0, 0.5, 0.15, 0.5, 0.08, 0.06, GOLD],
-      ['torso', 0, 0.44, 0.17, 0.3, 0.05, 0.03, IMPERIAL],
-      ['torso', 0, 0.02, 0, 0.6, 0.07, 0.36, GOLD],
-      ['armL', 0.02, -0.04, 0, 0.24, 0.12, 0.25, 0x8a7448],
-      // tira de bandagem solta
-      ['armR', -0.02, -0.62, 0.02, 0.05, 0.28, 0.02, BANDAGE, 0, 0.2],
+      ...fiend(BANDAGE_D),
+      ...nemes(),
+      ...bandStripes(),
+      ['torso', 0, 0.5, 0.12, 0.6, 0.1, 0.14, GOLD],
+      ['torso', 0, 0.44, 0.19, 0.34, 0.04, 0.012, IMPERIAL],
+      ['torso', 0, 0.02, 0, 0.6, 0.08, 0.36, GOLD],
+      ['torso', 0, 0.02, 0.185, 0.14, 0.12, 0.012, IMPERIAL],
+      ...mirror(['armL', 0, -0.36, 0, 0.22, 0.08, 0.22, IMPERIAL], ['armL', 0, -0.44, 0, 0.22, 0.05, 0.22, GOLD]),
+      ['armR', -0.02, -0.66, 0.02, 0.05, 0.26, 0.02, BANDAGE, 0, 0.2],
     ],
   },
-  // Guardião Anúbis: cabeça de chacal, armadura dourada e azul, machado cerimonial
+  // Guardião Anúbis: chacal preto rosnando, armadura azul e dourada, machado dourado
   anubis: {
     skin: JACKAL, shirt: IMPERIAL, sleeve: JACKAL, hands: JACKAL, pants: GOLD, boots: GOLD, noFace: true, arms: 'brawl',
     extras: [
-      // focinho, nariz, orelhas altas e olhos luminosos
-      ['head', 0, 0.2, 0.38, 0.26, 0.18, 0.26, JACKAL],
-      ['head', 0, 0.26, 0.52, 0.1, 0.07, 0.04, 0x0a0a0a],
-      ...mirror(['head', 0.17, 0.72, -0.02, 0.11, 0.34, 0.08, JACKAL, 0, -0.12], ['head', 0.17, 0.7, 0.03, 0.05, 0.22, 0.012, GOLD, 0, -0.12]),
-      ...mirror(['head', 0.13, 0.36, 0.276, 0.12, 0.05, 0.02, GOLD_L, 0, 0.25, GLOW]),
-      // toucado listrado azul e dourado
-      ...mirror(['head', 0.29, 0.2, -0.05, 0.04, 0.4, 0.4, IMPERIAL], ['head', 0.3, 0.2, -0.05, 0.02, 0.06, 0.4, GOLD]),
+      // focinho com boca aberta vermelha e presas
+      ['head', 0, 0.24, 0.38, 0.26, 0.12, 0.28, JACKAL],
+      ['head', 0, 0.3, 0.53, 0.1, 0.06, 0.04, 0x0a0a0a],
+      ['head', 0, 0.1, 0.36, 0.22, 0.08, 0.24, JACKAL, 0.25],
+      ['head', 0, 0.16, 0.42, 0.2, 0.05, 0.2, 0x8a1010],
+      ...mirror(['head', 0.08, 0.19, 0.5, 0.03, 0.06, 0.03, TEETH], ['head', 0.08, 0.12, 0.47, 0.03, 0.05, 0.03, TEETH]),
+      ...mirror(['head', 0.17, 0.74, -0.02, 0.11, 0.38, 0.08, JACKAL, 0, -0.1], ['head', 0.17, 0.72, 0.03, 0.05, 0.24, 0.012, GOLD, 0, -0.1]),
+      ...mirror(['head', 0.13, 0.38, 0.276, 0.13, 0.05, 0.02, 0xff2a1a, 0, 0.3, GLOW]),
+      ...mirror(['head', 0.29, 0.2, -0.05, 0.04, 0.4, 0.4, IMPERIAL], ['head', 0.3, 0.26, -0.05, 0.02, 0.05, 0.4, GOLD], ['head', 0.3, 0.12, -0.05, 0.02, 0.05, 0.4, GOLD]),
       ['head', 0, 0.2, -0.29, 0.56, 0.42, 0.04, IMPERIAL],
-      // colar largo, peitoral e saia dourados
-      ['torso', 0, 0.48, 0.12, 0.62, 0.14, 0.14, GOLD],
-      ['torso', 0, 0.36, 0.172, 0.26, 0.12, 0.012, GOLD_L, 0, 0, GLOW],
+      ['torso', 0, 0.48, 0.12, 0.64, 0.16, 0.16, GOLD],
+      ['torso', 0, 0.48, 0.2, 0.5, 0.05, 0.012, IMPERIAL],
+      ['torso', 0, 0.32, 0.172, 0.22, 0.12, 0.012, GOLD_L, 0, 0, GLOW],
       ['torso', 0, 0.02, 0, 0.62, 0.08, 0.38, GOLD],
-      ...mirror(['armL', 0.04, -0.02, 0, 0.3, 0.16, 0.3, GOLD], ['armL', 0, -0.45, 0, 0.22, 0.08, 0.22, GOLD]),
-      // machado cerimonial na mão direita
-      ['armR', 0, -0.6, 0.08, 0.06, 0.9, 0.06, 0x5a3a20],
-      ['armR', 0, -0.25, 0.3, 0.05, 0.36, 0.3, GOLD],
-      ['armR', 0, -0.25, 0.44, 0.06, 0.38, 0.04, GOLD_L],
+      ...mirror(['armL', 0.04, -0.02, 0, 0.32, 0.18, 0.32, GOLD], ['armL', 0.04, 0.06, 0, 0.34, 0.04, 0.34, IMPERIAL], ['armL', 0, -0.45, 0, 0.22, 0.08, 0.22, GOLD]),
+      // machado cerimonial grande
+      ['armR', 0, -0.55, 0.08, 0.06, 1.1, 0.06, 0x3a2414],
+      ['armR', 0, -0.12, 0.32, 0.05, 0.5, 0.36, GOLD],
+      ['armR', 0, -0.12, 0.5, 0.06, 0.56, 0.04, GOLD_L],
+      ['armR', 0, -0.12, 0.2, 0.06, 0.14, 0.06, IMPERIAL],
     ],
   },
-  // Arqueiro do Deserto: armadura egípcia leve, arco dourado e aljava
+  // Arqueiro do Deserto: múmia encapuzada, arco dourado com flecha em chamas
   archer: {
-    skin: 0xa8845a, shirt: 0xe8dcc0, sleeve: 0xa8845a, hands: 0x8a6a44, pants: 0xe8dcc0, boots: 0x7a5a32, noFace: true, arms: 'reach',
+    skin: BANDAGE, shirt: 0xc8b890, sleeve: BANDAGE, hands: BANDAGE_D, pants: 0xc8b890, boots: 0x7a5a32, noFace: true, arms: 'reach',
     extras: [
-      ...face(0x8aff3a, { brow: 0x3a2a14, open: 0.06, fangs: false }),
-      // toucado listrado
-      ['head', 0, 0.52, -0.02, 0.6, 0.1, 0.6, IMPERIAL],
-      ...mirror(['head', 0.29, 0.28, -0.06, 0.04, 0.34, 0.36, IMPERIAL], ['head', 0.3, 0.28, -0.06, 0.02, 0.05, 0.36, GOLD]),
-      ['head', 0, 0.5, 0.29, 0.6, 0.05, 0.02, GOLD],
-      // colar e cinto
+      ...fiend(BANDAGE_D),
+      // capuz de faixas caindo nas costas
+      ['head', 0, 0.54, -0.04, 0.66, 0.16, 0.66, BANDAGE_D],
+      ['head', 0, 0.3, -0.31, 0.64, 0.56, 0.06, BANDAGE_D],
+      ...mirror(['head', 0.31, 0.32, -0.06, 0.05, 0.5, 0.5, BANDAGE_D]),
+      ['torso', 0, 0.4, -0.2, 0.5, 0.4, 0.04, BANDAGE_D],
+      ...bandStripes(0xa89a70),
       ['torso', 0, 0.5, 0.15, 0.5, 0.07, 0.06, GOLD],
       ['torso', 0, 0.02, 0, 0.58, 0.07, 0.36, GOLD],
-      // aljava com flechas luminosas nas costas
-      ['torso', 0.12, 0.34, -0.24, 0.14, 0.44, 0.12, 0x6a4a28, 0, 0.35],
-      ...mirror(['torso', 0.2, 0.62, -0.24, 0.025, 0.14, 0.025, 0x8aff3a, 0, 0.35, GLOW]),
-      // arco dourado na mão esquerda
-      ['armL', 0, -0.55, 0.16, 0.05, 1.0, 0.05, GOLD],
-      ['armL', 0, -0.55, 0.1, 0.012, 0.95, 0.012, 0xeeeeee],
-      ['armL', 0, -0.08, 0.16, 0.06, 0.08, 0.06, GOLD_L],
-      ['armL', 0, -1.02, 0.16, 0.06, 0.08, 0.06, GOLD_L],
+      ['torso', 0.12, 0.34, -0.25, 0.14, 0.44, 0.12, 0x6a4a28, 0, 0.35],
+      // arco dourado e flecha em chamas
+      ['armL', 0, -0.55, 0.16, 0.06, 1.05, 0.06, GOLD],
+      ['armL', 0, -0.55, 0.08, 0.012, 1.0, 0.012, 0xeeeeee],
+      ...[-0.06, -1.04].map((y) => ['armL', 0, y, 0.16, 0.07, 0.1, 0.07, GOLD_L]),
+      ['armL', 0, -0.55, 0.36, 0.03, 0.03, 0.5, 0x6a4a28],
+      ['armL', 0, -0.55, 0.64, 0.08, 0.08, 0.1, 0xff8a1a, 0, 0, GLOW],
     ],
   },
 });
@@ -710,43 +732,47 @@ BODIES.scarab = drawScarab;
 OTHER_COLORS.scarab = [0x1e4a8a, GOLD];
 
 Object.assign(HUMANS, {
-  // Sacerdote Profano: manto roxo, cajado cerimonial com cristal violeta
+  // Sacerdote Profano: capuz roxo com bordas douradas, rosto de múmia, cajado com orbe roxo
   priest: {
-    skin: 0x8a6a4a, shirt: 0x5a2a8a, sleeve: 0x5a2a8a, hands: 0x7a5a3a, pants: 0x4a2272, boots: 0x2a1640, noFace: true, arms: 'reach',
+    skin: BANDAGE_D, shirt: 0x5a2a8a, sleeve: 0x5a2a8a, hands: BANDAGE_D, pants: 0x4a2272, boots: 0x2a1640, noFace: true, arms: 'reach',
     extras: [
-      ...face(0xc070ff, { brow: 0x2a1a14, open: 0.06, fangs: false }),
-      // capuz e máscara dourada
-      ['head', 0, 0.42, -0.04, 0.64, 0.36, 0.62, 0x4a2272],
-      ['head', 0, 0.62, -0.02, 0.4, 0.12, 0.4, 0x4a2272],
-      ['head', 0, 0.46, 0.3, 0.5, 0.06, 0.02, GOLD],
-      // manto longo com faixa dourada e runas
+      ...fiend(0x8a7a50),
+      ['head', 0, 0.56, -0.04, 0.68, 0.16, 0.68, 0x4a2272],
+      ['head', 0, 0.3, -0.33, 0.68, 0.6, 0.06, 0x4a2272],
+      ...mirror(['head', 0.33, 0.32, -0.04, 0.06, 0.56, 0.6, 0x4a2272], ['head', 0.365, 0.32, 0.25, 0.012, 0.56, 0.06, GOLD]),
+      ['head', 0, 0.63, 0.27, 0.68, 0.05, 0.03, GOLD],
+      ['head', 0, 0.72, 0.24, 0.1, 0.12, 0.05, GOLD],
       ['torso', 0, 0.02, 0, 0.62, 0.3, 0.4, 0x4a2272],
-      ['torso', 0, 0.3, 0.172, 0.08, 0.5, 0.012, GOLD],
-      ...mirror(['torso', 0.14, 0.26, 0.172, 0.05, 0.05, 0.012, 0xc070ff, 0, 0, GLOW]),
-      ...mirror(['legL', 0, -0.2, 0, 0.26, 0.44, 0.28, 0x4a2272]),
-      // cajado com cristal violeta
-      ['armR', 0, -0.55, 0.12, 0.05, 1.2, 0.05, GOLD],
-      ['armR', 0, 0.12, 0.12, 0.16, 0.2, 0.16, 0xc070ff, 0, 0.6, GLOW],
+      ['torso', 0, 0.48, 0.15, 0.6, 0.1, 0.08, GOLD],
+      ['torso', 0, 0.3, 0.172, 0.1, 0.5, 0.012, GOLD],
+      ...mirror(['torso', 0.16, 0.24, 0.172, 0.05, 0.05, 0.012, 0xc070ff, 0, 0, GLOW]),
+      ...mirror(['legL', 0, -0.2, 0, 0.26, 0.44, 0.28, 0x4a2272], ['armL', 0, -0.4, 0, 0.22, 0.06, 0.22, GOLD]),
+      ['armR', 0, -0.5, 0.12, 0.06, 1.3, 0.06, GOLD],
+      ['armR', 0, 0.22, 0.12, 0.24, 0.24, 0.24, 0xc070ff, 0.6, 0.6, GLOW],
+      ['armR', 0, 0.22, 0.12, 0.3, 0.06, 0.06, GOLD],
     ],
   },
-  // Construto de Areia: blocos de areia, armadura de rocha, núcleo dourado
+  // Construto de Areia: blocos de arenito dourado, olhos vermelhos, punhos enormes
   construct: {
-    skin: 0xd8b878, shirt: 0xc8a060, sleeve: 0xd8b878, hands: 0x8a7458, pants: 0xb8904e, boots: 0x6a5a44, noFace: true, arms: 'brawl',
+    skin: 0xd8a848, shirt: 0xc89838, sleeve: 0xd8a848, hands: 0xb88a38, pants: 0xb8883a, boots: 0x8a6a30, noFace: true, arms: 'brawl',
     extras: [
-      ...mirror(['head', 0.13, 0.33, 0.276, 0.12, 0.07, 0.02, GOLD_L, 0, 0.1, GLOW]),
-      ['head', 0, 0.5, 0, 0.66, 0.16, 0.66, 0x8a7458],
-      ['head', 0.18, 0.2, 0.25, 0.16, 0.14, 0.08, 0xc09858],
-      // placas de rocha e núcleo dourado brilhando
-      ['torso', 0, 0.3, 0.17, 0.4, 0.4, 0.04, 0x8a7458],
-      ['torso', 0, 0.3, 0.2, 0.14, 0.14, 0.02, GOLD_L, 0, 0.785, GLOW],
-      ...mirror(['armL', 0.04, -0.02, 0, 0.36, 0.26, 0.36, 0x8a7458], ['armL', 0, -0.52, 0, 0.38, 0.32, 0.38, 0xa88a5a]),
-      ['torso', -0.2, 0.08, 0.17, 0.14, 0.12, 0.04, 0xe8c888],
-      ['torso', 0.22, 0.48, 0.17, 0.1, 0.1, 0.04, 0xe8c888],
-      ...mirror(['legL', 0, -0.3, 0.12, 0.24, 0.18, 0.04, 0x8a7458]),
+      ...face(0xff2a1a, { brow: 0x8a6a30, mouth: 0x5a3a14, open: 0.1, fangs: false }),
+      ['head', 0, 0.52, 0, 0.66, 0.14, 0.66, 0xb88a38],
+      ['head', 0.2, 0.22, 0.25, 0.16, 0.14, 0.08, 0xe8c068],
+      ['head', -0.22, 0.46, 0.2, 0.14, 0.1, 0.16, 0xe8c068],
+      ['torso', 0, 0.3, 0.17, 0.44, 0.44, 0.04, 0xb88a38],
+      ['torso', -0.2, 0.1, 0.18, 0.18, 0.14, 0.05, 0xe8c068],
+      ['torso', 0.24, 0.48, 0.18, 0.12, 0.12, 0.05, 0xe8c068],
+      ['torso', 0, 0.62, 0, 0.8, 0.16, 0.5, 0xc89838],
+      ...mirror(
+        ['armL', 0.04, -0.02, 0, 0.4, 0.3, 0.4, 0xb88a38],
+        ['armL', 0, -0.56, 0, 0.5, 0.42, 0.5, 0xd8a848],
+        ['armL', 0.1, -0.46, 0.16, 0.14, 0.12, 0.2, 0xe8c068],
+      ),
+      ...mirror(['legL', 0, -0.3, 0.12, 0.26, 0.2, 0.04, 0xb88a38]),
     ],
   },
 });
-
 // Serpente Sagrada: corpo em segmentos dourados com faixas vermelhas, cabeça erguida
 function drawSerpent(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
@@ -760,17 +786,23 @@ function drawSerpent(B, G, base, z, col, t) {
   }
   // pescoço e cabeça erguidos (sobe mais no bote)
   const up = z.state === 'lunge' ? 0.2 : z.attackT > 0 ? 0.12 : 0;
-  const neck = joint(base, 0, 0.3, 0.12, -0.5 - up, 0, Math.sin(t * 2) * 0.08);
-  P(neck, 0, 0.22, 0, 0.26, 0.5, 0.26, 0xd4a020);
-  const head = joint(neck, 0, 0.5, 0.06, 0.5 + up, 0, 0);
-  P(head, 0, 0.02, 0.1, 0.36, 0.2, 0.46, 0xd4a020);
-  P(head, 0, 0.13, 0.08, 0.3, 0.02, 0.36, 0xa01a14);
-  G.part(head, 0.13, 0.08, 0.22, 0, 0, 0, 0, 0, 0.07, 0.05, 0.08, 0xff3a1a);
-  G.part(head, -0.13, 0.08, 0.22, 0, 0, 0, 0, 0, 0.07, 0.05, 0.08, 0xff3a1a);
-  if (z.attackT > 0 || z.state === 'lunge') P(head, 0, -0.1, 0.32, 0.04, 0.12, 0.02, TEETH);
+  // naja erguida: pescoço alto quase vertical
+  const neck = joint(base, 0, 0.3, 0.12, -0.12 - up, 0, Math.sin(t * 2) * 0.08);
+  P(neck, 0, 0.45, 0, 0.3, 0.95, 0.28, 0xd4a020);
+  for (const y of [0.15, 0.45, 0.75]) P(neck, 0, y, 0.145, 0.22, 0.12, 0.012, 0xf0d070);
+  const head = joint(neck, 0, 0.95, 0.06, 0.12 + up, 0, 0); // cabeça na horizontal, olhando para frente
+  P(head, 0, 0.04, 0.12, 0.44, 0.26, 0.52, 0xd4a020);
+  P(head, 0, 0.18, 0.1, 0.36, 0.02, 0.4, 0xa01a14);
+  G.part(head, 0.13, 0.1, 0.39, 0, 0, 0, 0, 0, 0.1, 0.07, 0.02, 0xff3a1a);
+  G.part(head, -0.13, 0.1, 0.39, 0, 0, 0, 0, 0, 0.1, 0.07, 0.02, 0xff3a1a);
+  const bite = z.attackT > 0 || z.state === 'lunge' ? 0.5 : 0.3;
+  P(head, 0, -0.1, 0.12, 0.32, 0.08, 0.42, 0xb88818, bite);
+  P(head, 0, -0.06, 0.14, 0.26, 0.04, 0.36, 0x8a1010, bite * 0.5);
+  for (const sg of [1, -1]) P(head, sg * 0.1, -0.1, 0.4, 0.04, 0.14, 0.03, TEETH);
   // capuz de naja
-  P(neck, 0, 0.42, -0.04, 0.5, 0.36, 0.06, 0xb88818);
-  P(neck, 0, 0.42, -0.01, 0.2, 0.24, 0.02, 0xa01a14);
+  // capuz largo atrás da cabeça
+  P(neck, 0, 0.72, -0.08, 0.86, 0.7, 0.06, 0xb88818);
+  for (const y of [0.5, 0.68, 0.86]) P(neck, 0, y, -0.045, 0.62, 0.05, 0.02, 0xa01a14);
 }
 
 // Fantasma do Faraó: corpo translúcido ciano, toucado de faraó, cauda espectral
@@ -803,8 +835,14 @@ function drawPhantom(B, G, base, z, col, t) {
   P(hd, 0.24, -0.04, -0.04, 0.06, 0.42, 0.42, IMPERIAL);
   P(hd, -0.24, -0.04, -0.04, 0.06, 0.42, 0.42, IMPERIAL);
   P(hd, 0, 0.3, 0.18, 0.08, 0.14, 0.06, GOLD);
-  L(hd, 0.1, 0.02, 0.225, 0.1, 0.05, 0.02, 0xffffff);
-  L(hd, -0.1, 0.02, 0.225, 0.1, 0.05, 0.02, 0xffffff);
+  for (const sg of [1, -1]) {
+    P(hd, sg * 0.1, 0.03, 0.222, 0.13, 0.1, 0.02, 0x0a2a3a);
+    L(hd, sg * 0.1, 0.03, 0.232, 0.06, 0.05, 0.02, 0xff2a1a);
+    P(hd, sg * 0.245, 0.08, -0.04, 0.012, 0.05, 0.42, GOLD);
+    P(hd, sg * 0.245, -0.12, -0.04, 0.012, 0.05, 0.42, GOLD);
+  }
+  P(hd, 0, -0.13, 0.222, 0.24, 0.1, 0.02, 0x0a2a3a);
+  P(hd, 0, -0.12, 0.232, 0.2, 0.04, 0.012, TEETH);
 }
 BODIES.serpent = drawSerpent;
 BODIES.phantom = drawPhantom;
@@ -814,22 +852,6 @@ OTHER_COLORS.phantom = [0x3ac8e8, GOLD];
 const BONE = 0xe8e0c8;
 const BONE_D = 0xb8ae90;
 Object.assign(HUMANS, {
-  // Híbrido Chacal: humanoide magro com cabeça de chacal, armadura leve e garras
-  jackal: {
-    skin: 0x6a4a2a, shirt: 0x3a2a1a, sleeve: 0x6a4a2a, hands: 0x4a3420, pants: 0x3a2a1a, boots: 0x2a1e12, noFace: true, arms: 'reach',
-    extras: [
-      ['head', 0, 0.2, 0.36, 0.24, 0.16, 0.24, 0x6a4a2a],
-      ['head', 0, 0.24, 0.49, 0.08, 0.06, 0.03, 0x0a0a0a],
-      ['head', 0, 0.12, 0.42, 0.18, 0.04, 0.12, 0x2a0a06],
-      ...mirror(['head', 0.16, 0.68, -0.04, 0.1, 0.3, 0.08, 0x6a4a2a, 0, -0.15], ['head', 0.16, 0.66, 0.01, 0.05, 0.2, 0.012, 0xc89a6a, 0, -0.15]),
-      ...mirror(['head', 0.13, 0.36, 0.276, 0.12, 0.05, 0.02, 0xff2a1a, 0, 0.3, GLOW]),
-      ['torso', 0, 0.46, 0.13, 0.56, 0.1, 0.1, GOLD],
-      ['torso', 0, 0.02, 0, 0.58, 0.07, 0.36, GOLD],
-      ...mirror(['armL', 0, -0.4, 0, 0.2, 0.08, 0.2, GOLD]),
-      // garras
-      ...mirror(['armL', 0.05, -0.68, 0.08, 0.03, 0.14, 0.03, TEETH, 0.4], ['armL', -0.05, -0.68, 0.08, 0.03, 0.14, 0.03, TEETH, 0.4]),
-    ],
-  },
   // Esqueleto de Faraó: ossos, toucado e armadura dourada, espada cerimonial
   skeleton: {
     skin: BONE, shirt: BONE_D, sleeve: BONE, hands: BONE, pants: BONE_D, boots: BONE_D, noFace: true, arms: 'brawl',
@@ -895,32 +917,79 @@ function drawScorpion(B, G, base, z, col, t) {
     }
 }
 
-// Portal das Almas: obelisco com portal roxo, runas e fragmentos flutuantes; brilha forte antes de invocar
+// Híbrido Chacal: fera de quatro patas, pelo preto com faixas de múmia, colar dourado, olhos vermelhos
+function drawJackal(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const fur = 0x1e1e24;
+  const gait = z.walk * 1.4;
+  const bob = Math.abs(Math.sin(gait)) * 0.05;
+  P(base, 0, 0.68 + bob, -0.1, 0.46, 0.4, 0.92, fur);
+  P(base, 0, 0.68 + bob, 0.28, 0.5, 0.5, 0.4, fur);
+  // faixas de múmia no corpo e pelos espetados no dorso
+  for (const zz of [-0.4, -0.15, 0.1]) P(base, 0, 0.68 + bob, zz, 0.48, 0.42, 0.06, BANDAGE_D, 0.3);
+  for (const [zz, hh] of [[0.3, 0.24], [0.1, 0.22], [-0.1, 0.18], [-0.3, 0.14]]) P(base, 0, 0.9 + bob + hh * 0.35, zz, 0.1, hh, 0.12, 0x3a2a1a, -0.55);
+  P(base, 0, 0.82 + bob, 0.46, 0.54, 0.1, 0.14, GOLD);
+  P(base, 0, 0.8 + bob, 0.54, 0.2, 0.08, 0.02, IMPERIAL);
+  const tail = joint(base, 0, 0.76 + bob, -0.56, -0.9 + Math.sin(t * 8) * 0.2, 0, Math.sin(t * 6) * 0.3);
+  P(tail, 0, 0.2, 0, 0.1, 0.42, 0.1, fur);
+  // cabeça de chacal: orelhas altas, focinho longo, boca aberta
+  const lunge = z.state === 'lunge';
+  const head = joint(base, 0, 0.92 + bob, 0.5, -0.15 + (lunge ? -0.3 : 0), 0, Math.sin(gait * 0.5) * 0.05);
+  P(head, 0, 0.08, 0.1, 0.4, 0.34, 0.36, fur);
+  P(head, 0, 0.02, 0.4, 0.24, 0.16, 0.3, fur);
+  P(head, 0, 0.08, 0.56, 0.1, 0.06, 0.03, 0x0a0a0a);
+  const jaw = 0.35 + (z.attackT > 0 || lunge ? 0.35 : 0);
+  P(head, 0, -0.12, 0.34, 0.22, 0.06, 0.28, fur, jaw);
+  P(head, 0, -0.08, 0.36, 0.18, 0.04, 0.24, 0x8a1010, jaw * 0.5);
+  for (const sg of [1, -1]) {
+    G.part(head, sg * 0.12, 0.14, 0.285, 0, sg * 0.3, 0, 0, 0, 0.1, 0.05, 0.02, 0xff2a1a);
+    P(head, sg * 0.13, 0.4, 0.02, 0.1, 0.32, 0.08, fur, -0.15, -sg * 0.1);
+    P(head, sg * 0.13, 0.38, 0.06, 0.05, 0.22, 0.012, GOLD, -0.15, -sg * 0.1);
+    P(head, sg * 0.08, -0.08, 0.53, 0.035, 0.08, 0.03, TEETH);
+    P(head, sg * 0.08, -0.15, 0.46, 0.035, 0.06, 0.03, TEETH, jaw);
+  }
+  const legs = [[0.16, 0.32, 0], [-0.16, 0.32, Math.PI], [0.16, -0.44, Math.PI], [-0.16, -0.44, 0]];
+  for (const [x, zz, ph] of legs) {
+    const a = lunge ? (zz > 0 ? -1.1 : 0.9) : Math.sin(gait + ph) * 0.7;
+    const leg = joint(base, x, 0.56 + bob, zz, a, 0, 0);
+    P(leg, 0, -0.25, 0, 0.14, 0.54, 0.16, fur);
+    P(leg, 0, -0.2, 0, 0.15, 0.08, 0.17, BANDAGE_D);
+    P(leg, 0, -0.52, 0.05, 0.16, 0.07, 0.22, 0x0e0e12);
+  }
+}
+
+// Portal das Almas: obelisco único de arenito com portal roxo oval na frente, runas e cubos flutuantes
 function drawPortal(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
   const charge = z.state === 'cast' ? 1 : 0;
   const pulse = 0.5 + 0.5 * Math.sin(t * (charge ? 14 : 3));
-  // base e dois obeliscos
-  P(base, 0, 0.12, 0, 1.6, 0.24, 0.7, 0x5a5048);
-  for (const sg of [1, -1]) {
-    P(base, sg * 0.62, 1.1, 0, 0.32, 1.8, 0.32, 0x6a5e52);
-    P(base, sg * 0.62, 2.1, 0, 0.2, 0.2, 0.2, GOLD, 0.785, 0.785);
-    for (let k = 0; k < 4; k++) G.part(base, sg * 0.62, 0.5 + k * 0.38, 0.165, 0, 0, 0, 0, 0, 0.12, 0.06, 0.02, pulse > 0.5 || charge ? 0xc070ff : 0x7a3ab0);
-  }
-  P(base, 0, 1.96, 0, 1.56, 0.16, 0.36, 0x6a5e52);
-  // vórtice roxo no meio
-  const s = 0.8 + pulse * 0.12 + charge * 0.25;
-  G.part(base, 0, 1.1, 0, 0, t * 2, 0, 0, 0, s * 0.9, s * 1.5, 0.06, charge ? 0xe0a0ff : 0x8a3ad0);
-  G.part(base, 0, 1.1, 0.02, 0, -t * 3, 0, 0, 0, s * 0.5, s * 0.9, 0.06, 0x2a0a4a);
-  // fragmentos flutuantes
-  for (let k = 0; k < 4; k++) {
-    const a = t * (1 + charge * 2) + k * 1.57;
-    P(base, Math.sin(a) * 1.05, 1.2 + Math.sin(t * 2 + k) * 0.25, Math.cos(a) * 0.5, 0.14, 0.14, 0.14, 0x6a5e52, a, a);
+  P(base, 0, 0.12, 0, 1.3, 0.24, 1.0, 0x8a7a5a);
+  P(base, 0, 0.3, 0, 1.1, 0.14, 0.86, 0xa8946a);
+  // obelisco afinando para cima com ponta dourada
+  P(base, 0, 1.1, 0, 0.9, 1.5, 0.7, 0xc8b080);
+  P(base, 0, 2.15, 0, 0.74, 0.6, 0.56, 0xc8b080);
+  P(base, 0, 2.6, 0, 0.5, 0.3, 0.4, GOLD, 0, 0);
+  P(base, 0, 2.8, 0, 0.24, 0.14, 0.2, GOLD_L);
+  // moldura e portal roxo oval
+  P(base, 0, 1.05, 0.36, 0.7, 1.2, 0.04, 0x6a5a40);
+  const s = 0.9 + pulse * 0.1 + charge * 0.2;
+  G.part(base, 0, 1.05, 0.39, 0, 0, 0, 0, 0, 0.5 * s, 1.0 * s, 0.02, charge ? 0xe0a0ff : 0x9a4ae0);
+  G.part(base, 0, 1.05, 0.4, 0, t * 2, 0, 0, 0, 0.3 * s, 0.6 * s, 0.02, 0x3a0a6a);
+  G.part(base, 0, 1.05, 0.41, 0, 0, 0, 0, 0, 0.12, 0.24, 0.02, 0xffffff);
+  // runas roxas nas laterais
+  for (const sg of [1, -1]) for (let k = 0; k < 4; k++) G.part(base, sg * 0.46, 0.55 + k * 0.42, 0.2, 0, 0, 0, 0, 0, 0.02, 0.12, 0.1, pulse > 0.5 || charge ? 0xc070ff : 0x7a3ab0);
+  // cubos roxos flutuando ao redor
+  for (let k = 0; k < 5; k++) {
+    const a = t * (0.8 + charge * 2) + k * 1.26;
+    G.part(base, Math.sin(a) * 1.0, 1.0 + Math.sin(t * 2 + k) * 0.4 + k * 0.15, Math.cos(a) * 0.7, a, a, 0, 0, 0, 0.14, 0.14, 0.14, 0x9a4ae0);
   }
 }
+
+BODIES.jackal = drawJackal;
 BODIES.scorpion = drawScorpion;
 BODIES.portal = drawPortal;
 OTHER_COLORS.scorpion = [0x1a1a20, GOLD];
+OTHER_COLORS.jackal = [0x1e1e24, GOLD];
 OTHER_COLORS.portal = [0x6a5e52, 0x8a3ad0];
 
 // Carruagem Maldita: carruagem dourada, rodas grandes, dois cavalos esqueletos e condutor infectado
@@ -941,10 +1010,15 @@ function drawChariot(B, G, base, z, col, t) {
     P(w, 0, 0, 0, 0.1, 0.94, 0.12, GOLD);
     P(w, 0, 0, 0, 0.12, 0.2, 0.2, GOLD_L);
   }
-  // condutor infectado
-  P(base, 0, 1.25, -0.5, 0.36, 0.5, 0.3, 0x5a6a3a);
-  P(base, 0, 1.68, -0.5, 0.32, 0.32, 0.32, 0x7fae4a);
-  P(base, 0, 1.86, -0.5, 0.36, 0.06, 0.36, IMPERIAL);
+  // condutor múmia com toucado listrado e arco
+  P(base, 0, 1.25, -0.5, 0.38, 0.5, 0.3, BANDAGE);
+  P(base, 0, 1.3, -0.34, 0.38, 0.04, 0.012, BANDAGE_D);
+  P(base, 0, 1.68, -0.5, 0.34, 0.34, 0.34, BANDAGE);
+  P(base, 0, 1.88, -0.52, 0.38, 0.08, 0.38, GOLD);
+  P(base, 0, 1.68, -0.69, 0.38, 0.36, 0.04, IMPERIAL);
+  for (const sg of [1, -1]) P(base, sg * 0.19, 1.62, -0.52, 0.04, 0.34, 0.34, IMPERIAL);
+  P(base, 0, 1.58, -0.33, 0.14, 0.06, 0.02, 0x3a0606);
+  P(base, 0.3, 1.3, -0.3, 0.05, 0.7, 0.05, GOLD);
   G.part(base, 0.08, 1.7, -0.335, 0, 0, 0, 0, 0, 0.06, 0.04, 0.02, 0xff2a1a);
   G.part(base, -0.08, 1.7, -0.335, 0, 0, 0, 0, 0, 0.06, 0.04, 0.02, 0xff2a1a);
   // dois cavalos esqueletos à frente
@@ -967,39 +1041,39 @@ function drawChariot(B, G, base, z, col, t) {
   if (wind) G.part(base, 0, 0.03, 1.6, 0, 0, 0, 0, 0, 0.9, 0.02, 1.6 + Math.sin(t * 20) * 0.2, 0xffd040);
 }
 
-// Hórus Corrompido: cabeça de falcão, asas douradas, armadura azul e dourada
+// Hórus Corrompido: falcão inteiro de asas douradas listradas de azul, olhos vermelhos
 function drawHorus(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  base = joint(base, 0, -0.55, 0);
-  const flap = Math.sin(t * 9 + z.walk) * 0.55;
-  const dive = z.state === 'lunge' ? 0.6 : z.state === 'wind' ? -0.3 : 0;
-  const body = joint(base, 0, 0.5, 0, dive, 0, 0);
-  // tronco e saiote
-  P(body, 0, 0.3, 0, 0.5, 0.56, 0.34, IMPERIAL);
-  P(body, 0, 0.5, 0.16, 0.54, 0.1, 0.08, GOLD);
-  P(body, 0, 0.02, 0, 0.46, 0.2, 0.34, GOLD);
-  P(body, 0, -0.18, 0, 0.3, 0.24, 0.26, 0xe8dcc0);
-  // garras pendentes
-  for (const sg of [1, -1]) P(body, sg * 0.1, -0.38, 0.04, 0.08, 0.18, 0.1, 0x2a2018);
-  // cabeça de falcão com bico e olhos luminosos
-  const hd = joint(body, 0, 0.8, 0.02, -dive * 0.5, 0, 0);
-  P(hd, 0, 0, 0, 0.36, 0.36, 0.38, 0x5a3a20);
-  P(hd, 0, -0.06, 0.18, 0.3, 0.16, 0.04, 0xe8dcc0);
-  P(hd, 0, -0.04, 0.26, 0.12, 0.1, 0.16, GOLD_L);
-  P(hd, 0, -0.1, 0.34, 0.08, 0.08, 0.06, 0x2a2018);
-  P(hd, 0, 0.2, -0.02, 0.4, 0.06, 0.42, IMPERIAL);
-  G.part(hd, 0.1, 0.04, 0.2, 0, 0, 0, 0, 0, 0.08, 0.05, 0.02, 0x3fe0ff);
-  G.part(hd, -0.1, 0.04, 0.2, 0, 0, 0, 0, 0, 0.08, 0.05, 0.02, 0x3fe0ff);
-  // asas douradas batendo
+  const flap = Math.sin(t * 8 + z.walk) * 0.5;
+  const dive = z.state === 'lunge' ? 0.55 : z.state === 'wind' ? -0.35 : 0.1;
+  const body = joint(base, 0, -0.1, 0, dive, 0, 0);
+  // corpo horizontal
+  P(body, 0, 0, 0, 0.42, 0.38, 0.8, GOLD);
+  P(body, 0, -0.12, 0.08, 0.36, 0.16, 0.6, 0xe8d8a0);
+  P(body, 0, 0.12, -0.05, 0.3, 0.06, 0.6, IMPERIAL);
+  // cauda em leque
+  P(body, 0, 0.02, -0.56, 0.44, 0.06, 0.36, IMPERIAL);
+  P(body, 0, 0.04, -0.6, 0.3, 0.06, 0.3, GOLD);
+  // cabeça de falcão com bico curvo
+  const hd = joint(body, 0, 0.22, 0.46, -dive * 0.4, 0, 0);
+  P(hd, 0, 0, 0, 0.32, 0.32, 0.32, GOLD);
+  P(hd, 0, 0.1, -0.02, 0.34, 0.08, 0.34, IMPERIAL);
+  P(hd, 0, -0.04, 0.2, 0.14, 0.12, 0.12, 0x2a2018);
+  P(hd, 0, -0.1, 0.26, 0.08, 0.08, 0.06, 0x2a2018, 0.6);
+  G.part(hd, 0.12, 0.02, 0.15, 0, 0, 0, 0, 0, 0.06, 0.06, 0.04, 0xff2a1a);
+  G.part(hd, -0.12, 0.02, 0.15, 0, 0, 0, 0, 0, 0.06, 0.06, 0.04, 0xff2a1a);
+  // asas grandes batendo, com penas azuis nas pontas
   for (const sg of [1, -1]) {
-    const wg = joint(body, sg * 0.26, 0.45, -0.1, 0, 0, sg * (0.25 + flap));
-    P(wg, sg * 0.45, 0, 0, 0.9, 0.08, 0.5, GOLD);
-    P(wg, sg * 0.5, -0.02, -0.18, 0.8, 0.06, 0.2, IMPERIAL);
-    const tip = joint(wg, sg * 0.88, 0, 0, 0, 0, sg * flap * 0.5);
-    P(tip, sg * 0.3, 0, -0.05, 0.6, 0.05, 0.4, GOLD_L);
+    const wg = joint(body, sg * 0.2, 0.1, 0.05, 0, 0, sg * (0.15 + flap));
+    P(wg, sg * 0.5, 0, 0, 1.0, 0.07, 0.6, GOLD);
+    for (let k = 0; k < 3; k++) P(wg, sg * (0.3 + k * 0.3), -0.01, -0.28, 0.24, 0.05, 0.16, IMPERIAL);
+    const tip = joint(wg, sg * 1.0, 0, 0, 0, 0, sg * flap * 0.6);
+    P(tip, sg * 0.32, 0, -0.06, 0.64, 0.05, 0.46, GOLD_L);
+    P(tip, sg * 0.4, -0.01, -0.28, 0.5, 0.04, 0.12, IMPERIAL);
   }
-  // rajada carregando entre as mãos
-  if (z.attackT > 0) G.part(body, 0, 0.3, 0.35, 0, 0, 0, 0, 0, 0.18, 0.18, 0.18, 0x3fe0ff);
+  // garras
+  for (const sg of [1, -1]) P(body, sg * 0.12, -0.28, 0.12, 0.08, 0.16, 0.08, 0x2a2018);
+  if (z.attackT > 0) G.part(hd, 0, -0.04, 0.36, 0, 0, 0, 0, 0, 0.16, 0.16, 0.16, 0x3fe0ff);
 }
 BODIES.chariot = drawChariot;
 BODIES.horus = drawHorus;
