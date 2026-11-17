@@ -709,6 +709,108 @@ function drawScarab(B, G, base, z, col, t) {
 BODIES.scarab = drawScarab;
 OTHER_COLORS.scarab = [0x1e4a8a, GOLD];
 
+Object.assign(HUMANS, {
+  // Sacerdote Profano: manto roxo, cajado cerimonial com cristal violeta
+  priest: {
+    skin: 0x8a6a4a, shirt: 0x5a2a8a, sleeve: 0x5a2a8a, hands: 0x7a5a3a, pants: 0x4a2272, boots: 0x2a1640, noFace: true, arms: 'reach',
+    extras: [
+      ...face(0xc070ff, { brow: 0x2a1a14, open: 0.06, fangs: false }),
+      // capuz e máscara dourada
+      ['head', 0, 0.42, -0.04, 0.64, 0.36, 0.62, 0x4a2272],
+      ['head', 0, 0.62, -0.02, 0.4, 0.12, 0.4, 0x4a2272],
+      ['head', 0, 0.46, 0.3, 0.5, 0.06, 0.02, GOLD],
+      // manto longo com faixa dourada e runas
+      ['torso', 0, 0.02, 0, 0.62, 0.3, 0.4, 0x4a2272],
+      ['torso', 0, 0.3, 0.172, 0.08, 0.5, 0.012, GOLD],
+      ...mirror(['torso', 0.14, 0.26, 0.172, 0.05, 0.05, 0.012, 0xc070ff, 0, 0, GLOW]),
+      ...mirror(['legL', 0, -0.2, 0, 0.26, 0.44, 0.28, 0x4a2272]),
+      // cajado com cristal violeta
+      ['armR', 0, -0.55, 0.12, 0.05, 1.2, 0.05, GOLD],
+      ['armR', 0, 0.12, 0.12, 0.16, 0.2, 0.16, 0xc070ff, 0, 0.6, GLOW],
+    ],
+  },
+  // Construto de Areia: blocos de areia, armadura de rocha, núcleo dourado
+  construct: {
+    skin: 0xd8b878, shirt: 0xc8a060, sleeve: 0xd8b878, hands: 0x8a7458, pants: 0xb8904e, boots: 0x6a5a44, noFace: true, arms: 'brawl',
+    extras: [
+      ...mirror(['head', 0.13, 0.33, 0.276, 0.12, 0.07, 0.02, GOLD_L, 0, 0.1, GLOW]),
+      ['head', 0, 0.5, 0, 0.66, 0.16, 0.66, 0x8a7458],
+      ['head', 0.18, 0.2, 0.25, 0.16, 0.14, 0.08, 0xc09858],
+      // placas de rocha e núcleo dourado brilhando
+      ['torso', 0, 0.3, 0.17, 0.4, 0.4, 0.04, 0x8a7458],
+      ['torso', 0, 0.3, 0.2, 0.14, 0.14, 0.02, GOLD_L, 0, 0.785, GLOW],
+      ...mirror(['armL', 0.04, -0.02, 0, 0.36, 0.26, 0.36, 0x8a7458], ['armL', 0, -0.52, 0, 0.38, 0.32, 0.38, 0xa88a5a]),
+      ['torso', -0.2, 0.08, 0.17, 0.14, 0.12, 0.04, 0xe8c888],
+      ['torso', 0.22, 0.48, 0.17, 0.1, 0.1, 0.04, 0xe8c888],
+      ...mirror(['legL', 0, -0.3, 0.12, 0.24, 0.18, 0.04, 0x8a7458]),
+    ],
+  },
+});
+
+// Serpente Sagrada: corpo em segmentos dourados com faixas vermelhas, cabeça erguida
+function drawSerpent(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const n = 7;
+  for (let i = 0; i < n; i++) {
+    const zz = -0.1 - i * 0.24;
+    const xx = Math.sin(z.walk * 1.6 - i * 0.9) * 0.18 * (i / n + 0.3);
+    const s = 0.34 - i * 0.03;
+    P(base, xx, s / 2, zz, s, s, 0.26, i % 2 ? 0xd4a020 : 0xb88818);
+    if (i % 2 === 0) P(base, xx, s + 0.005, zz, s * 0.6, 0.02, 0.1, 0xa01a14);
+  }
+  // pescoço e cabeça erguidos (sobe mais no bote)
+  const up = z.state === 'lunge' ? 0.2 : z.attackT > 0 ? 0.12 : 0;
+  const neck = joint(base, 0, 0.3, 0.12, -0.5 - up, 0, Math.sin(t * 2) * 0.08);
+  P(neck, 0, 0.22, 0, 0.26, 0.5, 0.26, 0xd4a020);
+  const head = joint(neck, 0, 0.5, 0.06, 0.5 + up, 0, 0);
+  P(head, 0, 0.02, 0.1, 0.36, 0.2, 0.46, 0xd4a020);
+  P(head, 0, 0.13, 0.08, 0.3, 0.02, 0.36, 0xa01a14);
+  G.part(head, 0.13, 0.08, 0.22, 0, 0, 0, 0, 0, 0.07, 0.05, 0.08, 0xff3a1a);
+  G.part(head, -0.13, 0.08, 0.22, 0, 0, 0, 0, 0, 0.07, 0.05, 0.08, 0xff3a1a);
+  if (z.attackT > 0 || z.state === 'lunge') P(head, 0, -0.1, 0.32, 0.04, 0.12, 0.02, TEETH);
+  // capuz de naja
+  P(neck, 0, 0.42, -0.04, 0.5, 0.36, 0.06, 0xb88818);
+  P(neck, 0, 0.42, -0.01, 0.2, 0.24, 0.02, 0xa01a14);
+}
+
+// Fantasma do Faraó: corpo translúcido ciano, toucado de faraó, cauda espectral
+function drawPhantom(B, G, base, z, col, t) {
+  base = joint(base, 0, -0.4, 0); // corpo mais baixo: cabeça na altura dos outros inimigos
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => G.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, c);
+  const bob = Math.sin(t * 2.2 + z.walk * 0.3) * 0.07;
+  const sway = Math.sin(t * 1.6) * 0.06;
+  // cauda que some no ar
+  const tail = joint(base, 0, -0.1 + bob, 0, 0, 0, sway);
+  L(tail, 0, -0.14, 0, 0.4, 0.3, 0.34, 0x2a8aa8);
+  L(tail, 0, -0.4, -0.02, 0.28, 0.26, 0.26, 0x1e6a88);
+  L(tail, 0, -0.62, 0.02, 0.16, 0.2, 0.16, 0x145068);
+  // tronco com vestes de faraó
+  L(base, 0, 0.32 + bob, 0, 0.56, 0.6, 0.36, 0x3ac8e8);
+  P(base, 0, 0.5 + bob, 0.16, 0.6, 0.12, 0.08, GOLD);
+  P(base, 0, 0.36 + bob, 0.19, 0.26, 0.1, 0.02, IMPERIAL);
+  // braços estendidos
+  const reach = z.attackT > 0 ? -1.2 : -0.6;
+  for (const sg of [1, -1]) {
+    const a = joint(base, sg * 0.36, 0.56 + bob, 0, reach, 0, sg * 0.15);
+    L(a, 0, -0.26, 0, 0.16, 0.5, 0.16, 0x3ac8e8);
+    P(a, 0, -0.1, 0, 0.18, 0.08, 0.18, GOLD);
+  }
+  // cabeça com toucado (nemes) e olhos luminosos
+  const hd = joint(base, 0, 0.94 + bob, 0, 0, 0, sway);
+  L(hd, 0, 0, 0, 0.44, 0.44, 0.44, 0x6ae0ff);
+  P(hd, 0, 0.2, -0.02, 0.5, 0.12, 0.5, GOLD);
+  P(hd, 0.24, -0.04, -0.04, 0.06, 0.42, 0.42, IMPERIAL);
+  P(hd, -0.24, -0.04, -0.04, 0.06, 0.42, 0.42, IMPERIAL);
+  P(hd, 0, 0.3, 0.18, 0.08, 0.14, 0.06, GOLD);
+  L(hd, 0.1, 0.02, 0.225, 0.1, 0.05, 0.02, 0xffffff);
+  L(hd, -0.1, 0.02, 0.225, 0.1, 0.05, 0.02, 0xffffff);
+}
+BODIES.serpent = drawSerpent;
+BODIES.phantom = drawPhantom;
+OTHER_COLORS.serpent = [0xd4a020, 0xa01a14];
+OTHER_COLORS.phantom = [0x3ac8e8, GOLD];
+
 // Desenha um inimigo. z = { type, def, look, pos, facing, scale, walk, hurtT, attackT, state, alive, deadT, fallDir, rise, flyY }
 export function drawEnemy(B, G, z, t) {
   const type = z.type;

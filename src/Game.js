@@ -969,6 +969,16 @@ export class Game {
 
   // ------------------------------------------------------------------ dano
   // quiet: dano contínuo (fogo, ácido, laser) sem som de impacto nem jorro de sangue
+  // onda de choque no chão: fere quem está no raio (além do alvo do golpe)
+  quake(z, q) {
+    for (let k = 0; k < 22; k++) {
+      const a = (k / 22) * Math.PI * 2;
+      this.parts.spawn(z.pos.x + Math.sin(a) * 0.6, 0.15, z.pos.z + Math.cos(a) * 0.6, Math.sin(a) * q.radius * 2.2, rand(0.5, 1.5), Math.cos(a) * q.radius * 2.2, rand(0.1, 0.18), pick([0xe0c080, 0xb08a40]), 0.5, 10, 0);
+    }
+    this.noiseShake(0.35);
+    this.audio.play('stomp', { volume: 0.7, pos: z.pos });
+    for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - z.pos.x, p.pos.z - z.pos.z) < q.radius) this.damagePlayer(p, q.dmg, z.pos.x, z.pos.z, 4, true);
+  }
   damageZombie(z, dmg, dx, dz, src, knock = 0.8, quiet = false) {
     if (!z.alive) return;
     // passivas de quem causou o dano: Dano aumentado, Fúria total e Crítico
@@ -2432,6 +2442,7 @@ export class Game {
       look: enemyLook(type),
     };
     zb.maxHp = zb.hp;
+    zb.regenLeft = def.regen ? def.regen.max : 0; // Construto: cura total limitada
     this.zombies.push(zb);
     if (def.boss) {
       this.boss = zb;
@@ -3153,7 +3164,7 @@ export class Game {
             z.spitCd = def.spit.cd * rand(0.8, 1.2);
             z.attackT = 0.35;
             const T = def.spit.arrow ? Math.max(0.25, td / 18) : Math.max(0.5, td / 9);
-            this.projectiles.push({ kind: 'acid', x: z.pos.x, y: 1.2, z: z.pos.z, vx: dx / T, vy: def.spit.arrow ? 7 * T : 4.5, vz: dz / T, t: 0, dmg: def.spit.dmg, color: def.spit.color, splat: def.spit.splat, poison: def.spit.poison });
+            this.projectiles.push({ kind: 'acid', x: z.pos.x, y: 1.2, z: z.pos.z, vx: dx / T, vy: def.spit.arrow ? 7 * T : 4.5, vz: dz / T, t: 0, dmg: def.spit.dmg, color: def.spit.color, splat: def.spit.splat, poison: def.spit.poison, slow: def.spit.slow });
             this.audio.play('spit', { pos: z.pos, volume: 0.7 });
           }
         }
@@ -3233,7 +3244,14 @@ export class Game {
           this.audio.play('zombie_attack', { pos: z.pos, volume: 0.6 });
           const target = tgt;
           this.later(0.18, () => {
-            if (z.alive && Math.hypot(target.pos.x - z.pos.x, target.pos.z - z.pos.z) < reach * 1.3) this.damagePlayer(target, def.dmg * (1 + 0.04 * (this.wave - 1)), z.pos.x, z.pos.z, def.boss ? 6 : 1.5);
+            if (z.alive && Math.hypot(target.pos.x - z.pos.x, target.pos.z - z.pos.z) < reach * 1.3) {
+              this.damagePlayer(target, def.dmg * (1 + 0.04 * (this.wave - 1)), z.pos.x, z.pos.z, def.boss ? 6 : 1.5);
+              if (def.poison) {
+                target.poisonT = def.poison.t; // Serpente Sagrada
+                target.poisonDps = def.poison.dps;
+              }
+            }
+            if (z.alive && def.quake) this.quake(z, def.quake); // Construto: onda de choque
           });
         }
       } else if (blockedBy && Math.hypot(blockedBy.x - z.pos.x, blockedBy.z - z.pos.z) < 1.0 + z.radius) {
@@ -3456,6 +3474,12 @@ export class Game {
         }
       }
     }
+    if (def.regen && z.regenLeft > 0 && z.hp < z.maxHp) {
+      const hl = Math.min(def.regen.rate * dt, z.regenLeft, z.maxHp - z.hp);
+      z.hp += hl;
+      z.regenLeft -= hl;
+      if (Math.random() < dt * 4) this.parts.spawn(z.pos.x + rand(-0.6, 0.6), rand(0.5, 2), z.pos.z + rand(-0.6, 0.6), 0, rand(0.5, 1.5), 0, 0.08, pick([0xe0c080, 0xf0c840]), 0.6, -1, 2);
+    }
     if (def.blink) {
       // Espectro: some e reaparece mais perto do alvo, num ponto livre
       z.blinkCd -= dt;
@@ -3465,10 +3489,10 @@ export class Game {
         const nz = z.pos.z + (dz / td) * step;
         z.blinkCd = def.blink.cd * rand(0.8, 1.2);
         if (A.inb(Math.floor(nx), Math.floor(nz)) && !A.circleBlocked(nx, nz, 0.3)) {
-          for (let k = 0; k < 12; k++) this.parts.spawn(z.pos.x + rand(-0.3, 0.3), rand(0.6, 1.8), z.pos.z + rand(-0.3, 0.3), rand(-1.5, 1.5), rand(0, 1.5), rand(-1.5, 1.5), rand(0.06, 0.12), pick([0x70e8ff, 0xc0f4ff]), 0.5, -1, 2);
+          for (let k = 0; k < 12; k++) this.parts.spawn(z.pos.x + rand(-0.3, 0.3), rand(0.6, 1.8), z.pos.z + rand(-0.3, 0.3), rand(-1.5, 1.5), rand(0, 1.5), rand(-1.5, 1.5), rand(0.06, 0.12), pick([def.blink.color || 0x70e8ff, 0xc0f4ff]), 0.5, -1, 2);
           z.pos.x = nx;
           z.pos.z = nz;
-          for (let k = 0; k < 12; k++) this.parts.spawn(nx + rand(-0.3, 0.3), rand(0.6, 1.8), nz + rand(-0.3, 0.3), rand(-1.5, 1.5), rand(0, 1.5), rand(-1.5, 1.5), rand(0.06, 0.12), pick([0x70e8ff, 0xc0f4ff]), 0.5, -1, 2);
+          for (let k = 0; k < 12; k++) this.parts.spawn(nx + rand(-0.3, 0.3), rand(0.6, 1.8), nz + rand(-0.3, 0.3), rand(-1.5, 1.5), rand(0, 1.5), rand(-1.5, 1.5), rand(0.06, 0.12), pick([def.blink.color || 0x70e8ff, 0xc0f4ff]), 0.5, -1, 2);
           this.audio.play('swing', { pos: z.pos, volume: 0.5, rate: 0.6 });
         }
       }
@@ -3685,6 +3709,10 @@ export class Game {
         for (const p of this.players)
           if (p.alive && Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) < 0.5 && pr.y < 1.6) {
             this.damagePlayer(p, pr.dmg, pr.x, pr.z, 1, true);
+            if (pr.slow) {
+              p.slowT = pr.slow.t; // maldição: lentidão
+              p.slowMul = pr.slow.mul;
+            }
             if (pr.poison) {
               p.poisonT = pr.poison.t; // flecha envenenada: dano contínuo
               p.poisonDps = pr.poison.dps;
