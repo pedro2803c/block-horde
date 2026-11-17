@@ -39,10 +39,19 @@ const R = await p.evaluate(async () => {
   let trios = 0, mum = 0;
   for (let k = 0; k < 40; k++) { const l = g.buildWave(1); for (let i = 0; i < l.length; i++) if (l[i] === 'mummy') { mum++; if (l[i + 1] === 'mummy' && l[i + 2] === 'mummy') trios++; } }
   out.mumiasEmGrupo = mum > 0 && trios > 0;
-  // cenário controlado
+  // cenário controlado no Templo; inimigos colocados em direções com caminho livre
   g.debugGod = false;
   g.state = 'paused';
   const pl = g.players[0];
+  // coloca o inimigo numa direção com caminho reto livre até o jogador (as investidas exigem isso)
+  const atL = (t, d) => {
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2;
+      const x = pl.pos.x + Math.sin(a) * d, z = pl.pos.z + Math.cos(a) * d;
+      if (g.arena.inb(Math.floor(x), Math.floor(z)) && !g.arena.circleBlocked(x, z, 0.9) && g.arena.walkable(x, z, pl.pos.x, pl.pos.z, 0.6) && g.arena.los(x, z, pl.pos.x, pl.pos.z)) return at(t, Math.sin(a) * d, Math.cos(a) * d);
+    }
+    return at(t, d, 0);
+  };
   const at = (t, dx, dz) => { g.spawnZombie(t, pl.pos.x + dx, pl.pos.z + dz); const z = g.zombies[g.zombies.length - 1]; z.rise = 0; return z; };
   g.zombies.length = 0;
   // aura do Anúbis: múmia perto leva 60% do dano; longe leva 100%
@@ -60,16 +69,20 @@ const R = await p.evaluate(async () => {
   out.escudoFrontal = +(ha - an.hp).toFixed(1);
   // escaravelho explode ao morrer e fere quem está perto
   g.zombies.length = 0;
-  pl.hp = 100; pl.armor = 0;
+  pl.alive = true; pl.hp = 100; pl.armor = 0;
   const sc = at('scarab', 1.2, 0);
   g.damageZombie(sc, 999, 1, 0, pl);
   g.state = 'playing';
+  // cenário isolado: sem ondas normais chegando (só os inimigos que o teste coloca)
+  const semOndas = () => { g.toSpawn = []; g.waveState = 'intermission'; g.waveT = 9999; };
+  semOndas(); setInterval(semOndas, 50);
   await w(400);
   out.explosaoEscaravelho = 100 - Math.round(pl.hp);
   // arqueiro: recua quando perto e envenena
   g.zombies.length = 0;
-  pl.hp = 100; pl.poisonT = 0;
-  const ar = at('archer', 2.5, 0);
+  pl.alive = true; pl.hp = 100; pl.poisonT = 0;
+  const ar = atL('archer', 2.5);
+  ar.pos.set(pl.pos.x + (ar.pos.x - pl.pos.x) * 2.5 / Math.hypot(ar.pos.x - pl.pos.x, ar.pos.z - pl.pos.z), 0, pl.pos.z + (ar.pos.z - pl.pos.z) * 2.5 / Math.hypot(ar.pos.x - pl.pos.x, ar.pos.z - pl.pos.z));
   const d0 = Math.hypot(ar.pos.x - pl.pos.x, ar.pos.z - pl.pos.z);
   await w(900);
   out.arqueiroRecuou = +(Math.hypot(ar.pos.x - pl.pos.x, ar.pos.z - pl.pos.z) - d0).toFixed(2);
@@ -78,27 +91,30 @@ const R = await p.evaluate(async () => {
   for (let i = 0; i < 40 && !pois; i++) { await w(100); pois = pl.poisonT > 0; }
   out.flechaEnvenena = pois;
   // ---- etapa 4 ----
+  out.estados = [];
+  const marca = (n) => out.estados.push(`${n}:${g.state}/${pl.alive ? 'vivo' : 'morto'}/${Math.round(pl.hp)}`);
   const espera = async (fn, ms = 6000) => { const t0 = performance.now(); while (performance.now() - t0 < ms) { if (fn()) return true; await w(80); } return false; };
+  marca('serpente');
   // serpente: mordida envenena
-  g.zombies.length = 0; g.projectiles.length = 0; pl.hp = 100; pl.poisonT = 0;
-  const se = at('serpent', 1.0, 0); se.attackCd = 0; se.lungeCd = 9;
+  g.zombies.length = 0; g.projectiles.length = 0; pl.alive = true; pl.hp = 100; pl.poisonT = 0;
+  const se = atL('serpent', 1.0); se.attackCd = 0; se.lungeCd = 9;
   out.serpenteEnvenena = await espera(() => pl.poisonT > 0);
   // serpente: some e reaparece (teletransporte)
-  se.pos.set(pl.pos.x + 10, 0, pl.pos.z); se.blinkCd = 0; se.lungeCd = 9;
-  const sx = se.pos.x;
-  out.serpenteReaparece = await espera(() => Math.abs(se.pos.x - sx) > 2.5, 3000);
+  g.zombies.length = 0; const se2 = atL('serpent', 10); se2.blinkCd = 0; se2.lungeCd = 9;
+  const sp0 = { x: se2.pos.x, z: se2.pos.z };
+  out.serpenteReaparece = await espera(() => Math.hypot(se2.pos.x - sp0.x, se2.pos.z - sp0.z) > 2.5, 3000);
   // sacerdote: maldição deixa lento e invoca múmias
-  g.zombies.length = 0; g.projectiles.length = 0; pl.hp = 100; pl.slowT = 0;
-  const pr = at('priest', 5, 0); pr.spitCd = 0; pr.summonCd = 0;
+  g.zombies.length = 0; g.projectiles.length = 0; pl.alive = true; pl.hp = 100; pl.slowT = 0;
+  const pr = atL('priest', 5); pr.spitCd = 0; pr.summonCd = 0;
   out.maldicaoLentidao = await espera(() => pl.slowT > 0);
   out.sacerdoteInvoca = await espera(() => g.zombies.some((q) => q !== pr && q.alive && (q.type === 'mummy' || q.type === 'scarab')));
   // fantasma: teletransporta
   g.zombies.length = 0;
-  const fa = at('phantom', 9, 0); fa.blinkCd = 0;
-  const fx0 = fa.pos.x;
-  out.fantasmaTeleporta = await espera(() => Math.abs(fa.pos.x - fx0) > 2.5, 3000);
+  const fa = atL('phantom', 9); fa.blinkCd = 0;
+  const fp0 = { x: fa.pos.x, z: fa.pos.z };
+  out.fantasmaTeleporta = await espera(() => Math.hypot(fa.pos.x - fp0.x, fa.pos.z - fp0.z) > 2.5, 3000);
   // construto: regenera até o limite e o golpe gera onda de choque
-  g.zombies.length = 0; pl.hp = 100;
+  g.zombies.length = 0; pl.alive = true; pl.hp = 100;
   const co = at('construct', 30, 30);
   co.hp -= 200;
   const hBaixo = co.hp;
@@ -106,19 +122,20 @@ const R = await p.evaluate(async () => {
   out.construtoRegenera = +(co.hp - hBaixo).toFixed(1);
   co.regenLeft = 0; const hFix = co.hp; await w(800);
   out.construtoParaDeRegenerar = co.hp === hFix;
-  co.pos.set(pl.pos.x + 1.4, 0, pl.pos.z); co.attackCd = 0; pl.hp = 100; pl.armor = 0;
+  co.pos.set(pl.pos.x + 1.4, 0, pl.pos.z); co.attackCd = 0; pl.alive = true; pl.hp = 100; pl.armor = 0;
   let qk = 0; const oq = g.quake.bind(g); g.quake = (z, q) => { qk++; return oq(z, q); };
   out.ondaDeChoque = await espera(() => qk > 0);
   g.quake = oq;
+  marca('etapa5');
   // ---- etapa 5 ----
   // escorpião: salta (bote) e envenena
-  g.zombies.length = 0; g.projectiles.length = 0; pl.hp = 100; pl.poisonT = 0;
-  const es = at('scorpion', 4.5, 0); es.lungeCd = 0;
+  g.zombies.length = 0; g.projectiles.length = 0; pl.alive = true; pl.hp = 100; pl.poisonT = 0;
+  const es = atL('scorpion', 4.5); es.lungeCd = 0;
   out.escorpiaoSalta = await espera(() => es.state === 'lunge', 3000);
   out.escorpiaoEnvenena = await espera(() => pl.poisonT > 0);
   // chacal: ataques consecutivos (cadência alta) e salto
-  g.zombies.length = 0; pl.hp = 100;
-  const ch = at('jackal', 4, 0); ch.lungeCd = 0;
+  g.zombies.length = 0; pl.alive = true; pl.hp = 100;
+  const ch = atL('jackal', 4); ch.lungeCd = 0;
   out.chacalSalta = await espera(() => ch.state === 'lunge', 3000);
   // portal: fixo, avisa antes de invocar e invoca; pode ser destruído
   g.zombies.length = 0;
@@ -135,26 +152,31 @@ const R = await p.evaluate(async () => {
   let desvios = 0;
   for (let i = 0; i < 40; i++) { const sk = at('skeleton', 20, 0); const h = sk.hp; g.damageZombie(sk, 5, 1, 0, pl); if (sk.hp === h) desvios++; }
   out.esqueletoEsquiva = desvios;
+  marca('etapa6');
   // ---- etapa 6 ----
   // carruagem: avisa (para e trava a direção), investe e atropela
-  g.zombies.length = 0; g.projectiles.length = 0; pl.hp = 100; pl.armor = 0;
-  const ca = at('chariot', 7, 0); ca.lungeCd = 0; ca.spitCd = 99;
+  g.zombies.length = 0; g.projectiles.length = 0; pl.alive = true; pl.hp = 100; pl.armor = 0;
+  const ca = atL('chariot', 7); ca.lungeCd = 0; ca.spitCd = 99;
   out.carruagemAvisa = await espera(() => ca.state === 'wind', 3000);
-  const posAviso = ca.pos.x;
+  const posAviso = { x: ca.pos.x, z: ca.pos.z };
   await w(300);
-  out.carruagemParadaNoAviso = Math.abs(ca.pos.x - posAviso) < 0.05;
-  out.carruagemInveste = await espera(() => ca.state === 'lunge', 2000);
-  out.carruagemAtropela = await espera(() => ca.chargeHit, 2000);
+  out.carruagemParadaNoAviso = Math.hypot(ca.pos.x - posAviso.x, ca.pos.z - posAviso.z) < 0.05;
+  out.carruagemInveste = await espera(() => ca.state === 'lunge' || ca.chargeHit, 4000);
+  if (!out.carruagemInveste) { // armadilha do templo pode atordoar no meio: tenta de novo
+    ca.stunT = 0; ca.state = 'move'; ca.lungeCd = 0;
+    out.carruagemInveste = await espera(() => ca.state === 'lunge', 5000);
+  }
+  out.carruagemAtropela = await espera(() => ca.chargeHit, 3000);
   // carruagem também atira de longe
   g.zombies.length = 0; g.projectiles.length = 0;
-  const cb = at('chariot', 9, 0); cb.lungeCd = 99; cb.spitCd = 0;
+  const cb = atL('chariot', 9); cb.lungeCd = 99; cb.spitCd = 0;
   out.carruagemAtira = await espera(() => g.projectiles.some((q) => q.kind === 'acid'), 3000);
   // hórus: voa, dispara rajadas e mergulha
   g.zombies.length = 0; g.projectiles.length = 0;
-  const ho = at('horus', 8, 0); ho.lungeCd = 99; ho.spitCd = 0;
+  const ho = atL('horus', 8); ho.lungeCd = 99; ho.spitCd = 0;
   out.horusVoa = !!ho.def.fly && (ho.flyY ?? ho.def.hover) > 1;
   out.horusAtira = await espera(() => g.projectiles.some((q) => q.kind === 'acid'), 3000);
-  ho.lungeCd = 0; ho.pos.set(pl.pos.x + 5, 0, pl.pos.z);
+  ho.lungeCd = 0;
   out.horusMergulha = await espera(() => ho.state === 'lunge', 3000);
   g.debugGod = true;
   // visual: os quatro lado a lado
@@ -171,7 +193,7 @@ fs.mkdirSync('tests/hud-shots', { recursive: true });
 await p.screenshot({ path: 'tests/hud-shots/egito-etapa3.png' });
 console.log(JSON.stringify(R, null, 1));
 const ok = R.noTemplo.length === 14 && R.serpenteEnvenena && R.serpenteReaparece && R.maldicaoLentidao && R.sacerdoteInvoca && R.fantasmaTeleporta && R.construtoRegenera > 0 && R.construtoParaDeRegenerar && R.ondaDeChoque && R.escorpiaoSalta && R.escorpiaoEnvenena && R.chacalSalta && R.portalAvisa && R.portalInvoca && R.portalFixo && R.portalDestruido && R.esqueletoEsquiva > 3 && R.carruagemAvisa && R.carruagemParadaNoAviso && R.carruagemInveste && R.carruagemAtropela && R.carruagemAtira && R.horusVoa && R.horusAtira && R.horusMergulha && R.esqueletoEsquiva < 30 && !R.foraDoTemplo.length && R.mumiasEmGrupo && R.auraAnubis.pertoPerdeu < R.auraAnubis.longePerdeu && R.escudoFrontal < 5 && R.explosaoEscaravelho > 0 && R.arqueiroRecuou > 0 && R.flechaEnvenena && !erros.length;
-console.log(erros.length ? 'erros: ' + erros.join(' | ') : '', ok ? '✓ Egito ok' : '✗ falhou');
+console.log(erros.length ? 'erros: ' + erros.join(' | ') : '', ok ? '✓ Egito ok' : '✗ falhou', ok ? '' : JSON.stringify({ esq: R.esqueletoEsquiva, exp: R.explosaoEscaravelho, rec: R.arqueiroRecuou, fora: R.foraDoTemplo, n: R.noTemplo.length }));
 await b.close();
 srv.close();
 process.exit(ok ? 0 : 1);

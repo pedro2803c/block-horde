@@ -3395,7 +3395,8 @@ export class Game {
         }
         const d = Math.sqrt(d2);
         const push = (min - d) * 0.5;
-        const wa = a.def.boss ? 0.15 : b.def.boss ? 1.85 : 1;
+        // estruturas fixas (Portal das Almas) não se movem: o outro sai inteiro
+        const wa = a.def.static ? 0 : b.def.static ? 2 : a.def.boss ? 0.15 : b.def.boss ? 1.85 : 1;
         this.nudge(a, (-dx / d) * push * wa, (-dz / d) * push * wa);
         this.nudge(b, (dx / d) * push * (2 - wa), (dz / d) * push * (2 - wa));
       }
@@ -3407,7 +3408,7 @@ export class Game {
         const d2 = dx * dx + dz * dz;
         if (d2 < min * min && d2 > 1e-6) {
           const d = Math.sqrt(d2);
-          const f = a.def.boss ? 0.15 : 0.6;
+          const f = a.def.static ? 0 : a.def.boss ? 0.15 : 0.6; // portal fixo: só o jogador sai
           A.move(a.pos, (dx / d) * (min - d) * f, (dz / d) * (min - d) * f, a.wallR);
           A.move(p.pos, (-dx / d) * (min - d) * (1 - f), (-dz / d) * (min - d) * (1 - f), p.radius);
         }
@@ -3482,10 +3483,18 @@ export class Game {
           z.state = 'move';
           z.summonCd = def.summon.cd * rand(0.85, 1.2);
           for (let k = 0; k < def.summon.n && this.countAlive() < this.aliveCap(); k++) {
-            const a = rand(0, 6.28);
-            const x = z.pos.x + Math.sin(a) * 1.3;
-            const zz = z.pos.z + Math.cos(a) * 1.3;
-            if (A.circleBlocked(x, zz, 0.35)) continue;
+            // procura um ponto livre ao redor (fora do corpo de quem invoca, longe de paredes)
+            const rr = Math.max(1.3, z.radius + 0.9);
+            let x = 0;
+            let zz = 0;
+            let free = false;
+            for (let tries = 0; tries < 8 && !free; tries++) {
+              const a = rand(0, 6.28);
+              x = z.pos.x + Math.sin(a) * rr;
+              zz = z.pos.z + Math.cos(a) * rr;
+              free = !A.circleBlocked(x, zz, 0.35);
+            }
+            if (!free) continue;
             const m = this.spawnZombie(pick(def.summon.types), x, zz);
             z.minions.push(m);
             for (let j = 0; j < 10; j++) this.parts.spawn(x, 0.3, zz, rand(-1.5, 1.5), rand(2, 4), rand(-1.5, 1.5), rand(0.1, 0.2), pick([0xc070ff, 0xe0a0ff]), 0.7, 3, 2);
