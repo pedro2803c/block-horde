@@ -46,8 +46,10 @@ const R = await p.evaluate(async () => {
   // fase 1: ondas de energia e explosões no chão
   f.waveCd = 0; f.blastCd = 0;
   out.ondasDeEnergia = await espera(() => g.projectiles.filter((q) => q.kind === 'acid').length >= 8, 3000);
-  const hp0 = pl.hp;
-  out.explosaoNoChao = await espera(() => pl.hp < hp0 - 5, 4000);
+  // explosões caem em pontos aleatórios perto do jogador (dá para desviar): conta as explosões
+  let boom = 0; const oe = g.explosion.bind(g); g.explosion = (...a) => { boom++; return oe(...a); };
+  out.explosaoNoChao = await espera(() => boom >= 2, 4000);
+  g.explosion = oe;
   // fase 2
   f.hp = f.maxHp * 0.6;
   out.fase2 = await espera(() => f.phase === 2, 3000);
