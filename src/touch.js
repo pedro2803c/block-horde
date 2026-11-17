@@ -95,9 +95,10 @@ export class TouchControls {
   // tamanho dos botões (configurações) e um pouco maior em tablets
   applySettings() {
     const tablet = Math.min(window.innerWidth, window.innerHeight) >= 600 ? 1.15 : 1;
-    this.scale = (this.s.touchSize ?? 1) * tablet;
+    this.scale = Math.max(0.9, this.s.touchSize ?? 1) * tablet; // abaixo de 0,9 os botões ficam menores que 44 px
     this.R = BASE_R * this.scale;
     this.root.style.setProperty('--ts', this.scale.toFixed(3));
+    document.body.classList.toggle('lefty', !!this.s.touchLefty); // canhoto: lados trocados
   }
 
   setMode(on) {
@@ -235,7 +236,7 @@ export class TouchControls {
     if (e.target.closest('.tb, .wpicker')) return;
     e.preventDefault();
     this.closePicker();
-    const left = e.clientX < window.innerWidth * 0.45;
+    const left = this.s.touchLefty ? e.clientX > window.innerWidth * 0.55 : e.clientX < window.innerWidth * 0.45;
     const s = left ? this.sMove : this.sAim;
     if (s.id !== null) return;
     s.id = e.pointerId;

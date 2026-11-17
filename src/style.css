@@ -654,8 +654,8 @@ body.touch .top .chip b { font-size: 1.1rem; }
 body.touch .mult { min-width: 0; flex: 1 1 100%; max-width: 420px; padding: 0.2rem 0.6rem; gap: 0.5rem; }
 body.touch .pause-btn { top: 8px; right: calc(8px + var(--sr)); }
 body.touch .radar { top: 62px; right: calc(8px + var(--sr)); width: 76px; height: 76px; }
-body.touch .boss { top: 100px; left: calc(200px + var(--sl)); right: calc(96px + var(--sr)); transform: none; width: auto; max-width: 420px; margin: 0 auto; }
-body.touch .boss .boss-name { font-size: 1rem; }
+body.touch .boss:not(.bar) { top: 100px; left: calc(200px + var(--sl)); right: calc(96px + var(--sr)); transform: none; width: auto; max-width: 420px; margin: 0 auto; }
+body.touch .boss:not(.bar) .boss-name { font-size: 1rem; }
 body.touch .alerts { top: 100px; left: calc(8px + var(--sl)); right: auto; width: min(240px, 28vw); }
 body.touch .alerts .alert { font-size: 0.74rem; padding: 0.15rem 0.1rem 0.15rem 0.5rem; gap: 0.4rem; }
 body.touch .alerts .alert > .ic { width: 16px; height: 16px; }
@@ -931,3 +931,108 @@ body.touch .chip.diff-chip b { font-size: 0.85rem; }
 @media (min-width: 1000px) { .diff-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 999px) { .diff-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 body.touch .diff-card .d-rows { font-size: 0.72rem; }
+
+/* ======================================================================
+   HUD MOBILE v2 — só no modo toque (body.touch). PC não é afetado.
+   Regiões: topo (jogador | partida | pausa+radar), centro livre,
+   inferior esquerdo (joystick), inferior direito (ataque e habilidades).
+   ====================================================================== */
+body.touch {
+  /* design system mobile: escala única de espaço, tipo, raio e superfície */
+  --m-1: 4px; --m-2: 8px; --m-3: 12px; --m-4: 16px;
+  --m-fs-xs: 10.5px; --m-fs-s: 12px; --m-fs-m: 14px; --m-fs-l: 18px;
+  --m-ic-s: 14px; --m-ic-m: 18px;
+  --m-r: 10px; --m-r-s: 6px;
+  --m-surface: rgba(14, 17, 23, 0.82); --m-line: rgba(68, 76, 92, 0.9);
+  --m-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  --m-st: env(safe-area-inset-top, 0px);
+  --m-top: calc(var(--m-2) + var(--m-st));
+  --m-card-w: clamp(168px, 27vw, 240px);
+  --m-right-w: clamp(72px, 11vw, 96px);
+}
+
+/* ---------- topo esquerdo: cartão do jogador (sem encolher por transform) ---------- */
+body.touch .players { top: var(--m-top); bottom: auto; left: calc(var(--m-2) + var(--sl)); right: auto; transform: none; }
+body.touch .players .pp { width: var(--m-card-w); max-width: none; grid-template-columns: 40px 1fr; gap: var(--m-2); padding: 6px var(--m-2); border-width: 1px; border-color: var(--m-line); border-radius: var(--m-r); background: var(--m-surface); box-shadow: var(--m-shadow); }
+body.touch .pp .avatar { width: 40px; height: 40px; border-width: 1px; }
+body.touch .pp .pp-main { gap: 3px; }
+body.touch .pp-top { gap: var(--m-1); align-items: center; }
+body.touch .pp-top strong { font-size: var(--m-fs-l); min-width: 0; flex: 1 1 auto; }
+body.touch .pp-top .tag { display: none; }
+body.touch .pp-top .lvl, body.touch .pp-top .pts { font-size: var(--m-fs-xs); white-space: nowrap; padding: 2px 6px; line-height: 1.1; flex: none; }
+body.touch .pp .xpbar { height: 4px; }
+body.touch .pp .bar-line { gap: var(--m-1); }
+body.touch .pp .bar-line > .ic { width: var(--m-ic-s); height: var(--m-ic-s); }
+body.touch .pp .bar { height: 13px; font-size: var(--m-fs-xs); }
+body.touch .pp .buffs:empty { display: none; }
+body.touch .pp-weapon { font-size: var(--m-fs-s); gap: var(--m-1); }
+body.touch .pp-weapon { flex-wrap: nowrap; white-space: nowrap; }
+body.touch .pp-weapon > span { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+body.touch .pp-weapon b { font-size: var(--m-fs-l); white-space: nowrap; flex: none; }
+body.touch .pp .buffs { gap: 3px; }
+body.touch .pp .buffs > * { transform: scale(0.85); transform-origin: left center; }
+/* bônus ativos ficam embaixo do retrato (coluna que sobrava): o cartão perde uma linha */
+body.touch .pp .buffs { position: absolute; left: 6px; top: 52px; width: 44px; flex-direction: column; align-items: flex-start; }
+body.touch .pp .reload-line { font-size: var(--m-fs-xs); }
+
+/* ---------- topo central: indicadores da partida numa linha + multiplicador fino ---------- */
+body.touch .top {
+  top: var(--m-top);
+  left: calc(var(--m-card-w) + var(--m-4) + var(--sl));
+  right: calc(var(--m-right-w) + var(--m-3) + var(--sr));
+  padding: 0; gap: var(--m-1); flex-wrap: wrap; justify-content: center; align-content: flex-start;
+}
+body.touch .top .chip { height: 30px; padding: 0 var(--m-2); gap: var(--m-1); border-width: 1px; border-radius: var(--m-r-s); background: var(--m-surface); box-shadow: none; }
+body.touch .top .chip > .ic { width: var(--m-ic-m); height: var(--m-ic-m); }
+body.touch .top .chip b { font-size: var(--m-fs-l); }
+body.touch .top .chip.event b { font-size: var(--m-fs-s); }
+body.touch .top .chip.diff-chip b { font-size: var(--m-fs-s); }
+body.touch .mult { flex: 1 1 100%; max-width: 340px; min-width: 0; height: 30px; padding: 0 var(--m-2); gap: var(--m-2); border-width: 1px; border-radius: var(--m-r-s); background: var(--m-surface); box-shadow: none; }
+body.touch .mult-num { font-size: 1.35rem; min-width: 2ch; }
+body.touch .mult-next { font-size: var(--m-fs-xs); margin-bottom: 2px; }
+body.touch .mult .bar { height: 7px; font-size: 0; }
+body.touch .mult .bar .val { display: none; }
+/* celulares estreitos: dificuldade vira só o ícone colorido (o nome segue no título) */
+@media (max-width: 700px) {
+  body.touch .pp-weapon > span:not(:first-child) { display: none; } /* só ícone da arma + munição */
+  body.touch .pp-top strong { min-width: 4ch; }
+  body.touch .top .chip.diff-chip b { display: none; }
+  body.touch .top .chip { padding: 0 6px; }
+}
+
+/* ---------- topo direito: pausa e radar empilhados ---------- */
+body.touch .pause-btn { top: var(--m-top); right: calc(var(--m-2) + var(--sr)); width: 44px; height: 44px; min-height: 44px; }
+body.touch .radar { top: calc(var(--m-top) + 44px + var(--m-2)); right: calc(var(--m-2) + var(--sr)); width: var(--m-right-w); height: var(--m-right-w); border-width: 2px; }
+
+/* ---------- chefe: logo abaixo da faixa do topo, fora do centro ---------- */
+body.touch .boss:not(.bar) { top: calc(var(--hud-top-b, 84px) + var(--m-1)); left: calc(var(--m-card-w) + var(--m-4) + var(--sl)); right: calc(var(--m-right-w) + var(--m-3) + var(--sr)); width: auto; max-width: 360px; margin: 0 auto; transform: none; }
+body.touch .boss:not(.bar) { display: flex; align-items: center; gap: var(--m-2); }
+body.touch .boss:not(.bar) .boss-name { font-size: var(--m-fs-m); margin: 0; flex: none; }
+body.touch .boss .bar.boss { flex: 1; }
+body.touch .boss .bar.boss { position: relative; top: auto; left: auto; right: auto; max-width: none; height: 10px; }
+body.touch .boss .bar.boss .val { display: none; }
+
+/* ---------- dica do tutorial: mesma faixa do chefe ---------- */
+body.touch .tutorial { top: calc(var(--hud-top-b, 84px) + var(--m-1)); left: calc(var(--m-card-w) + var(--m-4) + var(--sl)); right: calc(var(--m-right-w) + var(--m-3) + var(--sr)); font-size: var(--m-fs-s); }
+
+/* ---------- inferior esquerdo: indicador de tiro automático junto do joystick ---------- */
+body.touch .auto-tag { left: calc(var(--m-3) + var(--sl)); right: auto; transform: none; bottom: calc(var(--m-2) + env(safe-area-inset-bottom)); font-size: var(--m-fs-xs); }
+
+/* ---------- inferior direito: ataque principal em destaque, secundários padronizados ---------- */
+body.touch .tbtns { width: 284px; height: 144px; }
+body.touch .tb { width: 54px; height: 54px; border-width: 2px; }
+body.touch .tb .ic, body.touch .tb svg { width: 24px; height: 24px; }
+body.touch .tb.ab:nth-child(1) { right: 66px; bottom: 0; }
+body.touch .tb.ab:nth-child(2) { right: 0; bottom: 0; }
+body.touch .tb.ab:nth-child(3) { right: 66px; bottom: 66px; }
+body.touch .tb.ab.ult { right: 0; bottom: 66px; }
+body.touch .tb.wpn { right: 136px; bottom: 0; width: 74px; height: 74px; border-width: 3px; background: rgba(40, 32, 6, 0.72); box-shadow: 0 0 14px rgba(255, 193, 7, 0.35), 0 2px 0 rgba(0, 0, 0, 0.5); }
+body.touch .tb.wpn .ico svg { width: 48px; height: 24px; }
+body.touch .tb.mel { right: 146px; bottom: 88px; width: 54px; height: 54px; }
+body.touch .tb.rel { right: 222px; bottom: 10px; width: 54px; height: 54px; }
+body.touch .tb.mel .ic, body.touch .tb.rel .ic { width: 22px; height: 22px; }
+
+/* ---------- canhoto: joystick à direita, botões à esquerda (espelha só a posição) ---------- */
+body.touch.lefty .tbtns { right: auto; left: calc(12px + env(safe-area-inset-left) + (var(--ts, 1) - 1) * 142px); transform: scale(calc(-1 * var(--ts, 1)), var(--ts, 1)); transform-origin: 50% 100%; } /* espelha no próprio lugar */
+body.touch.lefty .tb > * { transform: scaleX(-1); }
+body.touch.lefty .auto-tag { left: auto; right: calc(var(--m-3) + var(--sr)); }

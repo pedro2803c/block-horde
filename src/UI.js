@@ -106,7 +106,7 @@ export class UI {
     // celular: faixa única de avisos no topo (não recebe toques)
     this.noticeEl = h('div', { class: 'notices', 'aria-live': 'polite' });
     // som bloqueado pelo navegador até o primeiro clique/toque: avisa e libera ao tocar
-    this.soundEl = h('button', { class: 'sound-hint hidden', onclick: () => this.g.audio.unlock() }, icon('music'), h('span', {}, 'Clique ou toque para ativar o som'));
+    this.soundEl = h('button', { class: 'sound-hint hidden', onclick: () => this.g.audio.unlock() }, icon('music'), h('span', { class: 'txt' }, 'Clique ou toque para ativar o som'));
     root.append(this.soundEl);
     setInterval(() => this.noticeTick(), 300);
     const guard = () => {
@@ -117,8 +117,8 @@ export class UI {
     setInterval(() => {
       const ctx = this.g.audio.ctx;
       const muted = !!(window.AudioContext || window.webkitAudioContext) && (!ctx || ctx.state !== 'running'); // sem suporte a som: nada a liberar
-      this.soundEl.classList.toggle('hidden', !muted || this.g.state === 'playing' && !this.g.pad?.usingPad);
-      if (muted) this.soundEl.querySelector('span').textContent = this.g.input.touchMode ? 'Toque na tela para ativar o som' : this.g.pad?.usingPad ? 'Clique na tela ou aperte uma tecla para ativar o som' : 'Clique ou aperte uma tecla para ativar o som';
+      this.soundEl.classList.toggle('hidden', !muted || this.g.state === 'paused' || (this.g.state === 'playing' && !this.g.pad?.usingPad)); // nunca por cima de menus da partida
+      if (muted) this.soundEl.querySelector('.txt').textContent = this.g.input.touchMode ? 'Toque na tela para ativar o som' : this.g.pad?.usingPad ? 'Clique na tela ou aperte uma tecla para ativar o som' : 'Clique ou aperte uma tecla para ativar o som';
     }, 400);
     root.append(this.hudEl, this.bannerEl, this.alertsEl, this.screenEl, this.noticeEl, this.fpsEl);
     this.fpsAcc = 0;
@@ -643,14 +643,16 @@ export class UI {
     const s = g.settings;
     const sw = (ic, label, key) => h('div', { class: 'set' }, icon(ic), h('span', {}, label),
       h('label', { class: 'switch ctrl' },
-        h('input', { type: 'checkbox', checked: s[key] !== false, role: 'switch', 'aria-label': label, onchange: (e) => {
+        h('input', { type: 'checkbox', checked: key === 'touchLefty' ? !!s[key] : s[key] !== false, role: 'switch', 'aria-label': label, onchange: (e) => {
           s[key] = e.target.checked;
           g.saveSettings();
+          if (key === 'touchLefty') g.touch.applySettings();
         } }),
         h('span', { class: 'track' })));
     return [
       h('h3', { class: 'section slashed' }, 'Celular'),
-      slider('gamepad', 'Tamanho dos botões', 'touchSize', 0.8, 1.4, 0.05, () => g.touch.applySettings()),
+      slider('gamepad', 'Tamanho dos botões', 'touchSize', 0.9, 1.4, 0.05, () => g.touch.applySettings()),
+      sw('gamepad', 'Controles para canhoto (botões à esquerda)', 'touchLefty'),
       sw('target', 'Tiro automático', 'touchAuto'),
       sw('bolt', 'Vibração', 'touchHaptic'),
       h('div', { class: 'set' }, icon('info'), h('span', {}, 'Duração dos avisos'),
@@ -1659,7 +1661,7 @@ export class UI {
       out.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom + 34 });
     }
     const top = this.hudEl.querySelector('.top')?.getBoundingClientRect();
-    if (top) out.push({ left: top.left, right: top.right, top: top.top, bottom: Math.max(top.bottom, 100) + 58 }); // a barra do chefe (top: 100px) cabe aqui
+    if (top) out.push({ left: top.left, right: top.right, top: top.top, bottom: top.bottom + 46 }); // a barra do chefe surge logo abaixo da faixa do topo
     // centro da arena: personagem, inimigos próximos e mira automática
     out.push({ left: innerWidth * 0.3, right: innerWidth * 0.7, top: innerHeight * 0.32, bottom: innerHeight * 0.8 });
     return out;
@@ -1696,6 +1698,8 @@ export class UI {
   // chamado pelo laço da UI: tenta de novo quando a fila espera vaga ou um menu fecha
   noticeTick() {
     if (!this.g.input.touchMode) return;
+    const tb = Math.max(this.hudEl.querySelector('.top')?.getBoundingClientRect().bottom || 0, 44);
+    if (Math.abs(tb - (this.topB || 0)) > 1) document.body.style.setProperty('--hud-top-b', `${Math.round((this.topB = tb))}px`);
     if (document.querySelector('.notices .notice') && !this.nCur) [...this.noticeEl.querySelectorAll('.notice:not(.out)')].forEach((e) => e.remove());
     if (this.nCur && this.screen) return this.nextNotice(); // abriu um menu: some na hora
     // algo da HUD apareceu por baixo (barra do chefe, multiplicador): muda de lugar ou volta para a fila
