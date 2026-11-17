@@ -244,15 +244,17 @@ export class UI {
     this.previewItems = items;
     const t0 = performance.now();
     let last = t0;
+    let frame = 0;
     const loop = (now) => {
       if (this.previewItems !== items || this.screen !== screen) return;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const t = (now - t0) / 1000;
+       frame++;
       for (const it of items) {
         if (it.active) it.angle += Math.atan2(Math.sin(-it.angle), Math.cos(-it.angle)) * Math.min(1, dt * 8);
         else it.angle += dt * 0.7;
-        draw(pv, it, t);
+        if (it.active || frame % 3 === 0) draw(pv, it, t);
       }
       requestAnimationFrame(loop);
     };
@@ -273,7 +275,7 @@ export class UI {
     const cards = ARENAS.map((a, k) => {
       const r = rec[`${a.id}_${mode}`];
       const thumb = h('canvas', { class: 'thumb', width: 368, height: 200, 'aria-hidden': 'true' });
-      if (pv) pv.arenaThumb(a, thumb);
+       if (pv) setTimeout(() => pv.arenaThumb(a, thumb), k * 50);
       const lock = !open[k];
       return h('button', {
         class: 'arena-card' + (k === selected ? ' selected' : '') + (lock ? ' locked' : ''),
