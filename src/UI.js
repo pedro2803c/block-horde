@@ -6,6 +6,7 @@ import { ACTIVES, ACTIVE_ORDER, ULTIMATES, ULT_ORDER, PASSIVES, BRANCHES, BUILDS
 import { Preview } from './Preview.js';
 import { icon, weaponIcon, skullSvg } from './icons.js';
 import { platform } from './platform.js';
+import { DIFFICULTIES, DIFF_ROWS, diffOf, fmtMul } from './difficulty.js';
 import { ACTIONS, BROWSER_GUIDE, browserTip, browserName } from './gamepad.js';
 
 // Construtor de DOM enxuto: h('div', { class: 'x', onclick }, filhos...)
@@ -220,7 +221,7 @@ export class UI {
       h('div', { class: 'menu-box' },
         h('div', {}, logo(), h('div', { class: 'logo-sub' }, 'Sobreviva à horda')),
         h('div', { class: 'menu-buttons' },
-          btn('primary lg', 'play', 'Jogar agora', () => this.g.quickStart()),
+          btn('primary lg', 'play', 'Jogar agora', () => this.showScreen('difficulty', { back: () => this.showScreen('menu'), go: () => this.g.quickStart() })),
           btn('', 'map', 'Escolher arena e sobrevivente', () => this.showScreen('pick', { mode: 'solo' })),
           btn('coop-btn', 'users', 'Co-op · 2 jogadores, 1 teclado', () => this.showScreen('pick', { mode: 'coop' })),
           h('div', { class: 'menu-duo' },
@@ -298,6 +299,59 @@ export class UI {
     for (const it of items) draw(pv, it, 0);
   }
 
+
+  // ------------------------------------------------------------ dificuldade
+  diffCards(sel, onPick) {
+    return h('div', { class: 'arena-grid diff-grid' }, DIFFICULTIES.map((d, i) => h('button', {
+      class: 'arena-card diff-card' + (d.id === sel ? ' selected' : ''), style: `--dc:${d.color}`,
+      'aria-pressed': d.id === sel ? 'true' : 'false', onclick: () => onPick(d.id),
+    },
+    h('span', { class: 'check' }, icon('check')),
+    h('span', { class: 'd-head' }, h('span', { class: 'd-ic' }, icon(d.icon)), h('span', {}, h('b', { class: 'd-name' }, `${i + 1}. ${d.name}`), h('span', { class: 'd-title' }, d.title))),
+    h('small', {}, d.desc),
+    h('span', { class: 'd-rows' }, DIFF_ROWS.map(([k, label]) => {
+      const v = d.mul[k];
+      return h('span', { class: 'd-row' }, h('span', {}, label), h('b', { class: v === 1 ? '' : 'd-chg' }, fmtMul(v)));
+    })))));
+  }
+  scr_difficulty({ back, go, sel }) {
+    const g = this.g;
+    sel = sel || g.settings.difficulty || 'normal';
+    const start = () => {
+      g.settings.difficulty = sel;
+      g.saveSettings();
+      go();
+    };
+    return this.win('difficulty', 'Escolha a dificuldade', back,
+      h('p', { class: 'muted', style: 'margin:0 0 0.8rem' }, 'Vale para PC, celular e controle. Fica salva para as próximas partidas e pode ser trocada em Configurações sem perder progresso.'),
+      this.diffCards(sel, (id) => this.showScreen('difficulty', { back, go, sel: id })),
+      h('div', { class: 'row end' }, btn('back', 'back', 'Voltar', back), btn('primary', 'play', `Começar · ${diffOf(sel).name}`, start, { 'data-focus': '' })));
+  }
+  // Configurações: troca com confirmação; vale da próxima partida em diante
+  diffSetting(back) {
+    const g = this.g;
+    const cur = diffOf(g.settings.difficulty);
+    let pick = cur.id;
+    const sel = h('select', { 'aria-label': 'Dificuldade', onchange: (e) => {
+      pick = e.target.value;
+      apply.disabled = pick === cur.id;
+      delete apply.dataset.armed;
+      apply.lastChild.textContent = 'Aplicar';
+    } }, DIFFICULTIES.map((d) => h('option', { value: d.id, selected: d.id === cur.id }, `${d.name} · ${d.title}`)));
+    const apply = btn('', 'check', 'Aplicar', () => {
+      if (!apply.dataset.armed) {
+        apply.dataset.armed = '1';
+        apply.lastChild.textContent = 'Confirmar troca';
+        return;
+      }
+      g.settings.difficulty = pick;
+      g.saveSettings();
+      this.alert(`Dificuldade: ${diffOf(pick).name}. ${g.state === 'menu' ? 'Vale na próxima partida.' : 'A partida atual continua como estava; a próxima já usa a nova.'} O progresso foi mantido.`, 'success', 'checkCircle');
+      this.showScreen('settings', { back, tab: 0 });
+    }, { disabled: true });
+    return h('div', { class: 'set diff-set' }, icon('skull'), h('span', {}, 'Dificuldade'), h('span', { class: 'diff-ctrl' }, h('span', { class: 'select ctrl' }, icon(cur.icon), sel, icon('chevron', 'chev')), apply));
+  }
+
   scr_arena({ mode, picks, sel = 0 }) {
     const rec = this.g.records();
     const pv = this.getPreview();
@@ -306,7 +360,7 @@ export class UI {
     const open = ARENAS.map((a) => this.g.arenaUnlocked(a));
     let selected = open[sel] ? sel : Math.max(0, open.indexOf(true));
     const play = (k) => {
-      if (open[k]) this.g.startMatch(ARENAS[k], picks, mode);
+      if (open[k]) this.showScreen('difficulty', { back: () => this.showScreen('arena', { mode, picks, sel: k }), go: () => this.g.startMatch(ARENAS[k], picks, mode) });
     };
     const cards = ARENAS.map((a, k) => {
       const r = rec[`${a.id}_${mode}`];
@@ -638,6 +692,7 @@ export class UI {
       h('span', { class: 'track' }));
     return this.win('settings', 'Configurações', () => this.showScreen(back),
       tabs,
+      this.diffSetting(back),
       slider('volume', 'Volume geral', 'master'),
       slider('music', 'Música', 'music'),
       slider('burst', 'Efeitos', 'sfx'),
@@ -1093,6 +1148,7 @@ export class UI {
         h('div', { class: 'chip' }, icon('trophy'), h('div', {}, h('small', {}, 'Pontos'), this.hScore)),
         h('div', { class: 'chip' }, icon('flag'), h('div', {}, h('small', {}, 'Onda'), this.hWave)),
         h('div', { class: 'chip red' }, icon('skull'), h('div', {}, this.hLeftLabel, this.hLeft)),
+        (this.hDiff = h('div', { class: 'chip diff-chip' }, icon('skull'), h('div', {}, h('small', {}, 'Dificuldade'), h('b', {})))),
         this.hEvent,
         h('div', { class: 'mult' }, this.hMult, h('div', { class: 'mult-body' }, h('div', { class: 'mult-next' }, this.hNextIcon, this.hNextText), this.hMeter.el))),
       this.pauseBtn,
@@ -1109,6 +1165,11 @@ export class UI {
     if (!on) return;
     const g = this.g;
     const pv = this.getPreview();
+    const dd = g.diff || diffOf('normal');
+    this.hDiff.style.setProperty('--dc', dd.color);
+    this.hDiff.querySelector('b').textContent = dd.name;
+    this.hDiff.title = `${dd.name} · ${dd.title}`;
+    this.hDiff.firstChild.replaceWith(icon(dd.icon));
     this.pEls.forEach((el, k) => {
       const p = g.players[k];
       el.root.classList.toggle('hidden', !p);

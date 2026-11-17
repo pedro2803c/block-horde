@@ -83,6 +83,8 @@ async function roteiro(page, m) {
 
   await ev((m) => __pad.plug(m), m);
   await tap(0); // primeiro botão: o navegador "libera" o controle; A/✕ confirma "Jogar agora"
+  // confirma "Começar" na tela de dificuldade (repete se a tela ainda estava abrindo)
+  for (let k = 0; k < 4 && !(await ev(() => __bh.state === 'playing')); k++) { await sleep(250); await tap(0); }
   await page.waitForFunction(() => __bh.state === 'playing', null, { timeout: 8000 }).catch(() => {});
   const info = await ev(() => __bh.pad.active?.info);
   ck('reconhece', info?.family === m.fam, `${info?.family}/${info?.maker}`);

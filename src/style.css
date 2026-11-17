@@ -907,3 +907,27 @@ body.touch .notices.over .notice { background: rgba(14, 17, 23, 0.94); }
 #ui .sound-hint { position: absolute; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 20; display: inline-flex; align-items: center; gap: 0.5rem; min-height: 40px; padding: 0 1rem; border-radius: 999px; background: rgba(14, 17, 23, 0.88); border: 1px solid var(--primary); color: var(--text); font: 600 0.9rem/1 var(--body); box-shadow: 0 0 14px rgba(255, 193, 7, 0.35); pointer-events: auto; cursor: pointer; animation: notice-in 0.25s var(--ease); }
 #ui .sound-hint .ic { width: 18px; height: 18px; color: var(--primary); }
 #ui .sound-hint.hidden { display: none; }
+
+/* ---------- dificuldade: cartões (reaproveitam .arena-card), chip na HUD e linha nas configurações ---------- */
+.diff-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.diff-card { padding: 0.9rem 0 0.8rem; border-top: 4px solid var(--dc); }
+.diff-card .d-head { display: flex; align-items: center; gap: 0.6rem; padding: 0 0.8rem; }
+.diff-card .d-ic { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--dc) 18%, transparent); border: 1px solid var(--dc); }
+.diff-card .d-ic .ic { width: 24px; height: 24px; color: var(--dc); }
+.diff-card .d-name { display: block; font: 400 1.6rem/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; color: var(--dc); }
+.diff-card .d-title { display: block; font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.diff-card .d-rows { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.3rem 0.8rem 0; font-size: 0.8rem; }
+.diff-card .d-row { display: flex; justify-content: space-between; gap: 0.5rem; border-bottom: 1px solid var(--border); padding: 0.12rem 0; color: var(--muted); }
+.diff-card .d-row b { color: var(--text); font-weight: 700; }
+.diff-card .d-row b.d-chg { color: var(--dc); }
+.chip.diff-chip { --dc: var(--info); border-color: var(--dc); }
+.chip.diff-chip .ic { color: var(--dc); }
+.chip.diff-chip b { color: var(--dc); }
+.set.diff-set .diff-ctrl { grid-column: 3 / -1; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.set.diff-set .diff-ctrl button { min-height: 44px; }
+body.touch .chip.diff-chip small { display: none; }
+body.touch .chip.diff-chip b { font-size: 0.85rem; }
+.difficulty .panel { width: min(1180px, 96vw); }
+@media (min-width: 1000px) { .diff-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 999px) { .diff-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+body.touch .diff-card .d-rows { font-size: 0.72rem; }

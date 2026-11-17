@@ -14,6 +14,7 @@ import { WorldMixin } from './world.js';
 import { platform } from './platform.js';
 import { TouchControls } from './touch.js';
 import { ControllerManager } from './gamepad.js';
+import { diffOf } from './difficulty.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -65,7 +66,7 @@ const EVENT_INFO = {
 export class Game {
   constructor(canvas, uiRoot) {
     this.canvas = canvas;
-    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95, touchAuto: true, touchSize: 1, touchHaptic: true, aimMode: 1, notifyDur: 1 };
+    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95, touchAuto: true, touchSize: 1, touchHaptic: true, aimMode: 1, notifyDur: 1, difficulty: 'normal' };
     try {
       Object.assign(this.settings, JSON.parse(platform.getItem(SETTINGS_KEY) || '{}'));
     } catch {
@@ -222,6 +223,7 @@ export class Game {
 
   // ------------------------------------------------------------------ partida
   setupMatch(arenaDef, survivors, demo = false) {
+    this.diff = demo ? diffOf('normal') : diffOf(this.matchDiff || this.settings.difficulty);
     this.disposeMatch();
     const scene = (this.scene = new THREE.Scene());
     const L = arenaDef.light;
@@ -440,6 +442,7 @@ export class Game {
     this.xpCredited = 0; // XP de perfil já creditado (se a partida continuar, não conta duas vezes)
     this.firstPrev = undefined;
     this.mode = mode;
+    this.matchDiff = this.settings.difficulty || 'normal'; // reiniciar mantém a dificuldade da partida
     this.arenaDef = arenaDef;
     this.survivorPicks = survivors;
     this.setupMatch(arenaDef, survivors);
@@ -1057,6 +1060,7 @@ export class Game {
       for (let k = 0; k < 4; k++) this.parts.spawn(p.pos.x + rand(-0.5, 0.5), rand(0.6, 1.4), p.pos.z + rand(-0.5, 0.5), rand(-2, 2), rand(0, 2), rand(-2, 2), 0.07, 0x4fd0ff, 0.35, 0, 2);
       return;
     }
+    dmg *= this.diff?.mul.enemyDmg || 1; // dificuldade escolhida
     // Blindagem, Fúria total e Campo de sobrevivência reduzem o dano
     dmg *= (1 - this.pv(p, 'armor') / 100) * (p.furyT > 0 ? 0.5 : 1) * (this.inHaven(p) ? 0.4 : 1);
     if (special && p.helmet) dmg *= 0.6;
@@ -1157,7 +1161,7 @@ export class Game {
       for (let k = 0; k < 10; k++) this.parts.spawn(pr.x + Math.cos(pr.rot) * 0.6, 2.8, pr.z - Math.sin(pr.rot) * 0.6, rand(-2, 2), rand(0, 2), rand(-2, 2), 0.06, 0xffe8a0, 0.6, 14, 2);
       this.audio.play('hit_wall', { volume: 0.8, pos: pr, rate: 1.4 });
     }
-    if (pr.def.drop && Math.random() < pr.def.drop) this.spawnPickup(this.rollField(), pr.x, pr.z, { x: pr.x, z: pr.z });
+    if (pr.def.drop && Math.random() < pr.def.drop * this.diff.mul.resources) this.spawnPickup(this.rollField(), pr.x, pr.z, { x: pr.x, z: pr.z });
     if (!this.demo && by) this.stats.score += 10;
   }
   // cone: cai e desliza na direção do empurrão
@@ -1776,6 +1780,7 @@ export class Game {
   }
   gainXp(p, n) {
     if (this.demo) return;
+    n = Math.max(1, Math.round(n * this.diff.mul.xp));
     p.xp += n;
     while (p.xp >= xpNeed(p.lv)) {
       p.xp -= xpNeed(p.lv);
@@ -2345,7 +2350,7 @@ export class Game {
   // ------------------------------------------------------------------ ondas
   buildWave(w) {
     const coop = this.players.length > 1;
-    const n = Math.round((6 + w * 4) * (coop ? 1.35 : 1) * (this.arena.def.diff?.count || 1));
+    const n = Math.round((6 + w * 4) * (coop ? 1.35 : 1) * (this.arena.def.diff?.count || 1) * this.diff.mul.count);
     const list = [];
     // sorteio por peso entre os tipos já liberados; o zumbi comum fica mais raro com o tempo
     const pool = ENEMY_ORDER.filter((t) => !ENEMIES[t].boss && ENEMIES[t].from <= w).map((t) => {
@@ -2380,9 +2385,9 @@ export class Game {
       type,
       def,
       pos: new THREE.Vector3(x, 0, z),
-      hp: def.hp * hpMul * (this.players.length > 1 && def.boss ? 1.4 : 1) * (this.arena.def.diff?.hp || 1),
+      hp: def.hp * hpMul * (this.players.length > 1 && def.boss ? 1.4 : 1) * (this.arena.def.diff?.hp || 1) * (def.boss ? this.diff.mul.bossHp : this.diff.mul.enemyHp),
       maxHp: 0,
-      speed: def.speed * Math.min(1.3, 1 + 0.015 * (w - 1)) * rand(0.9, 1.1) * (this.arena.def.diff?.speed || 1),
+      speed: def.speed * Math.min(1.3, 1 + 0.015 * (w - 1)) * rand(0.9, 1.1) * (this.arena.def.diff?.speed || 1) * this.diff.mul.enemySpeed,
       scale: def.scale,
       radius: def.radius ?? 0.32 * def.scale,
       wallR: Math.min(0.32 * def.scale, 0.45),
@@ -2439,7 +2444,7 @@ export class Game {
     return null;
   }
   aliveCap() {
-    return this.settings.quality === 'low' ? 40 : 60;
+    return Math.round((this.settings.quality === 'low' ? 40 : 60) * (this.diff?.mul.aliveCap || 1));
   }
   countAlive() {
     let n = 0;
@@ -2495,7 +2500,7 @@ export class Game {
     this.spawnT -= dt;
     const alive = this.countAlive();
     if (this.toSpawn.length && this.spawnT <= 0 && alive < cap) {
-      this.spawnT = Math.max(0.18, 0.75 - this.wave * 0.035) * rand(0.6, 1.3);
+      this.spawnT = (Math.max(0.18, 0.75 - this.wave * 0.035) * rand(0.6, 1.3)) / this.diff.mul.spawnRate;
       const gates = this.arena.gates.filter((g) => this.players.every((p) => !p.alive || Math.hypot(p.pos.x - g.x, p.pos.z - g.z) > 7));
       let sx;
       let sz;
@@ -2530,7 +2535,7 @@ export class Game {
       this.stats.score += this.wave * 100;
       this.ui.banner(`ONDA ${this.wave} CONCLUÍDA  +${this.wave * 100}`, 'good');
       this.audio.setMusic('ambient');
-      if (this.fieldCount() < 4) this.spawnPickup(this.rollField());
+      if (this.fieldCount() < Math.max(1, Math.round(4 * this.diff.mul.resources))) this.spawnPickup(this.rollField());
     }
   }
 
@@ -3198,7 +3203,7 @@ export class Game {
       if (z.state === 'move' && def.dmg > 0 && td < reach && (def.fly || A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z))) {
         speed = 0;
         if (z.attackCd <= 0) {
-          z.attackCd = def.rate;
+          z.attackCd = def.rate * this.diff.mul.aggression;
           z.attackT = 0.35;
           this.audio.play('zombie_attack', { pos: z.pos, volume: 0.6 });
           const target = tgt;
@@ -3209,7 +3214,7 @@ export class Game {
       } else if (blockedBy && Math.hypot(blockedBy.x - z.pos.x, blockedBy.z - z.pos.z) < 1.0 + z.radius) {
         speed = 0;
         if (z.attackCd <= 0) {
-          z.attackCd = def.rate;
+          z.attackCd = def.rate * this.diff.mul.aggression;
           z.attackT = 0.35;
           this.audio.play('melee_hit', { pos: z.pos, volume: 0.4, rate: 0.7 });
           if (blockedBy.kind === 'barricade') {
@@ -3288,7 +3293,7 @@ export class Game {
         if (Math.hypot(gp.x - z.pos.x, gp.z - z.pos.z) > 1.5 + z.radius) continue;
         speed = 0;
         if (z.attackCd <= 0) {
-          z.attackCd = def.rate;
+          z.attackCd = def.rate * this.diff.mul.aggression;
           z.attackT = 0.35;
           gp.hp -= Math.max(8, def.dmg);
           this.audio.play('hit_armor', { volume: 0.5, pos: gp, rate: 0.7 });
@@ -3693,7 +3698,7 @@ export class Game {
     this.crateT -= dt;
     if (this.crateT <= 0) {
       this.crateT = rand(9, 14);
-      if (this.fieldCount() < 4) this.spawnPickup(this.rollField());
+      if (this.fieldCount() < Math.max(1, Math.round(4 * this.diff.mul.resources))) this.spawnPickup(this.rollField());
     }
     for (const c of this.pickups) {
       c.t += dt;
@@ -3726,7 +3731,7 @@ export class Game {
     const prev = this.firstPrev; // recorde de antes desta partida (mesmo depois de continuar)
     const isRecord = !prev || this.stats.score > prev.score;
     if (isRecord) {
-      rec[key] = { score: this.stats.score, wave: this.wave, mult: this.maxMult, date: Date.now() };
+      rec[key] = { score: this.stats.score, wave: this.wave, mult: this.maxMult, date: Date.now(), diff: this.diff.id };
       try {
         platform.setItem(RECORDS_KEY, JSON.stringify(rec));
       } catch {
@@ -3735,7 +3740,7 @@ export class Game {
     }
     this.canvas.style.cursor = 'default';
     const before = pf.level;
-    const gained = Math.max(0, matchXp(this.stats.score, this.wave) - this.xpCredited);
+    const gained = Math.max(0, Math.round(matchXp(this.stats.score, this.wave) * this.diff.mul.xp) - this.xpCredited);
     this.xpCredited += gained;
     this.addProfileXp(pf, gained);
     this.saveProfile(pf);
