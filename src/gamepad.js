@@ -323,7 +323,10 @@ export class ControllerManager {
   menuNav(pad, dt) {
     const g = this.g;
     if (this.tapped(pad, 'pause') && g.state === 'paused') return g.onKey({ code: 'Escape', repeat: false, preventDefault() {} });
-    if (this.tapped(pad, 'tree') && g.state === 'paused' && g.ui.screen === 'tree') return g.onKey({ code: 'Tab', repeat: false, preventDefault() {} });
+    if (this.tapped(pad, 'tree') && g.state === 'paused') {
+      if (g.ui.screen === 'tree') return g.onKey({ code: 'Tab', repeat: false, preventDefault() {} });
+      if (g.ui.screen === 'pause') return g.openTree(); // do menu de pausa direto para a árvore
+    }
     const s = this.stick(pad, 0);
     let dir = '';
     if (pad.now[12] || s.y < -0.6) dir = 'up';
