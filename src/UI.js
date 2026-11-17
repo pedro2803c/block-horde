@@ -967,7 +967,7 @@ export class UI {
         canvas,
         h('span', { class: 'beast-name' }, icon(d.icon), d.boss ? `Chefão: ${d.name}` : d.name),
         h('small', {}, d.desc),
-        h('span', { class: 'beast-stats' }, `Vida ${d.hp}`, ' · ', d.boss ? 'A cada 5 ondas' : `Desde a onda ${d.from}`));
+        h('span', { class: 'beast-stats' }, `Vida ${d.hp}`, ' · ', d.boss ? 'A cada 5 ondas' : `Desde a onda ${d.from}`, d.only ? ` · Só em ${d.only.map((id) => ARENAS.find((a) => a.id === id)?.name || id).join(', ')}` : ''));
     };
     const list = h('ul', { class: 'beast-grid' }, ENEMY_ORDER.map(card));
     this.runPreviews(items, 'enemies', (pv, it, t) => pv.enemy(it.canvas, it.type, it.angle, t, it.active));

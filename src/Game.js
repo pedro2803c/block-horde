@@ -980,6 +980,14 @@ export class Game {
       }
     }
     const hy = z.def.fly ? (z.flyY || 1.4) + 0.2 : 0.9 * z.scale;
+    // Guardião Anúbis protege aliados próximos (não a si mesmo)
+    if (!z.def.aura) {
+      const gd = this.zombies.find((q) => q.alive && q.def.aura && q !== z && Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z) < q.def.aura.radius);
+      if (gd) {
+        dmg *= gd.def.aura.mul;
+        if (Math.random() < 0.5) this.parts.spawn(z.pos.x, hy, z.pos.z, rand(-1, 1), rand(1, 2), rand(-1, 1), 0.07, pick([0xf0c840, 0x4a8aff]), 0.35, 0, 2);
+      }
+    }
     // blindagem do Operário Mutante: tiros e lâminas perdem parte do dano
     // EMP desliga a blindagem; ácido corrói metade dela
     if (z.def.plating && src && !(z.empT > 0)) dmg *= z.corrodeT > 0 ? (1 + z.def.plating) / 2 : z.def.plating;
@@ -1031,8 +1039,8 @@ export class Game {
       for (let k = 0; k < 16; k++) this.parts.spawn(z.pos.x, rand(0.3, 1.6) * z.scale, z.pos.z, rand(-4, 4), rand(2, 5), rand(-4, 4), rand(0.08, 0.18), pick([0xc8f0ff, 0x8ad8ff, 0xffffff]), 0.9, 18, 2);
       this.audio.play('glass', { volume: 0.5, pos: z.pos });
     }
-    if (z.def.explode) {
-      const e = z.def.explode;
+    if (z.def.explode || z.def.deathBurst) {
+      const e = z.def.explode || z.def.deathBurst;
       this.later(0.08, () => this.explosion(z.pos.x, z.pos.z, e.radius, e.dmg, null));
     }
     if (z.def.spore) this.addCloud(z.pos.x, z.pos.z, z.def.spore);
@@ -2353,7 +2361,8 @@ export class Game {
     const n = Math.round((6 + w * 4) * (coop ? 1.35 : 1) * (this.arena.def.diff?.count || 1) * this.diff.mul.count);
     const list = [];
     // sorteio por peso entre os tipos já liberados; o zumbi comum fica mais raro com o tempo
-    const pool = ENEMY_ORDER.filter((t) => !ENEMIES[t].boss && ENEMIES[t].from <= w).map((t) => {
+    const here = (t) => !ENEMIES[t].only || ENEMIES[t].only.includes(this.arena.def.id); // ex.: Egito só no Templo Antigo
+    const pool = ENEMY_ORDER.filter((t) => !ENEMIES[t].boss && ENEMIES[t].from <= w && here(t)).map((t) => {
       const d = ENEMIES[t];
       const grow = Math.min(2, 1 + (w - d.from) * 0.12);
       return [t, t === 'walker' ? Math.max(3.5, d.weight - w * 0.45) : d.weight * grow];
@@ -2370,9 +2379,12 @@ export class Game {
         }
       }
       list.push(t);
+      // inimigos que chegam em bando (Múmia Guerreira)
+      const gr = ENEMIES[t].group || 1;
+      for (let g = 1; g < gr && k + 1 < n; g++, k++) list.push(t);
     }
     // o tipo novo aparece garantido na onda em que é liberado
-    for (const t of ENEMY_ORDER) if (ENEMIES[t].from === w && !ENEMIES[t].boss && !list.includes(t)) list.splice(Math.floor(list.length * 0.3), 0, t);
+    for (const t of ENEMY_ORDER) if (ENEMIES[t].from === w && !ENEMIES[t].boss && here(t) && !list.includes(t)) list.splice(Math.floor(list.length * 0.3), 0, t);
     if (w % 5 === 0) list.splice(Math.floor(list.length * 0.6), 0, this.arena.def.boss || 'boss');
     return list;
   }
@@ -3041,6 +3053,16 @@ export class Game {
         this.damagePlayer(p, 3, p.pos.x, p.pos.z, 0, true);
       }
     } else p.toxicT = 0;
+    // veneno das flechas do Arqueiro do Deserto
+    if (p.poisonT > 0) {
+      p.poisonT -= dt;
+      p.poisonAcc = (p.poisonAcc || 0) + dt;
+      if (Math.random() < dt * 6) this.parts.spawn(p.pos.x + rand(-0.3, 0.3), 1.2, p.pos.z + rand(-0.3, 0.3), 0, rand(0.5, 1.2), 0, 0.06, 0x8aff3a, 0.5, -0.5, 2);
+      if (p.poisonAcc >= 0.5) {
+        p.poisonAcc = 0;
+        this.damagePlayer(p, (p.poisonDps || 4) * 0.5, p.pos.x, p.pos.z, 0, true);
+      }
+    }
     // piso elétrico ligado: choque e atordoamento curto
     p.shockCd = Math.max(0, (p.shockCd || 0) - dt);
     if (this.elecOn && ter === T_ELEC && p.shockCd <= 0) {
@@ -3123,12 +3145,15 @@ export class Game {
       if (def.spit) {
         z.spitCd -= dt;
         if (td < def.spit.range && A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z)) {
-          if (td < 6) speed = 0;
+          if (def.kite && td < def.kite) {
+            vx = -vx; // recua para manter distância
+            vz = -vz;
+          } else if (td < 6) speed = 0;
           if (z.spitCd <= 0) {
             z.spitCd = def.spit.cd * rand(0.8, 1.2);
             z.attackT = 0.35;
-            const T = Math.max(0.5, td / 9);
-            this.projectiles.push({ kind: 'acid', x: z.pos.x, y: 1.2, z: z.pos.z, vx: dx / T, vy: 4.5, vz: dz / T, t: 0, dmg: def.spit.dmg, color: def.spit.color, splat: def.spit.splat });
+            const T = def.spit.arrow ? Math.max(0.25, td / 18) : Math.max(0.5, td / 9);
+            this.projectiles.push({ kind: 'acid', x: z.pos.x, y: 1.2, z: z.pos.z, vx: dx / T, vy: def.spit.arrow ? 7 * T : 4.5, vz: dz / T, t: 0, dmg: def.spit.dmg, color: def.spit.color, splat: def.spit.splat, poison: def.spit.poison });
             this.audio.play('spit', { pos: z.pos, volume: 0.7 });
           }
         }
@@ -3660,6 +3685,10 @@ export class Game {
         for (const p of this.players)
           if (p.alive && Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) < 0.5 && pr.y < 1.6) {
             this.damagePlayer(p, pr.dmg, pr.x, pr.z, 1, true);
+            if (pr.poison) {
+              p.poisonT = pr.poison.t; // flecha envenenada: dano contínuo
+              p.poisonDps = pr.poison.dps;
+            }
             hit = true;
           }
         // coberturas baixas (muretas, sacos de areia, barreiras, caixas) barram o ácido

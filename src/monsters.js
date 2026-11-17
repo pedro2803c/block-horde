@@ -598,6 +598,117 @@ function drawSpecter(B, G, base, z, col, t) {
 
 const BODIES = { spider: drawSpider, bat: drawBat, dog: drawDog, spore: drawSpore, wasp: drawWasp, specter: drawSpecter };
 
+// ------------------------------------------------------------------ Egito Antigo (só no Templo Antigo)
+const GOLD = 0xd4a020;
+const GOLD_L = 0xf0c840;
+const IMPERIAL = 0x2a4aa0;
+const BANDAGE = 0xd8cba0;
+const BANDAGE_D = 0xb3a57a;
+const JACKAL = 0x22222a;
+Object.assign(HUMANS, {
+  // Múmia Guerreira: bandagens, armadura danificada, olhos vermelhos e detalhes dourados
+  mummy: {
+    skin: BANDAGE, shirt: BANDAGE, sleeve: BANDAGE, hands: BANDAGE_D, pants: BANDAGE, boots: 0x7a6a4a, noFace: true, arms: 'reach',
+    extras: [
+      ...face(0xff3a2a, { brow: BANDAGE_D, mouth: 0x2a1a0a, open: 0.06, fangs: false }),
+      // faixas cruzadas na cabeça, no tronco e nas pernas
+      ['head', 0, 0.48, 0.278, 0.58, 0.04, 0.02, BANDAGE_D, 0, 0.12],
+      ['head', 0, 0.22, 0.278, 0.58, 0.04, 0.02, BANDAGE_D, 0, -0.1],
+      ['torso', 0, 0.12, 0.166, 0.56, 0.04, 0.012, BANDAGE_D, 0, 0.2],
+      ['torso', 0, 0.3, 0.166, 0.56, 0.04, 0.012, BANDAGE_D, 0, -0.18],
+      ...mirror(['legL', 0, -0.15, 0.121, 0.2, 0.04, 0.012, BANDAGE_D, 0, 0.25], ['armL', 0, -0.2, 0.096, 0.18, 0.035, 0.012, BANDAGE_D, 0, 0.3]),
+      // colar e cinto dourados, armadura danificada no ombro
+      ['torso', 0, 0.5, 0.15, 0.5, 0.08, 0.06, GOLD],
+      ['torso', 0, 0.44, 0.17, 0.3, 0.05, 0.03, IMPERIAL],
+      ['torso', 0, 0.02, 0, 0.6, 0.07, 0.36, GOLD],
+      ['armL', 0.02, -0.04, 0, 0.24, 0.12, 0.25, 0x8a7448],
+      // tira de bandagem solta
+      ['armR', -0.02, -0.62, 0.02, 0.05, 0.28, 0.02, BANDAGE, 0, 0.2],
+    ],
+  },
+  // Guardião Anúbis: cabeça de chacal, armadura dourada e azul, machado cerimonial
+  anubis: {
+    skin: JACKAL, shirt: IMPERIAL, sleeve: JACKAL, hands: JACKAL, pants: GOLD, boots: GOLD, noFace: true, arms: 'brawl',
+    extras: [
+      // focinho, nariz, orelhas altas e olhos luminosos
+      ['head', 0, 0.2, 0.38, 0.26, 0.18, 0.26, JACKAL],
+      ['head', 0, 0.26, 0.52, 0.1, 0.07, 0.04, 0x0a0a0a],
+      ...mirror(['head', 0.17, 0.72, -0.02, 0.11, 0.34, 0.08, JACKAL, 0, -0.12], ['head', 0.17, 0.7, 0.03, 0.05, 0.22, 0.012, GOLD, 0, -0.12]),
+      ...mirror(['head', 0.13, 0.36, 0.276, 0.12, 0.05, 0.02, GOLD_L, 0, 0.25, GLOW]),
+      // toucado listrado azul e dourado
+      ...mirror(['head', 0.29, 0.2, -0.05, 0.04, 0.4, 0.4, IMPERIAL], ['head', 0.3, 0.2, -0.05, 0.02, 0.06, 0.4, GOLD]),
+      ['head', 0, 0.2, -0.29, 0.56, 0.42, 0.04, IMPERIAL],
+      // colar largo, peitoral e saia dourados
+      ['torso', 0, 0.48, 0.12, 0.62, 0.14, 0.14, GOLD],
+      ['torso', 0, 0.36, 0.172, 0.26, 0.12, 0.012, GOLD_L, 0, 0, GLOW],
+      ['torso', 0, 0.02, 0, 0.62, 0.08, 0.38, GOLD],
+      ...mirror(['armL', 0.04, -0.02, 0, 0.3, 0.16, 0.3, GOLD], ['armL', 0, -0.45, 0, 0.22, 0.08, 0.22, GOLD]),
+      // machado cerimonial na mão direita
+      ['armR', 0, -0.6, 0.08, 0.06, 0.9, 0.06, 0x5a3a20],
+      ['armR', 0, -0.25, 0.3, 0.05, 0.36, 0.3, GOLD],
+      ['armR', 0, -0.25, 0.44, 0.06, 0.38, 0.04, GOLD_L],
+    ],
+  },
+  // Arqueiro do Deserto: armadura egípcia leve, arco dourado e aljava
+  archer: {
+    skin: 0xa8845a, shirt: 0xe8dcc0, sleeve: 0xa8845a, hands: 0x8a6a44, pants: 0xe8dcc0, boots: 0x7a5a32, noFace: true, arms: 'reach',
+    extras: [
+      ...face(0x8aff3a, { brow: 0x3a2a14, open: 0.06, fangs: false }),
+      // toucado listrado
+      ['head', 0, 0.52, -0.02, 0.6, 0.1, 0.6, IMPERIAL],
+      ...mirror(['head', 0.29, 0.28, -0.06, 0.04, 0.34, 0.36, IMPERIAL], ['head', 0.3, 0.28, -0.06, 0.02, 0.05, 0.36, GOLD]),
+      ['head', 0, 0.5, 0.29, 0.6, 0.05, 0.02, GOLD],
+      // colar e cinto
+      ['torso', 0, 0.5, 0.15, 0.5, 0.07, 0.06, GOLD],
+      ['torso', 0, 0.02, 0, 0.58, 0.07, 0.36, GOLD],
+      // aljava com flechas luminosas nas costas
+      ['torso', 0.12, 0.34, -0.24, 0.14, 0.44, 0.12, 0x6a4a28, 0, 0.35],
+      ...mirror(['torso', 0.2, 0.62, -0.24, 0.025, 0.14, 0.025, 0x8aff3a, 0, 0.35, GLOW]),
+      // arco dourado na mão esquerda
+      ['armL', 0, -0.55, 0.16, 0.05, 1.0, 0.05, GOLD],
+      ['armL', 0, -0.55, 0.1, 0.012, 0.95, 0.012, 0xeeeeee],
+      ['armL', 0, -0.08, 0.16, 0.06, 0.08, 0.06, GOLD_L],
+      ['armL', 0, -1.02, 0.16, 0.06, 0.08, 0.06, GOLD_L],
+    ],
+  },
+});
+
+// Escaravelho Gigante: carapaça azul e dourada, patas reforçadas, olhos vermelhos
+function drawScarab(B, G, base, z, col, t) {
+  const P = (cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (cx, cy, cz, sx, sy, sz, c) => G.part(base, cx, cy, cz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const bob = Math.abs(Math.sin(z.walk * 3)) * 0.04;
+  // carapaça em duas metades com faixa dourada
+  P(0.2, 0.5 + bob, -0.15, 0.38, 0.4, 0.9, 0x1e4a8a);
+  P(-0.2, 0.5 + bob, -0.15, 0.38, 0.4, 0.9, 0x1e4a8a);
+  P(0, 0.72 + bob, -0.15, 0.06, 0.02, 0.88, GOLD);
+  P(0, 0.71 + bob, -0.15, 0.7, 0.02, 0.06, GOLD);
+  P(0, 0.42 + bob, -0.62, 0.62, 0.24, 0.12, 0x163a6a);
+  // cabeça com chifre e olhos vermelhos
+  P(0, 0.42, 0.42, 0.5, 0.3, 0.3, 0x14305a);
+  P(0, 0.62, 0.52, 0.08, 0.26, 0.08, GOLD, -0.5);
+  L(0.14, 0.48, 0.575, 0.08, 0.06, 0.02, 0xff2a1a);
+  L(-0.14, 0.48, 0.575, 0.08, 0.06, 0.02, 0xff2a1a);
+  const bite = z.attackT > 0 ? 0.35 : 0;
+  P(0.12, 0.28, 0.6, 0.06, 0.06, 0.18, GOLD, 0, 0.4 + bite);
+  P(-0.12, 0.28, 0.6, 0.06, 0.06, 0.18, GOLD, 0, -0.4 - bite);
+  // 6 patas reforçadas
+  const zs = [0.25, -0.1, -0.45];
+  for (let i = 0; i < 3; i++)
+    for (const sg of [1, -1]) {
+      const ph = z.walk * 2.2 + (i % 2 ? Math.PI : 0) + (sg > 0 ? Math.PI : 0);
+      const hx = sg * 0.36;
+      const hz = zs[i];
+      const fx = sg * 0.78;
+      const fz = hz + (i - 1) * 0.3 + Math.sin(ph) * 0.14;
+      const fy = Math.max(0, Math.cos(ph)) * 0.12;
+      seg(B, base, z.scale, hx, 0.4, hz, sg * 0.62, 0.62 + fy, hz, 0.1, col(0x163a6a));
+      seg(B, base, z.scale, sg * 0.62, 0.62 + fy, hz, fx, fy, fz, 0.08, col(GOLD));
+    }
+}
+BODIES.scarab = drawScarab;
+OTHER_COLORS.scarab = [0x1e4a8a, GOLD];
+
 // Desenha um inimigo. z = { type, def, look, pos, facing, scale, walk, hurtT, attackT, state, alive, deadT, fallDir, rise, flyY }
 export function drawEnemy(B, G, z, t) {
   const type = z.type;

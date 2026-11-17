@@ -13,7 +13,8 @@
     "test:som": "node tests/som.test.mjs",
     "test:dificuldade": "node tests/dificuldade.test.mjs",
     "test:avisos": "node tests/avisos.test.mjs",
-    "test:hud": "node tests/hud-mobile.test.mjs"
+    "test:hud": "node tests/hud-mobile.test.mjs",
+    "test:egito": "node tests/egito.test.mjs"
   },
   "dependencies": {
     "three": "^0.187.0"
