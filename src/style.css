@@ -902,3 +902,8 @@ body.touch .notices.over .notice { background: rgba(14, 17, 23, 0.94); }
 .pad-tip .ic { width: 18px; height: 18px; flex: none; color: var(--info); }
 .pad-tip.bad { background: rgba(229, 57, 53, 0.14); border-left-color: var(--action); }
 .pad-tip.bad .ic { color: var(--action-hi); }
+
+/* som bloqueado pelo navegador: chip discreto no rodapé */
+#ui .sound-hint { position: absolute; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 20; display: inline-flex; align-items: center; gap: 0.5rem; min-height: 40px; padding: 0 1rem; border-radius: 999px; background: rgba(14, 17, 23, 0.88); border: 1px solid var(--primary); color: var(--text); font: 600 0.9rem/1 var(--body); box-shadow: 0 0 14px rgba(255, 193, 7, 0.35); pointer-events: auto; cursor: pointer; animation: notice-in 0.25s var(--ease); }
+#ui .sound-hint .ic { width: 18px; height: 18px; color: var(--primary); }
+#ui .sound-hint.hidden { display: none; }

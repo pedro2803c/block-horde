@@ -104,6 +104,15 @@ export class UI {
     this.loadEl = null;
     // celular: faixa única de avisos no topo (não recebe toques)
     this.noticeEl = h('div', { class: 'notices', 'aria-live': 'polite' });
+    // som bloqueado pelo navegador até o primeiro clique/toque: avisa e libera ao tocar
+    this.soundEl = h('button', { class: 'sound-hint hidden', onclick: () => this.g.audio.unlock() }, icon('music'), h('span', {}, 'Clique ou toque para ativar o som'));
+    root.append(this.soundEl);
+    setInterval(() => {
+      const ctx = this.g.audio.ctx;
+      const muted = !!(window.AudioContext || window.webkitAudioContext) && (!ctx || ctx.state !== 'running'); // sem suporte a som: nada a liberar
+      this.soundEl.classList.toggle('hidden', !muted || this.g.state === 'playing' && !this.g.pad?.usingPad);
+      if (muted) this.soundEl.querySelector('span').textContent = this.g.input.touchMode ? 'Toque na tela para ativar o som' : this.g.pad?.usingPad ? 'Clique na tela ou aperte uma tecla para ativar o som' : 'Clique ou aperte uma tecla para ativar o som';
+    }, 400);
     root.append(this.hudEl, this.bannerEl, this.alertsEl, this.screenEl, this.noticeEl, this.fpsEl);
     this.fpsAcc = 0;
     this.fpsN = 0;

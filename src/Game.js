@@ -98,7 +98,8 @@ export class Game {
     this.shakeAmt = 0;
     this.scopeK = 0; // 0..1: quanto a luneta do sniper está ativa
     this.menuT = 0;
-    window.addEventListener('pointerdown', () => this.audio.unlock(), { capture: true });
+    // o navegador só libera o som depois de um gesto do jogador (clique, toque ou tecla)
+    for (const t of ['pointerdown', 'pointerup', 'touchend', 'click', 'mousedown']) window.addEventListener(t, () => this.audio.unlock(), { capture: true });
     window.addEventListener('keydown', (e) => {
       this.audio.unlock();
       this.onKey(e);

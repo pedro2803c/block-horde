@@ -217,6 +217,7 @@ export class ControllerManager {
       }
       const any = pad.now.some((v, i) => v && !pad.prev[i]) || this.stick(pad, 0).m > 0 || this.stick(pad, 1).m > 0;
       if (any) {
+        this.g.audio?.unlock(); // alguns navegadores aceitam o controle como gesto; os outros mostram o aviso de som
         this.active = pad;
         this.setUsing(true);
       }
