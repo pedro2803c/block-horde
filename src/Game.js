@@ -65,7 +65,7 @@ const EVENT_INFO = {
 export class Game {
   constructor(canvas, uiRoot) {
     this.canvas = canvas;
-    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95, touchAuto: true, touchSize: 1, touchHaptic: true, aimMode: 1 };
+    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95, touchAuto: true, touchSize: 1, touchHaptic: true, aimMode: 1, notifyDur: 1 };
     try {
       Object.assign(this.settings, JSON.parse(platform.getItem(SETTINGS_KEY) || '{}'));
     } catch {

@@ -102,7 +102,9 @@ export class UI {
     this.alertsEl = h('div', { class: 'alerts', 'aria-live': 'polite' });
     this.fpsEl = h('div', { class: 'fps hidden' });
     this.loadEl = null;
-    root.append(this.hudEl, this.bannerEl, this.alertsEl, this.screenEl, this.fpsEl);
+    // celular: faixa única de avisos no topo (não recebe toques)
+    this.noticeEl = h('div', { class: 'notices', 'aria-live': 'polite' });
+    root.append(this.hudEl, this.bannerEl, this.alertsEl, this.screenEl, this.noticeEl, this.fpsEl);
     this.fpsAcc = 0;
     this.fpsN = 0;
     this.buildHud();
@@ -414,7 +416,8 @@ export class UI {
   }
   // nome do comando da árvore no dispositivo em uso (Tab no teclado)
   treeKey() {
-    return this.g.pad?.usingPad ? this.g.pad.actionGlyph('tree') : 'Tab';
+    if (this.g.pad?.usingPad) return this.g.pad.actionGlyph('tree');
+    return this.g.input.touchMode ? 'na pausa' : 'Tab'; // celular: a árvore abre pelo botão de pausa
   }
   padChanged() {
     this.padLabels();
@@ -578,6 +581,13 @@ export class UI {
       slider('gamepad', 'Tamanho dos botões', 'touchSize', 0.8, 1.4, 0.05, () => g.touch.applySettings()),
       sw('target', 'Tiro automático', 'touchAuto'),
       sw('bolt', 'Vibração', 'touchHaptic'),
+      h('div', { class: 'set' }, icon('info'), h('span', {}, 'Duração dos avisos'),
+        h('span', { class: 'select ctrl' }, icon('clock'),
+          h('select', { 'aria-label': 'Duração dos avisos', onchange: (e) => {
+            s.notifyDur = +e.target.value;
+            g.saveSettings();
+          } }, [[0.7, 'Curta'], [1, 'Normal'], [1.5, 'Longa']].map(([v, t]) => h('option', { value: v, selected: (s.notifyDur ?? 1) === v }, t))),
+          icon('chevron', 'chev'))),
     ];
   }
 
@@ -1470,6 +1480,11 @@ export class UI {
   }
 
   banner(text, kind = 'info') {
+    // celular: nada de letreiro gigante no meio da arena; vira aviso breve no topo
+    if (this.g.input.touchMode) {
+      const map = { good: ['success', 'checkCircle'], bad: ['danger', 'warning'], gold: ['gold', 'trophy'] }[kind] || ['wave', 'flag'];
+      return this.notify(text, map[0], map[1], { pri: 2, dur: 2 });
+    }
     if (kind === 'good') return this.alert(text, 'success', 'checkCircle');
     if (kind === 'bad') return this.alert(text, 'danger', 'warning');
     if (kind === 'gold') return this.alert(text, 'gold', 'trophy');
@@ -1482,9 +1497,78 @@ export class UI {
     this.bannerT = setTimeout(() => (el.className = 'banner'), 2400);
   }
   unlockBanner(text) {
+    if (this.g.input.touchMode) return this.notify(`Desbloqueado: ${text}`, 'gold', 'star', { pri: 2, dur: 3 });
     this.alert(`Novo item desbloqueado: ${text}`, 'info', 'star');
   }
+
+  // ---------------------------------------------------------- avisos do celular
+  // Um aviso por vez, no topo, sem botão e sem receber toques. Repetidos viram "×N",
+  // importantes passam na frente e avisos comuns antigos são descartados.
+  notify(text, kind = 'info', ic = 'info', o = {}) {
+    const pri = o.pri ?? (kind === 'danger' || kind === 'gold' || kind === 'wave' ? 2 : kind === 'success' ? 1 : 0);
+    const dur = o.dur ?? (pri >= 2 ? 3 : 2);
+    const q = (this.nq = this.nq || []);
+    const same = (n) => n && n.text === text && n.kind === kind;
+    const cur = this.nCur;
+    if (same(cur)) {
+      cur.count++;
+      cur.badge.textContent = `×${cur.count}`;
+      return;
+    }
+    const dup = q.find(same);
+    if (dup) {
+      dup.count++;
+      return;
+    }
+    q.push({ text, kind, ic, pri, dur, count: 1, t: performance.now() });
+    // no máximo 3 na espera: sai o de menor prioridade (o mais antigo entre iguais)
+    while (q.length > 3) {
+      let k = 0;
+      q.forEach((n, i) => {
+        if (n.pri < q[k].pri) k = i;
+      });
+      q.splice(k, 1);
+    }
+    if (!cur) this.nextNotice();
+    else if (pri >= 2 && cur.pri < 2) this.nextNotice(); // importante interrompe um aviso comum
+  }
+  nextNotice() {
+    clearTimeout(this.nT);
+    if (this.nCur) {
+      const old = this.nCur.el;
+      old.classList.add('out');
+      setTimeout(() => old.remove(), 220);
+      this.nCur = null;
+    }
+    const q = this.nq || [];
+    const now = performance.now();
+    q.sort((a, b) => b.pri - a.pri || a.t - b.t);
+    let n = q.shift();
+    while (n && n.pri === 0 && now - n.t > 4000) n = q.shift(); // aviso comum velho perde a vez
+    if (!n) return;
+    n.badge = h('b', { class: 'n-count' }, n.count > 1 ? `×${n.count}` : '');
+    n.el = h('div', { class: 'notice ' + n.kind, role: n.kind === 'danger' ? 'alert' : 'status' }, icon(n.ic), h('span', {}, n.text), n.badge);
+    this.placeNotices();
+    this.noticeEl.append(n.el);
+    this.nCur = n;
+    this.nT = setTimeout(() => this.nextNotice(), n.dur * 1000 * (this.g.settings.notifyDur ?? 1));
+  }
+  // logo abaixo do que estiver visível no topo (placar, chefe, dica), nunca no centro.
+  // Em telas baixas (celular deitado) não sobra espaço: o aviso fica por cima da linha do
+  // placar por alguns segundos, sem empurrar o HUD e longe do personagem.
+  placeNotices() {
+    let bottom = 8;
+    for (const sel of ['.top', '.boss:not(.hidden)', '.tutorial:not(.hidden)']) {
+      const el = this.hudEl.querySelector(sel);
+      if (!el || !el.offsetParent) continue;
+      bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+    }
+    const over = bottom + 36 > innerHeight * 0.2;
+    this.noticeEl.classList.toggle('over', over);
+    this.noticeEl.style.top = over ? '' : `${Math.round(bottom + 6)}px`;
+  }
   alert(text, kind = 'info', ic = 'info') {
+    if (this.g.input.touchMode) return this.notify(text, kind, ic);
     const close = () => {
       if (!el.isConnected || el.classList.contains('out')) return;
       el.classList.add('out');
@@ -1512,6 +1596,10 @@ export class UI {
     el.classList.toggle('hurt2', b);
   }
   toast(id, text, ic = 'medkit', kind = '') {
+    if (this.g.input.touchMode) {
+      const up = ic === 'tree'; // subida de nível
+      return this.notify(text, kind === 'bad' ? 'danger' : up ? 'gold' : 'success', ic, { pri: up ? 2 : kind === 'bad' ? 1 : 0, dur: up ? 3 : 2 });
+    }
     const el = this.pEls[id]?.toast;
     if (!el) return;
     el.replaceChildren(h('span', { class: kind }, icon(ic), text));
