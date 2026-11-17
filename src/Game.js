@@ -3184,7 +3184,7 @@ export class Game {
         vx = Math.sin(z.chargeDir);
         vz = Math.cos(z.chargeDir);
         speed = def.lunge.speed;
-      } else if (z.state === 'cast' || z.state === 'slam' || z.state === 'throw') speed = 0;
+      } else if (z.state === 'cast' || z.state === 'slam' || z.state === 'throw' || (z.state === 'wind' && def.lunge?.windup)) speed = 0;
       // aranha: zigue-zague; invocador: mantém distância; esporo: finca raiz para atirar
       if (def.strafe && td > 2.2 && z.state === 'move') {
         const k = Math.sin(this.time * 3.2 + z.strafe) * 0.75;
@@ -3438,6 +3438,15 @@ export class Game {
   enemyAbilities(z, tgt, td, dx, dz, dt) {
     const def = z.def;
     const A = this.arena;
+    if (z.state === 'wind' && def.lunge?.windup) {
+      z.facing = z.chargeDir;
+      if (Math.random() < dt * 20) this.parts.spawn(z.pos.x + rand(-0.5, 0.5), 0.2, z.pos.z + rand(-0.5, 0.5), 0, rand(0.5, 1.5), 0, 0.08, 0xffd040, 0.4, -1, 2);
+      if ((z.stateT -= dt) <= 0) {
+        z.state = 'lunge';
+        z.stateT = def.lunge.time || 0.38;
+      }
+      return;
+    }
     if (z.state === 'lunge') {
       if (!z.chargeHit && td < z.radius + tgt.radius + 0.35) {
         z.chargeHit = true;
@@ -3449,8 +3458,8 @@ export class Game {
     if (def.lunge) {
       z.lungeCd -= dt;
       if (z.state === 'move' && z.lungeCd <= 0 && td < def.lunge.range && td > 1.4 && A.walkable(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z, z.wallR)) {
-        z.state = 'lunge';
-        z.stateT = 0.38;
+        z.state = def.lunge.windup ? 'wind' : 'lunge'; // Carruagem e Hórus avisam antes de investir
+        z.stateT = def.lunge.windup || def.lunge.time || 0.38;
         z.chargeHit = false;
         z.chargeDir = Math.atan2(dx, dz);
         z.facing = z.chargeDir;

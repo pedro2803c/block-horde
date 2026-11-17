@@ -2,7 +2,7 @@
 
 > **Regra do Pedro (2026-11-17): estes 14 inimigos e 4 chefões aparecem SOMENTE na arena do Egito.** Não entram no sorteio das outras arenas.
 > **Arena definida pelo Pedro: Templo Antigo (`id: 'templo'`).** A "arena do Egito" é ela; não criar arena nova.
-> **Progresso:** Etapas 1–3 feitas (2026-11-17): estrutura `only`/`group`/`aura`/`kite`/`deathBurst`/veneno + Múmia Guerreira, Guardião Anúbis, Arqueiro do Deserto, Escaravelho Gigante. Teste: `npm run test:egito`. Etapa 4 feita: Serpente Sagrada, Sacerdote Profano, Fantasma do Faraó, Construto de Areia (`regen`, `quake`, veneno na mordida, maldição com lentidão, cor do teletransporte). Etapa 5 feita: Escorpião Imperial, Híbrido Chacal, Portal das Almas (`static`, `summon.windup`), Esqueleto de Faraó (`dodge`). Próxima: Etapa 6 (Carruagem Maldita, Hórus Corrompido).
+> **Progresso:** Etapas 1–3 feitas (2026-11-17): estrutura `only`/`group`/`aura`/`kite`/`deathBurst`/veneno + Múmia Guerreira, Guardião Anúbis, Arqueiro do Deserto, Escaravelho Gigante. Teste: `npm run test:egito`. Etapa 4 feita: Serpente Sagrada, Sacerdote Profano, Fantasma do Faraó, Construto de Areia (`regen`, `quake`, veneno na mordida, maldição com lentidão, cor do teletransporte). Etapa 5 feita: Escorpião Imperial, Híbrido Chacal, Portal das Almas (`static`, `summon.windup`), Esqueleto de Faraó (`dodge`). Etapa 6 feita: Carruagem Maldita e Hórus Corrompido (`lunge.windup`/`lunge.time`: investida anunciada). **Os 14 inimigos estão prontos.** Próxima: Etapa 7 (chefão Faraó Renegado).
 > Especificação original abaixo. O texto fala em Godot 4, mas o projeto é Three.js: adaptar aos sistemas existentes (`src/data.js` ENEMIES, `src/monsters.js`, `Game.buildWave/updateZombie`).
 
 ---

@@ -22,7 +22,7 @@ await p.waitForFunction(() => window.__bh && document.body.innerText.includes('J
 const R = await p.evaluate(async () => {
   const g = __bh;
   const { ARENAS } = __bhTest;
-  const EG = ['mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton'];
+  const EG = ['mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus'];
   const w = (ms) => new Promise((r) => setTimeout(r, ms));
   const out = {};
   const ondas = (arena) => {
@@ -135,6 +135,27 @@ const R = await p.evaluate(async () => {
   let desvios = 0;
   for (let i = 0; i < 40; i++) { const sk = at('skeleton', 20, 0); const h = sk.hp; g.damageZombie(sk, 5, 1, 0, pl); if (sk.hp === h) desvios++; }
   out.esqueletoEsquiva = desvios;
+  // ---- etapa 6 ----
+  // carruagem: avisa (para e trava a direção), investe e atropela
+  g.zombies.length = 0; g.projectiles.length = 0; pl.hp = 100; pl.armor = 0;
+  const ca = at('chariot', 7, 0); ca.lungeCd = 0; ca.spitCd = 99;
+  out.carruagemAvisa = await espera(() => ca.state === 'wind', 3000);
+  const posAviso = ca.pos.x;
+  await w(300);
+  out.carruagemParadaNoAviso = Math.abs(ca.pos.x - posAviso) < 0.05;
+  out.carruagemInveste = await espera(() => ca.state === 'lunge', 2000);
+  out.carruagemAtropela = await espera(() => ca.chargeHit, 2000);
+  // carruagem também atira de longe
+  g.zombies.length = 0; g.projectiles.length = 0;
+  const cb = at('chariot', 9, 0); cb.lungeCd = 99; cb.spitCd = 0;
+  out.carruagemAtira = await espera(() => g.projectiles.some((q) => q.kind === 'acid'), 3000);
+  // hórus: voa, dispara rajadas e mergulha
+  g.zombies.length = 0; g.projectiles.length = 0;
+  const ho = at('horus', 8, 0); ho.lungeCd = 99; ho.spitCd = 0;
+  out.horusVoa = !!ho.def.fly && (ho.flyY ?? ho.def.hover) > 1;
+  out.horusAtira = await espera(() => g.projectiles.some((q) => q.kind === 'acid'), 3000);
+  ho.lungeCd = 0; ho.pos.set(pl.pos.x + 5, 0, pl.pos.z);
+  out.horusMergulha = await espera(() => ho.state === 'lunge', 3000);
   g.debugGod = true;
   // visual: os quatro lado a lado
   g.zombies.length = 0;
@@ -149,7 +170,7 @@ await p.waitForTimeout(400);
 fs.mkdirSync('tests/hud-shots', { recursive: true });
 await p.screenshot({ path: 'tests/hud-shots/egito-etapa3.png' });
 console.log(JSON.stringify(R, null, 1));
-const ok = R.noTemplo.length === 12 && R.serpenteEnvenena && R.serpenteReaparece && R.maldicaoLentidao && R.sacerdoteInvoca && R.fantasmaTeleporta && R.construtoRegenera > 0 && R.construtoParaDeRegenerar && R.ondaDeChoque && R.escorpiaoSalta && R.escorpiaoEnvenena && R.chacalSalta && R.portalAvisa && R.portalInvoca && R.portalFixo && R.portalDestruido && R.esqueletoEsquiva > 3 && R.esqueletoEsquiva < 30 && !R.foraDoTemplo.length && R.mumiasEmGrupo && R.auraAnubis.pertoPerdeu < R.auraAnubis.longePerdeu && R.escudoFrontal < 5 && R.explosaoEscaravelho > 0 && R.arqueiroRecuou > 0 && R.flechaEnvenena && !erros.length;
+const ok = R.noTemplo.length === 14 && R.serpenteEnvenena && R.serpenteReaparece && R.maldicaoLentidao && R.sacerdoteInvoca && R.fantasmaTeleporta && R.construtoRegenera > 0 && R.construtoParaDeRegenerar && R.ondaDeChoque && R.escorpiaoSalta && R.escorpiaoEnvenena && R.chacalSalta && R.portalAvisa && R.portalInvoca && R.portalFixo && R.portalDestruido && R.esqueletoEsquiva > 3 && R.carruagemAvisa && R.carruagemParadaNoAviso && R.carruagemInveste && R.carruagemAtropela && R.carruagemAtira && R.horusVoa && R.horusAtira && R.horusMergulha && R.esqueletoEsquiva < 30 && !R.foraDoTemplo.length && R.mumiasEmGrupo && R.auraAnubis.pertoPerdeu < R.auraAnubis.longePerdeu && R.escudoFrontal < 5 && R.explosaoEscaravelho > 0 && R.arqueiroRecuou > 0 && R.flechaEnvenena && !erros.length;
 console.log(erros.length ? 'erros: ' + erros.join(' | ') : '', ok ? '✓ Egito ok' : '✗ falhou');
 await b.close();
 srv.close();

@@ -923,6 +923,89 @@ BODIES.portal = drawPortal;
 OTHER_COLORS.scorpion = [0x1a1a20, GOLD];
 OTHER_COLORS.portal = [0x6a5e52, 0x8a3ad0];
 
+// Carruagem Maldita: carruagem dourada, rodas grandes, dois cavalos esqueletos e condutor infectado
+function drawChariot(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const wind = z.state === 'wind';
+  const roll = z.walk * 2;
+  // caixa da carruagem
+  P(base, 0, 0.7, -0.55, 1.1, 0.5, 0.9, GOLD);
+  P(base, 0, 0.98, -0.55, 1.14, 0.08, 0.94, GOLD_L);
+  P(base, 0, 0.7, -0.09, 1.0, 0.36, 0.04, IMPERIAL);
+  P(base, 0, 0.5, 0.3, 0.08, 0.08, 1.0, 0x5a3a20);
+  // rodas grandes girando
+  for (const sg of [1, -1]) {
+    const w = joint(base, sg * 0.62, 0.5, -0.55, roll, 0, 0);
+    P(w, 0, 0, 0, 0.08, 0.9, 0.9, 0x3a2a1a);
+    P(w, 0, 0, 0, 0.1, 0.12, 0.94, GOLD);
+    P(w, 0, 0, 0, 0.1, 0.94, 0.12, GOLD);
+    P(w, 0, 0, 0, 0.12, 0.2, 0.2, GOLD_L);
+  }
+  // condutor infectado
+  P(base, 0, 1.25, -0.5, 0.36, 0.5, 0.3, 0x5a6a3a);
+  P(base, 0, 1.68, -0.5, 0.32, 0.32, 0.32, 0x7fae4a);
+  P(base, 0, 1.86, -0.5, 0.36, 0.06, 0.36, IMPERIAL);
+  G.part(base, 0.08, 1.7, -0.335, 0, 0, 0, 0, 0, 0.06, 0.04, 0.02, 0xff2a1a);
+  G.part(base, -0.08, 1.7, -0.335, 0, 0, 0, 0, 0, 0.06, 0.04, 0.02, 0xff2a1a);
+  // dois cavalos esqueletos à frente
+  for (const sg of [1, -1]) {
+    const hx = sg * 0.32;
+    const gal = Math.sin(z.walk * 2.4 + (sg > 0 ? 0 : 1.2));
+    P(base, hx, 0.95 + gal * 0.03, 0.85, 0.3, 0.32, 0.8, BONE);
+    for (let r = 0; r < 3; r++) P(base, hx, 0.95, 0.65 + r * 0.2, 0.32, 0.04, 0.04, 0x2a2018);
+    const nk = joint(base, hx, 1.1, 1.22, -0.7 + (wind ? -0.3 : 0), 0, 0);
+    P(nk, 0, 0.2, 0, 0.16, 0.4, 0.18, BONE);
+    P(nk, 0, 0.42, 0.14, 0.18, 0.18, 0.36, BONE);
+    G.part(nk, 0.06, 0.48, 0.26, 0, 0, 0, 0, 0, 0.05, 0.04, 0.04, wind ? 0xffd040 : 0xff2a1a);
+    for (const [lx, lz, ph] of [[0.1, 1.1, 0], [-0.1, 1.1, 1.5], [0.1, 0.6, 3], [-0.1, 0.6, 4.5]]) {
+      const a = Math.sin(z.walk * 2.4 + ph) * 0.5;
+      const leg = joint(base, hx + lx, 0.8, lz, a, 0, 0);
+      P(leg, 0, -0.38, 0, 0.07, 0.76, 0.07, BONE_D);
+    }
+  }
+  // aviso da investida: brilho dourado no chão à frente
+  if (wind) G.part(base, 0, 0.03, 1.6, 0, 0, 0, 0, 0, 0.9, 0.02, 1.6 + Math.sin(t * 20) * 0.2, 0xffd040);
+}
+
+// Hórus Corrompido: cabeça de falcão, asas douradas, armadura azul e dourada
+function drawHorus(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  base = joint(base, 0, -0.55, 0);
+  const flap = Math.sin(t * 9 + z.walk) * 0.55;
+  const dive = z.state === 'lunge' ? 0.6 : z.state === 'wind' ? -0.3 : 0;
+  const body = joint(base, 0, 0.5, 0, dive, 0, 0);
+  // tronco e saiote
+  P(body, 0, 0.3, 0, 0.5, 0.56, 0.34, IMPERIAL);
+  P(body, 0, 0.5, 0.16, 0.54, 0.1, 0.08, GOLD);
+  P(body, 0, 0.02, 0, 0.46, 0.2, 0.34, GOLD);
+  P(body, 0, -0.18, 0, 0.3, 0.24, 0.26, 0xe8dcc0);
+  // garras pendentes
+  for (const sg of [1, -1]) P(body, sg * 0.1, -0.38, 0.04, 0.08, 0.18, 0.1, 0x2a2018);
+  // cabeça de falcão com bico e olhos luminosos
+  const hd = joint(body, 0, 0.8, 0.02, -dive * 0.5, 0, 0);
+  P(hd, 0, 0, 0, 0.36, 0.36, 0.38, 0x5a3a20);
+  P(hd, 0, -0.06, 0.18, 0.3, 0.16, 0.04, 0xe8dcc0);
+  P(hd, 0, -0.04, 0.26, 0.12, 0.1, 0.16, GOLD_L);
+  P(hd, 0, -0.1, 0.34, 0.08, 0.08, 0.06, 0x2a2018);
+  P(hd, 0, 0.2, -0.02, 0.4, 0.06, 0.42, IMPERIAL);
+  G.part(hd, 0.1, 0.04, 0.2, 0, 0, 0, 0, 0, 0.08, 0.05, 0.02, 0x3fe0ff);
+  G.part(hd, -0.1, 0.04, 0.2, 0, 0, 0, 0, 0, 0.08, 0.05, 0.02, 0x3fe0ff);
+  // asas douradas batendo
+  for (const sg of [1, -1]) {
+    const wg = joint(body, sg * 0.26, 0.45, -0.1, 0, 0, sg * (0.25 + flap));
+    P(wg, sg * 0.45, 0, 0, 0.9, 0.08, 0.5, GOLD);
+    P(wg, sg * 0.5, -0.02, -0.18, 0.8, 0.06, 0.2, IMPERIAL);
+    const tip = joint(wg, sg * 0.88, 0, 0, 0, 0, sg * flap * 0.5);
+    P(tip, sg * 0.3, 0, -0.05, 0.6, 0.05, 0.4, GOLD_L);
+  }
+  // rajada carregando entre as mãos
+  if (z.attackT > 0) G.part(body, 0, 0.3, 0.35, 0, 0, 0, 0, 0, 0.18, 0.18, 0.18, 0x3fe0ff);
+}
+BODIES.chariot = drawChariot;
+BODIES.horus = drawHorus;
+OTHER_COLORS.chariot = [GOLD, IMPERIAL];
+OTHER_COLORS.horus = [IMPERIAL, GOLD];
+
 // Desenha um inimigo. z = { type, def, look, pos, facing, scale, walk, hurtT, attackT, state, alive, deadT, fallDir, rise, flyY }
 export function drawEnemy(B, G, z, t) {
   const type = z.type;
