@@ -11,7 +11,8 @@
     "build:crazygames": "vite build --mode crazygames --outDir crazygames/build --emptyOutDir",
     "test:controles": "node tests/controles.test.mjs",
     "test:som": "node tests/som.test.mjs",
-    "test:dificuldade": "node tests/dificuldade.test.mjs"
+    "test:dificuldade": "node tests/dificuldade.test.mjs",
+    "test:avisos": "node tests/avisos.test.mjs"
   },
   "dependencies": {
     "three": "^0.187.0"

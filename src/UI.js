@@ -108,6 +108,12 @@ export class UI {
     // som bloqueado pelo navegador até o primeiro clique/toque: avisa e libera ao tocar
     this.soundEl = h('button', { class: 'sound-hint hidden', onclick: () => this.g.audio.unlock() }, icon('music'), h('span', {}, 'Clique ou toque para ativar o som'));
     root.append(this.soundEl);
+    setInterval(() => this.noticeTick(), 300);
+    const guard = () => {
+      if (this.nCur && this.g.input.touchMode) this.noticeTick();
+      requestAnimationFrame(guard);
+    };
+    requestAnimationFrame(guard); // aviso na tela: confere a cada quadro se algo da HUD surgiu por baixo
     setInterval(() => {
       const ctx = this.g.audio.ctx;
       const muted = !!(window.AudioContext || window.webkitAudioContext) && (!ctx || ctx.state !== 'running'); // sem suporte a som: nada a liberar
@@ -1602,7 +1608,7 @@ export class UI {
       });
       q.splice(k, 1);
     }
-    if (!cur) this.nextNotice();
+    if (!cur) this.showNotice();
     else if (pri >= 2 && cur.pri < 2) this.nextNotice(); // importante interrompe um aviso comum
   }
   nextNotice() {
@@ -1613,32 +1619,99 @@ export class UI {
       setTimeout(() => old.remove(), 220);
       this.nCur = null;
     }
+    this.showNotice();
+  }
+  // mostra o próximo da fila se houver vaga; senão espera (checagem periódica em noticeTick)
+  showNotice() {
+    if (this.nCur) return;
     const q = this.nq || [];
     const now = performance.now();
+    // menu aberto: avisos comuns são descartados, importantes esperam o menu fechar
+    if (this.screen) {
+      for (let i = q.length - 1; i >= 0; i--) if (q[i].pri < 2) q.splice(i, 1);
+      return;
+    }
+    for (let i = q.length - 1; i >= 0; i--) if (q[i].pri === 0 && now - q[i].t > 4000) q.splice(i, 1); // comum velho perde a vez
     q.sort((a, b) => b.pri - a.pri || a.t - b.t);
-    let n = q.shift();
-    while (n && n.pri === 0 && now - n.t > 4000) n = q.shift(); // aviso comum velho perde a vez
+    const n = q[0];
     if (!n) return;
-    n.badge = h('b', { class: 'n-count' }, n.count > 1 ? `×${n.count}` : '');
-    n.el = h('div', { class: 'notice ' + n.kind, role: n.kind === 'danger' ? 'alert' : 'status' }, icon(n.ic), h('span', {}, n.text), n.badge);
-    this.placeNotices();
-    this.noticeEl.append(n.el);
+    n.badge = n.badge || h('b', { class: 'n-count' });
+    n.badge.textContent = n.count > 1 ? `×${n.count}` : '';
+    n.el = n.el || h('div', { class: 'notice ' + n.kind, role: n.kind === 'danger' ? 'alert' : 'status' }, icon(n.ic), h('span', {}, n.text), n.badge);
+    if (!this.placeNotice(n.el)) return; // sem espaço livre agora: continua na fila
+    q.shift();
     this.nCur = n;
     this.nT = setTimeout(() => this.nextNotice(), n.dur * 1000 * (this.g.settings.notifyDur ?? 1));
   }
-  // logo abaixo do que estiver visível no topo (placar, chefe, dica), nunca no centro.
-  // Em telas baixas (celular deitado) não sobra espaço: o aviso fica por cima da linha do
-  // placar por alguns segundos, sem empurrar o HUD e longe do personagem.
-  placeNotices() {
-    let bottom = 8;
-    for (const sel of ['.top', '.boss:not(.hidden)', '.tutorial:not(.hidden)']) {
-      const el = this.hudEl.querySelector(sel);
-      if (!el || !el.offsetParent) continue;
-      bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+  // áreas da HUD do celular que nenhum aviso pode cobrir
+  protectedRects() {
+    const sel = ['.top', '.boss:not(.hidden)', '.tutorial:not(.hidden)', '.pause-btn', '.radar', '.xpbar', '.tb', '.stick', '.auto-tag', '.wpicker:not(.hidden)', '.sound-hint:not(.hidden)'];
+    const out = [];
+    for (const el of document.querySelectorAll(sel.join(','))) {
+      if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') continue;
+      const r = el.getBoundingClientRect();
+      if (r.width && r.height) out.push(r);
     }
-    const over = bottom + 36 > innerHeight * 0.2;
-    this.noticeEl.classList.toggle('over', over);
-    this.noticeEl.style.top = over ? '' : `${Math.round(bottom + 6)}px`;
+    // reservas: o painel do jogador cresce (buffs, pontos) e a barra do chefe pode surgir a qualquer momento
+    const pp = this.hudEl.querySelector('.pp:not(.hidden)');
+    if (pp) {
+      const r = pp.getBoundingClientRect();
+      out.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom + 34 });
+    }
+    const top = this.hudEl.querySelector('.top')?.getBoundingClientRect();
+    if (top) out.push({ left: top.left, right: top.right, top: top.top, bottom: Math.max(top.bottom, 100) + 58 }); // a barra do chefe (top: 100px) cabe aqui
+    // centro da arena: personagem, inimigos próximos e mira automática
+    out.push({ left: innerWidth * 0.3, right: innerWidth * 0.7, top: innerHeight * 0.32, bottom: innerHeight * 0.8 });
+    return out;
+  }
+  // procura a primeira vaga livre de cima para baixo (centro, depois laterais); null = sem vaga
+  placeNotice(el) {
+    const box = this.noticeEl;
+    el.style.visibility = 'hidden';
+    if (el.parentNode !== box) box.append(el);
+    const w = el.offsetWidth;
+    const hgt = el.offsetHeight;
+    const rects = this.protectedRects();
+    const m = 4;
+    const free = (x, y) => rects.every((r) => x + w + m <= r.left || x - m >= r.right || y + hgt + m <= r.top || y - m >= r.bottom);
+    const safeT = parseFloat(getComputedStyle(document.body).getPropertyValue('--st')) || 0;
+    // topo (centro e meio das laterais) e, se o topo estiver cheio, as colunas laterais abaixo do painel e do radar
+    const sl = 8 + (parseFloat(getComputedStyle(document.body).getPropertyValue('--sl')) || 0);
+    const xs = [(innerWidth - w) / 2, innerWidth * 0.3, innerWidth * 0.7 - w, sl, innerWidth - w - sl];
+    for (let y = 6 + safeT; y + hgt < innerHeight * 0.66; y += 4) {
+      for (const x of xs) {
+        if (x < 4 || x + w > innerWidth - 4) continue;
+        if (free(x, y)) {
+          box.style.left = `${Math.round(x)}px`;
+          box.style.top = `${Math.round(y)}px`;
+          el.style.visibility = '';
+          return true;
+        }
+      }
+    }
+    el.remove();
+    el.style.visibility = '';
+    return false;
+  }
+  // chamado pelo laço da UI: tenta de novo quando a fila espera vaga ou um menu fecha
+  noticeTick() {
+    if (!this.g.input.touchMode) return;
+    if (document.querySelector('.notices .notice') && !this.nCur) [...this.noticeEl.querySelectorAll('.notice:not(.out)')].forEach((e) => e.remove());
+    if (this.nCur && this.screen) return this.nextNotice(); // abriu um menu: some na hora
+    // algo da HUD apareceu por baixo (barra do chefe, multiplicador): muda de lugar ou volta para a fila
+    if (this.nCur) {
+      const nr = this.nCur.el.getBoundingClientRect();
+      const bad = this.protectedRects().some((r) => nr.left < r.right && nr.right > r.left && nr.top < r.bottom && nr.bottom > r.top);
+      if (bad && !this.placeNotice(this.nCur.el)) {
+        const n = this.nCur;
+        clearTimeout(this.nT);
+        this.nCur = null;
+        n.el = null;
+        (this.nq = this.nq || []).unshift(n);
+      }
+      return;
+    }
+    if (this.nq?.length) this.showNotice();
   }
   alert(text, kind = 'info', ic = 'info') {
     if (this.g.input.touchMode) return this.notify(text, kind, ic);
