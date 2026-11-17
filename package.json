@@ -19,7 +19,8 @@
     "test:sobek": "node tests/sobek.test.mjs",
     "test:bastet": "node tests/bastet.test.mjs",
     "test:esfinge": "node tests/esfinge.test.mjs",
-    "test:egito-som": "node tests/egito-som.test.mjs"
+    "test:egito-som": "node tests/egito-som.test.mjs",
+    "test:desempenho": "node tests/desempenho.test.mjs"
   },
   "dependencies": {
     "three": "^0.187.0"
