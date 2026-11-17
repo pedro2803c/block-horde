@@ -969,6 +969,97 @@ export class Game {
 
   // ------------------------------------------------------------------ dano
   // quiet: dano contínuo (fogo, ácido, laser) sem som de impacto nem jorro de sangue
+  // Faraó Renegado: fases por vida, ondas de energia, explosões no chão, múmias e tempestade de areia
+  pharaohTick(z, td, dt) {
+    const A = this.arena;
+    z.invulT = Math.max(0, (z.invulT || 0) - dt);
+    const ph = z.hp > z.maxHp * 0.66 ? 1 : z.hp > z.maxHp * 0.33 ? 2 : 3;
+    if (ph > (z.phase || 1)) {
+      z.phase = ph;
+      z.invulT = 1.2;
+      this.ui.banner(ph === 2 ? 'FARAÓ: INVOCAÇÃO DAS TROPAS!' : 'FARAÓ: PODER TOTAL DA CORRUPÇÃO!', 'bad');
+      this.audio.play('boss_roar', { volume: 1, priority: true, rate: ph === 3 ? 0.8 : 0.9 });
+      this.noiseShake(1.3);
+      for (let k = 0; k < 48; k++) {
+        const a = (k / 48) * Math.PI * 2;
+        this.parts.spawn(z.pos.x, 1.5, z.pos.z, Math.sin(a) * 9, rand(1, 4), Math.cos(a) * 9, rand(0.12, 0.25), pick(ph === 3 ? [0xc070ff, 0xff2a1a] : [0xffd040, 0xe0c080]), 0.8, 4, 2);
+      }
+      if (ph === 3) z.speed *= 1.3;
+      z.callCd = 0.6;
+      z.stormCd = 1.5;
+    }
+    const phase = z.phase || 1;
+    // ondas de energia: anel de projéteis dourados
+    z.waveCd = (z.waveCd ?? 4) - dt;
+    if (z.waveCd <= 0 && td < 18) {
+      z.waveCd = phase === 3 ? 3 : 5;
+      const n = phase === 3 ? 16 : 10;
+      const off = rand(0, 6.28);
+      for (let k = 0; k < n; k++) {
+        const a = off + (k / n) * Math.PI * 2;
+        this.projectiles.push({ kind: 'acid', x: z.pos.x + Math.sin(a), y: 1.4, z: z.pos.z + Math.cos(a), vx: Math.sin(a) * 9, vy: 4, vz: Math.cos(a) * 9, t: 0, dmg: 14, color: phase === 3 ? 0xc070ff : 0xffd040, splat: '#c8a020' });
+      }
+      this.audio.play('spit', { pos: z.pos, volume: 1, rate: 0.5 });
+    }
+    // explosões no chão: marca dourada e explosão 1 s depois (dá para sair)
+    z.blastCd = (z.blastCd ?? 6) - dt;
+    if (z.blastCd <= 0) {
+      z.blastCd = phase === 3 ? 4 : 7;
+      for (const p of this.players) {
+        if (!p.alive) continue;
+        for (let k = 0; k < phase + 1; k++) {
+          const x = p.pos.x + rand(-2.5, 2.5);
+          const zz = p.pos.z + rand(-2.5, 2.5);
+          for (let j = 0; j < 14; j++) {
+            const a = (j / 14) * Math.PI * 2;
+            this.parts.spawn(x + Math.sin(a) * 1.8, 0.1, zz + Math.cos(a) * 1.8, 0, rand(0.5, 1.2), 0, 0.12, 0xffd040, 1, -0.4, 2);
+          }
+          this.later(1, () => this.explosion(x, zz, 2, 22, null));
+        }
+      }
+    }
+    // fase 2+: invoca múmias
+    if (phase >= 2) {
+      z.callCd = (z.callCd ?? 3) - dt;
+      if (z.callCd <= 0 && this.countAlive() < this.aliveCap()) {
+        z.callCd = phase === 3 ? 7 : 10;
+        const types = phase === 3 ? ['mummy', 'mummy', 'mummy', 'scarab'] : ['mummy', 'mummy', 'mummy'];
+        for (const t of types) {
+          for (let tries = 0; tries < 8; tries++) {
+            const a = rand(0, 6.28);
+            const x = z.pos.x + Math.sin(a) * (z.radius + 1.4);
+            const zz = z.pos.z + Math.cos(a) * (z.radius + 1.4);
+            if (A.circleBlocked(x, zz, 0.35)) continue;
+            this.spawnZombie(t, x, zz);
+            break;
+          }
+        }
+        this.audio.play('roar', { pos: z.pos, volume: 0.8, rate: 1.4 });
+      }
+      // tempestade de areia: todos ficam lentos e levam dano aos poucos
+      z.stormCd = (z.stormCd ?? 8) - dt;
+      if (z.stormCd <= 0) {
+        z.stormCd = phase === 3 ? 12 : 16;
+        this.sandStormT = 5;
+        this.ui.banner('TEMPESTADE DE AREIA!', 'bad');
+      }
+    }
+    if (this.sandStormT > 0) {
+      this.sandStormT -= dt;
+      for (const p of this.players) {
+        if (!p.alive) continue;
+        p.slowT = Math.max(p.slowT || 0, 0.3);
+        p.slowMul = 0.7;
+        p.sandAcc = (p.sandAcc || 0) + dt;
+        if (p.sandAcc >= 0.5) {
+          p.sandAcc = 0;
+          this.damagePlayer(p, 1.5, p.pos.x, p.pos.z, 0, true);
+        }
+        for (let k = 0; k < 6; k++) this.parts.spawn(p.pos.x + rand(-9, 9), rand(0.3, 3), p.pos.z + rand(-7, 7), rand(5, 9), rand(-0.3, 0.3), rand(-1, 1), rand(0.06, 0.14), pick([0xe0c080, 0xc8a060, 0xd4a020]), 0.8, 0, 0);
+      }
+    }
+  }
+
   // onda de choque no chão: fere quem está no raio (além do alvo do golpe)
   quake(z, q) {
     for (let k = 0; k < 22; k++) {
@@ -981,6 +1072,11 @@ export class Game {
   }
   damageZombie(z, dmg, dx, dz, src, knock = 0.8, quiet = false) {
     if (!z.alive) return;
+    if (z.invulT > 0) {
+      // troca de fase do chefão: não leva dano
+      if (Math.random() < 0.4) this.parts.spawn(z.pos.x, 1.6 * z.scale, z.pos.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, 0xffd040, 0.3, 6, 2);
+      return;
+    }
     // Esqueleto de Faraó: às vezes desvia do golpe com um passo lateral
     if (z.def.dodge && src && !quiet && this.time >= (z.dodgeAt || 0) && Math.random() < z.def.dodge.chance) {
       z.dodgeAt = this.time + z.def.dodge.cd;
@@ -1067,6 +1163,7 @@ export class Game {
     if (z.def.summon) for (let k = 0; k < 16; k++) this.parts.spawn(z.pos.x, 1, z.pos.z, rand(-3, 3), rand(1, 4), rand(-3, 3), rand(0.1, 0.2), pick([0xc070ff, 0x8a3ad0]), 0.8, 2, 2);
     if (z.def.boss) {
       this.boss = null;
+      this.sandStormT = 0;
       this.audio.setMusic('combat');
       this.ui.banner(`${z.def.name.toUpperCase()} DERROTADO!`, 'gold');
       platform.happytime();
@@ -2456,7 +2553,12 @@ export class Game {
     this.zombies.push(zb);
     if (def.boss) {
       this.boss = zb;
-      if (this.state === 'playing') this.ui.banner(`${def.name.toUpperCase()} SURGIU!`, 'bad'); // a partida de fundo do menu não avisa
+      if (def.riseIntro) {
+        zb.rise = def.riseIntro; // emerge do chão
+        for (let k = 0; k < 40; k++) this.parts.spawn(x + rand(-1.5, 1.5), 0.2, z + rand(-1.5, 1.5), rand(-3, 3), rand(2, 6), rand(-3, 3), rand(0.12, 0.25), pick([0xe0c080, 0xd4a020, 0xb08a40]), 1.2, 12, 0);
+        this.noiseShake(1.4);
+      }
+      if (this.state === 'playing') this.ui.banner(def.intro || `${def.name.toUpperCase()} SURGIU!`, 'bad'); // a partida de fundo do menu não avisa
       this.audio.play('boss_roar', { volume: 1, priority: true });
       this.audio.setMusic('boss');
     }
@@ -3439,6 +3541,7 @@ export class Game {
   enemyAbilities(z, tgt, td, dx, dz, dt) {
     const def = z.def;
     const A = this.arena;
+    if (def.bossKind === 'pharaoh') this.pharaohTick(z, td, dt);
     if (z.state === 'wind' && def.lunge?.windup) {
       z.facing = z.chargeDir;
       if (Math.random() < dt * 20) this.parts.spawn(z.pos.x + rand(-0.5, 0.5), 0.2, z.pos.z + rand(-0.5, 0.5), 0, rand(0.5, 1.5), 0, 0.08, 0xffd040, 0.4, -1, 2);

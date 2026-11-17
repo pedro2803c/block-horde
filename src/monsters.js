@@ -695,6 +695,30 @@ Object.assign(HUMANS, {
   },
 });
 
+// Faraó Renegado (chefão): faraó-múmia gigante, toucado listrado, armadura azul e dourada, olhos vermelhos
+HUMANS.pharaoh = {
+  zombie: true, skin: BANDAGE, shirt: IMPERIAL, sleeve: BANDAGE, hands: BANDAGE_D, pants: GOLD, boots: GOLD, noFace: true, arms: 'brawl',
+  extras: [
+    ...fiend(BANDAGE_D),
+    ...nemes(),
+    ['head', 0, 0.74, 0.02, 0.3, 0.2, 0.3, GOLD_L],
+    ['head', 0, 0.86, 0.02, 0.14, 0.12, 0.14, 0xff2a1a, 0, 0, GLOW],
+    ...bandStripes(),
+    ['torso', 0, 0.5, 0.1, 0.7, 0.18, 0.22, GOLD],
+    ['torso', 0, 0.46, 0.21, 0.5, 0.05, 0.012, IMPERIAL],
+    ['torso', 0, 0.3, 0.172, 0.3, 0.16, 0.012, GOLD_L, 0, 0, GLOW],
+    ['torso', 0, 0.02, 0, 0.66, 0.1, 0.4, GOLD],
+    ['torso', 0, -0.1, 0.19, 0.24, 0.2, 0.02, IMPERIAL],
+    ...mirror(
+      ['armL', 0.04, -0.02, 0, 0.36, 0.24, 0.36, GOLD],
+      ['armL', 0.04, 0.08, 0, 0.38, 0.05, 0.38, IMPERIAL],
+      ['armL', 0, -0.4, 0, 0.24, 0.1, 0.24, IMPERIAL],
+      ['armL', 0, -0.48, 0, 0.24, 0.05, 0.24, GOLD],
+      ['legL', 0, -0.12, 0.12, 0.24, 0.1, 0.04, IMPERIAL],
+    ),
+  ],
+};
+
 // Escaravelho Gigante: carapaça azul e dourada, patas reforçadas, olhos vermelhos
 function drawScarab(B, G, base, z, col, t) {
   const P = (cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
