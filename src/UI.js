@@ -122,6 +122,29 @@ export class UI {
     });
   }
 
+  // miniaturas das arenas: uma por vez, com folga entre elas para a tela não travar.
+  // As já salvas saem na hora; as novas montam a cena 3D só uma vez por arena.
+  queueThumb(pv, def, target) {
+    const q = (this.thumbQ = this.thumbQ || []);
+    q.push([def, target]);
+    if (this.thumbBusy) return;
+    this.thumbBusy = true;
+    const step = () => {
+      const job = q.shift();
+      if (!job) {
+        this.thumbBusy = false;
+        return;
+      }
+      const [d, t] = job;
+      if (!t.isConnected) return step(); // a tela foi fechada
+      const quick = pv.hasThumb(d);
+      pv.arenaThumb(d, t);
+      if (quick) step();
+      else setTimeout(step, 120);
+    };
+    requestAnimationFrame(() => setTimeout(step, 0)); // primeiro mostra a tela, depois desenha
+  }
+
   getPreview() {
     if (this.preview === undefined) {
       try {
@@ -277,7 +300,7 @@ export class UI {
     const cards = ARENAS.map((a, k) => {
       const r = rec[`${a.id}_${mode}`];
       const thumb = h('canvas', { class: 'thumb', width: 368, height: 200, 'aria-hidden': 'true' });
-       if (pv) setTimeout(() => pv.arenaThumb(a, thumb), k * 50);
+      if (pv) this.queueThumb(pv, a, thumb);
       const lock = !open[k];
       return h('button', {
         class: 'arena-card' + (k === selected ? ' selected' : '') + (lock ? ' locked' : ''),

@@ -60,9 +60,51 @@ export class Preview {
   }
 
   // miniatura 3D de uma arena (cena real montada a partir do mapa), guardada em cache
+  // chave do cache salvo no navegador: muda sozinha quando o mapa ou a luz da arena mudam
+  thumbKey(def) {
+    let h = 0;
+    const s = JSON.stringify(def);
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return `blockhorde.thumb.v1.${def.id}.${(h >>> 0).toString(36)}`;
+  }
+  // true quando a miniatura sai na hora (memória ou cache salvo), sem montar a cena 3D
+  hasThumb(def) {
+    if (this.thumbs?.[def.id]) return true;
+    try {
+      return !!localStorage.getItem(this.thumbKey(def));
+    } catch {
+      return false;
+    }
+  }
   arenaThumb(def, target) {
     this.thumbs = this.thumbs || {};
     let img = this.thumbs[def.id];
+    if (!img) {
+      // cache salvo de uma visita anterior: só decodifica a imagem
+      let saved = null;
+      try {
+        saved = localStorage.getItem(this.thumbKey(def));
+      } catch {
+        /* sem armazenamento */
+      }
+      if (saved) {
+        const pic = new Image();
+        pic.onload = () => {
+          const c = document.createElement('canvas');
+          c.width = pic.width;
+          c.height = pic.height;
+          c.getContext('2d').drawImage(pic, 0, 0);
+          this.thumbs[def.id] = c;
+          if (target) {
+            target.width = c.width;
+            target.height = c.height;
+            target.getContext('2d').drawImage(c, 0, 0);
+          }
+        };
+        pic.src = saved;
+        return;
+      }
+    }
     if (!img) {
       const W = 368;
       const H = 200;
@@ -101,6 +143,16 @@ export class Preview {
       img.height = H;
       img.getContext('2d').drawImage(this.renderer.domElement, 0, 0);
       this.thumbs[def.id] = img;
+      try {
+        const key = this.thumbKey(def);
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith(`blockhorde.thumb.v1.${def.id}.`) && k !== key) localStorage.removeItem(k); // versão antiga da arena
+        }
+        localStorage.setItem(key, img.toDataURL('image/jpeg', 0.82));
+      } catch {
+        /* armazenamento cheio ou bloqueado: fica só na memória */
+      }
       arena.dispose(scene);
       for (const b of [pb, pg]) if (b) {
         scene.remove(b.mesh);
@@ -112,6 +164,7 @@ export class Preview {
       this.renderer.setClearColor(0x000000, 0);
       this.renderer.setSize(this.w, this.h, false);
     }
+    if (!target) return;
     target.width = img.width;
     target.height = img.height;
     target.getContext('2d').drawImage(img, 0, 0);
