@@ -90,6 +90,25 @@ export function identify(gp) {
   return { family, maker, model, vendor, product, conn, key: vendor ? `${vendor}:${product}` : id };
 }
 
+// navegador recomendado por tipo de controle (o que cada navegador entrega de verdade)
+export function browserName() {
+  const u = navigator.userAgent;
+  if (/Firefox\//.test(u)) return 'Firefox';
+  if (/Edg\//.test(u)) return 'Edge';
+  if (/OPR\//.test(u)) return 'Opera';
+  if (/Chrome\//.test(u)) return 'Chrome';
+  if (/Safari\//.test(u)) return 'Safari';
+  return 'outro';
+}
+export function browserTip(family) {
+  const b = browserName();
+  if (b === 'Firefox' && family === 'nintendo') return 'Controles Nintendo (Joy-Con e Pro Controller) não funcionam direito no Firefox. Use o Chrome ou o Edge.';
+  if (b === 'Firefox') return 'No Firefox o controle funciona, mas sem vibração. Para vibrar, use o Chrome ou o Edge.';
+  if (b === 'Safari') return 'No Safari, alguns controles não são reconhecidos e não há vibração. Recomendado: Chrome ou Edge.';
+  return '';
+}
+export const BROWSER_GUIDE = 'Navegador recomendado: Xbox, PlayStation e Nintendo (Joy-Con e Pro Controller) funcionam melhor no Chrome ou no Edge. No Firefox, controles Nintendo falham e não há vibração.';
+
 export class ControllerManager {
   constructor(game) {
     this.g = game;
@@ -143,6 +162,8 @@ export class ControllerManager {
     this.pads.sort((a, b) => a.index - b.index);
     this.g.ui?.alert?.(`Controle conectado: ${info.model} (${FAMILIES[info.family].name})`, 'success', 'gamepad');
     this.g.ui?.padChanged?.();
+    const tip = browserTip(info.family);
+    if (tip) setTimeout(() => this.g.ui?.alert?.(tip, 'danger', 'warning'), 600);
   }
   disconnect(gp) {
     const i = this.pads.findIndex((p) => p.index === gp.index);

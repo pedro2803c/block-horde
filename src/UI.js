@@ -6,7 +6,7 @@ import { ACTIVES, ACTIVE_ORDER, ULTIMATES, ULT_ORDER, PASSIVES, BRANCHES, BUILDS
 import { Preview } from './Preview.js';
 import { icon, weaponIcon, skullSvg } from './icons.js';
 import { platform } from './platform.js';
-import { ACTIONS } from './gamepad.js';
+import { ACTIONS, BROWSER_GUIDE, browserTip, browserName } from './gamepad.js';
 
 // Construtor de DOM enxuto: h('div', { class: 'x', onclick }, filhos...)
 function h(tag, attrs = {}, ...kids) {
@@ -391,6 +391,7 @@ export class UI {
       h('div', { class: 'table-wrap' }, h('table', { class: 'keys' }, h('tbody', {}, s.rows.map(([k, v]) => h('tr', {}, h('td', {}, keys(k)), h('td', {}, v)))))),
       h('p', { class: 'muted' }, 'No teclado, a mira segue a direção do movimento e corrige levemente para o zumbi mais próximo à frente. O carregador vazio recarrega sozinho. Objetos interativos (geradores, painéis, totens, alavancas e altares) funcionam ficando ao lado deles. Itens são coletados ao encostar; os que não servem no momento ficam no chão.'),
       tab === 3 ? h('p', { class: 'muted' }, this.g.pad?.pads.length ? `Controle ativo: ${(this.g.pad.active || this.g.pad.pads[0]).info.model}. Os ícones seguem o fabricante do controle. No co-op, o 1º controle é o Jogador 1 e o 2º é o Jogador 2.` : 'Nenhum controle detectado: os ícones mostram o layout Xbox. Conecte o controle e pressione um botão.') : null,
+      tab === 3 ? h('p', { class: 'pad-tip' }, icon('info'), BROWSER_GUIDE) : null,
       h('div', { class: 'row end' }, btn('', 'gamepad', 'Configurar e testar controle', () => this.showScreen('gamepad', { back: () => this.showScreen('controls', { back, tab: 3 }) })), btn('primary back', 'check', 'Ok', () => this.showScreen(back))));
   }
 
@@ -434,7 +435,8 @@ export class UI {
         h('div', { class: 'pad-empty' }, icon('gamepad'),
           h('h3', { class: 'section' }, 'Nenhum controle detectado'),
           h('p', {}, 'Conecte o controle por USB ou Bluetooth e pressione qualquer botão. Por segurança, o navegador só mostra o controle ao jogo depois do primeiro botão pressionado.'),
-          h('p', { class: 'muted' }, 'Perfis prontos: Xbox One, Xbox Series X|S, DualShock 4, DualSense, Switch Pro Controller, Joy-Con, 8BitDo, Logitech e controles USB/Bluetooth genéricos. O reconhecimento depende do sistema, do driver e do navegador.')),
+          h('p', { class: 'muted' }, 'Perfis prontos: Xbox One, Xbox Series X|S, DualShock 4, DualSense, Switch Pro Controller, Joy-Con, 8BitDo, Logitech e controles USB/Bluetooth genéricos. O reconhecimento depende do sistema, do driver e do navegador.'),
+          h('p', { class: 'pad-tip' }, icon('info'), `Você está no ${browserName()}. ${BROWSER_GUIDE}`)),
         h('div', { class: 'row end' }, btn('primary back', 'check', 'Ok', goBack)));
     }
     const fam = pad.info.family;
@@ -449,6 +451,7 @@ export class UI {
       ['Identificador', gp.id], ['Conexão', pad.info.conn], ['Botões', gp.buttons.length], ['Eixos', gp.axes.length],
       ['Mapeamento', gp.mapping === 'standard' ? 'Padrão (standard)' : 'Fora do padrão: confira e remapeie na aba Botões'], ['Vibração', vib], ['Estado', gp.connected ? 'Conectado' : 'Desconectado'],
     ].map(([k, v]) => h('div', {}, h('span', {}, k), h('b', {}, String(v)))));
+    const tip = browserTip(fam);
     let body;
     if (tab === 0) {
       const toneOf = (i) => (fam === 'xbox' ? ['ok', 'bad', 'info', 'act'][i] || '' : fam === 'playstation' ? ['info', 'bad', 'act', 'ok'][i] || '' : '');
@@ -562,7 +565,7 @@ export class UI {
       P.listen = null;
       goBack();
     };
-    return this.win('gamepad', 'Controle', close, devs, info, tabs, body, h('div', { class: 'row end' }, btn('primary back', 'check', 'Ok', close)));
+    return this.win('gamepad', 'Controle', close, devs, info, tip ? h('p', { class: 'pad-tip bad' }, icon('warning'), tip) : null, tabs, body, h('div', { class: 'row end' }, btn('primary back', 'check', 'Ok', close)));
   }
 
   // celular: tamanho dos botões, tiro automático e vibração
