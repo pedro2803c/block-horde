@@ -22,7 +22,7 @@ await p.waitForFunction(() => window.__bh && document.body.innerText.includes('J
 const R = await p.evaluate(async () => {
   const g = __bh;
   const { ARENAS } = __bhTest;
-  const EG = ['mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct'];
+  const EG = ['mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton'];
   const w = (ms) => new Promise((r) => setTimeout(r, ms));
   const out = {};
   const ondas = (arena) => {
@@ -110,6 +110,31 @@ const R = await p.evaluate(async () => {
   let qk = 0; const oq = g.quake.bind(g); g.quake = (z, q) => { qk++; return oq(z, q); };
   out.ondaDeChoque = await espera(() => qk > 0);
   g.quake = oq;
+  // ---- etapa 5 ----
+  // escorpião: salta (bote) e envenena
+  g.zombies.length = 0; g.projectiles.length = 0; pl.hp = 100; pl.poisonT = 0;
+  const es = at('scorpion', 4.5, 0); es.lungeCd = 0;
+  out.escorpiaoSalta = await espera(() => es.state === 'lunge', 3000);
+  out.escorpiaoEnvenena = await espera(() => pl.poisonT > 0);
+  // chacal: ataques consecutivos (cadência alta) e salto
+  g.zombies.length = 0; pl.hp = 100;
+  const ch = at('jackal', 4, 0); ch.lungeCd = 0;
+  out.chacalSalta = await espera(() => ch.state === 'lunge', 3000);
+  // portal: fixo, avisa antes de invocar e invoca; pode ser destruído
+  g.zombies.length = 0;
+  const po = at('portal', 12, 6); po.summonCd = 0;
+  const p0 = { x: po.pos.x, z: po.pos.z };
+  out.portalAvisa = await espera(() => po.state === 'cast', 3000);
+  out.portalInvoca = await espera(() => po.minions.some((m) => m.alive), 4000);
+  g.damageZombie(po, 30, 1, 0, pl, 3);
+  out.portalFixo = Math.hypot(po.pos.x - p0.x, po.pos.z - p0.z) < 0.01;
+  g.damageZombie(po, 9999, 1, 0, pl);
+  out.portalDestruido = !po.alive;
+  // esqueleto: esquiva de parte dos tiros
+  g.zombies.length = 0;
+  let desvios = 0;
+  for (let i = 0; i < 40; i++) { const sk = at('skeleton', 20, 0); const h = sk.hp; g.damageZombie(sk, 5, 1, 0, pl); if (sk.hp === h) desvios++; }
+  out.esqueletoEsquiva = desvios;
   g.debugGod = true;
   // visual: os quatro lado a lado
   g.zombies.length = 0;
@@ -124,7 +149,7 @@ await p.waitForTimeout(400);
 fs.mkdirSync('tests/hud-shots', { recursive: true });
 await p.screenshot({ path: 'tests/hud-shots/egito-etapa3.png' });
 console.log(JSON.stringify(R, null, 1));
-const ok = R.noTemplo.length === 8 && R.serpenteEnvenena && R.serpenteReaparece && R.maldicaoLentidao && R.sacerdoteInvoca && R.fantasmaTeleporta && R.construtoRegenera > 0 && R.construtoParaDeRegenerar && R.ondaDeChoque && !R.foraDoTemplo.length && R.mumiasEmGrupo && R.auraAnubis.pertoPerdeu < R.auraAnubis.longePerdeu && R.escudoFrontal < 5 && R.explosaoEscaravelho > 0 && R.arqueiroRecuou > 0 && R.flechaEnvenena && !erros.length;
+const ok = R.noTemplo.length === 12 && R.serpenteEnvenena && R.serpenteReaparece && R.maldicaoLentidao && R.sacerdoteInvoca && R.fantasmaTeleporta && R.construtoRegenera > 0 && R.construtoParaDeRegenerar && R.ondaDeChoque && R.escorpiaoSalta && R.escorpiaoEnvenena && R.chacalSalta && R.portalAvisa && R.portalInvoca && R.portalFixo && R.portalDestruido && R.esqueletoEsquiva > 3 && R.esqueletoEsquiva < 30 && !R.foraDoTemplo.length && R.mumiasEmGrupo && R.auraAnubis.pertoPerdeu < R.auraAnubis.longePerdeu && R.escudoFrontal < 5 && R.explosaoEscaravelho > 0 && R.arqueiroRecuou > 0 && R.flechaEnvenena && !erros.length;
 console.log(erros.length ? 'erros: ' + erros.join(' | ') : '', ok ? '✓ Egito ok' : '✗ falhou');
 await b.close();
 srv.close();

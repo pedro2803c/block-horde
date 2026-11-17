@@ -811,6 +811,118 @@ BODIES.phantom = drawPhantom;
 OTHER_COLORS.serpent = [0xd4a020, 0xa01a14];
 OTHER_COLORS.phantom = [0x3ac8e8, GOLD];
 
+const BONE = 0xe8e0c8;
+const BONE_D = 0xb8ae90;
+Object.assign(HUMANS, {
+  // Híbrido Chacal: humanoide magro com cabeça de chacal, armadura leve e garras
+  jackal: {
+    skin: 0x6a4a2a, shirt: 0x3a2a1a, sleeve: 0x6a4a2a, hands: 0x4a3420, pants: 0x3a2a1a, boots: 0x2a1e12, noFace: true, arms: 'reach',
+    extras: [
+      ['head', 0, 0.2, 0.36, 0.24, 0.16, 0.24, 0x6a4a2a],
+      ['head', 0, 0.24, 0.49, 0.08, 0.06, 0.03, 0x0a0a0a],
+      ['head', 0, 0.12, 0.42, 0.18, 0.04, 0.12, 0x2a0a06],
+      ...mirror(['head', 0.16, 0.68, -0.04, 0.1, 0.3, 0.08, 0x6a4a2a, 0, -0.15], ['head', 0.16, 0.66, 0.01, 0.05, 0.2, 0.012, 0xc89a6a, 0, -0.15]),
+      ...mirror(['head', 0.13, 0.36, 0.276, 0.12, 0.05, 0.02, 0xff2a1a, 0, 0.3, GLOW]),
+      ['torso', 0, 0.46, 0.13, 0.56, 0.1, 0.1, GOLD],
+      ['torso', 0, 0.02, 0, 0.58, 0.07, 0.36, GOLD],
+      ...mirror(['armL', 0, -0.4, 0, 0.2, 0.08, 0.2, GOLD]),
+      // garras
+      ...mirror(['armL', 0.05, -0.68, 0.08, 0.03, 0.14, 0.03, TEETH, 0.4], ['armL', -0.05, -0.68, 0.08, 0.03, 0.14, 0.03, TEETH, 0.4]),
+    ],
+  },
+  // Esqueleto de Faraó: ossos, toucado e armadura dourada, espada cerimonial
+  skeleton: {
+    skin: BONE, shirt: BONE_D, sleeve: BONE, hands: BONE, pants: BONE_D, boots: BONE_D, noFace: true, arms: 'brawl',
+    extras: [
+      // crânio: órbitas escuras com olhos vermelhos, dentes
+      ...mirror(['head', 0.13, 0.33, 0.276, 0.14, 0.12, 0.02, 0x1a1210], ['head', 0.13, 0.33, 0.284, 0.06, 0.05, 0.012, 0xff2a1a, 0, 0, GLOW]),
+      ['head', 0, 0.12, 0.278, 0.3, 0.08, 0.02, 0x1a1210],
+      ['head', 0, 0.12, 0.284, 0.26, 0.04, 0.012, TEETH],
+      // toucado listrado de faraó
+      ['head', 0, 0.52, -0.02, 0.62, 0.12, 0.62, GOLD],
+      ...mirror(['head', 0.29, 0.24, -0.06, 0.04, 0.42, 0.4, IMPERIAL], ['head', 0.3, 0.24, -0.06, 0.02, 0.06, 0.4, GOLD]),
+      ['head', 0, 0.62, 0.22, 0.08, 0.16, 0.06, GOLD],
+      // costelas aparentes e armadura dourada
+      ...[0.18, 0.28, 0.38].map((y) => ['torso', 0, y, 0.166, 0.44, 0.04, 0.012, 0x1a1210]),
+      ['torso', 0, 0.5, 0.15, 0.56, 0.08, 0.06, GOLD],
+      ['torso', 0, 0.02, 0, 0.58, 0.08, 0.36, GOLD],
+      ...mirror(['armL', 0.04, -0.02, 0, 0.26, 0.14, 0.26, GOLD]),
+      // espada cerimonial curva (khopesh)
+      ['armR', 0, -0.62, 0.1, 0.05, 0.12, 0.05, 0x5a3a20],
+      ['armR', 0, -0.66, 0.36, 0.04, 0.08, 0.46, GOLD_L],
+      ['armR', 0, -0.56, 0.6, 0.04, 0.22, 0.12, GOLD_L, 0.6],
+    ],
+  },
+});
+
+// Escorpião Imperial: armadura preta e dourada, pinças robustas, ferrão roxo
+function drawScorpion(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const bob = Math.abs(Math.sin(z.walk * 2.5)) * 0.03;
+  // corpo segmentado
+  P(base, 0, 0.42 + bob, 0.1, 0.62, 0.3, 0.6, 0x1a1a20);
+  P(base, 0, 0.58 + bob, 0.1, 0.4, 0.03, 0.5, GOLD);
+  P(base, 0, 0.4 + bob, -0.32, 0.5, 0.26, 0.3, 0x22222a);
+  G.part(base, 0.12, 0.5, 0.42, 0, 0, 0, 0, 0, 0.07, 0.05, 0.02, 0xff2a1a);
+  G.part(base, -0.12, 0.5, 0.42, 0, 0, 0, 0, 0, 0.07, 0.05, 0.02, 0xff2a1a);
+  // cauda curvada sobre o corpo, ferrão roxo (golpeia no ataque)
+  const strike = z.attackT > 0 ? 0.7 : 0;
+  let m = joint(base, 0, 0.45, -0.45, 0.9 - strike * 0.3, 0, Math.sin(t * 2) * 0.05);
+  for (let i = 0; i < 4; i++) {
+    P(m, 0, 0.13, 0, 0.22 - i * 0.02, 0.26, 0.22 - i * 0.02, i % 2 ? GOLD : 0x1a1a20);
+    m = joint(m, 0, 0.24, 0, 0.45 + strike * 0.35, 0, 0);
+  }
+  P(m, 0, 0.08, 0, 0.14, 0.18, 0.14, 0x7a2ab0);
+  G.part(m, 0, 0.2, 0.05, 0.5, 0, 0, 0, 0, 0.05, 0.16, 0.05, 0xc070ff);
+  // pinças
+  const pinch = z.attackT > 0 ? 0.5 : Math.sin(t * 3) * 0.1;
+  for (const sg of [1, -1]) {
+    const arm = joint(base, sg * 0.3, 0.42, 0.36, 0, sg * -0.3, 0);
+    P(arm, 0, 0, 0.18, 0.12, 0.12, 0.36, 0x1a1a20);
+    const claw = joint(arm, 0, 0, 0.4, 0, sg * (0.2 + pinch), 0);
+    P(claw, 0, 0, 0.1, 0.22, 0.16, 0.26, GOLD);
+    P(claw, sg * -0.08, 0, 0.3, 0.06, 0.1, 0.2, 0x1a1a20);
+  }
+  // 8 patas
+  for (let i = 0; i < 4; i++)
+    for (const sg of [1, -1]) {
+      const ph = z.walk * 2 + (i % 2 ? Math.PI : 0) + (sg > 0 ? Math.PI : 0);
+      const hz = 0.2 - i * 0.18;
+      const fz = hz + (i - 1.5) * 0.2 + Math.sin(ph) * 0.1;
+      const fy = Math.max(0, Math.cos(ph)) * 0.1;
+      seg(B, base, z.scale, sg * 0.3, 0.38, hz, sg * 0.56, 0.52 + fy, hz, 0.07, col(0x1a1a20));
+      seg(B, base, z.scale, sg * 0.56, 0.52 + fy, hz, sg * 0.72, fy, fz, 0.06, col(GOLD));
+    }
+}
+
+// Portal das Almas: obelisco com portal roxo, runas e fragmentos flutuantes; brilha forte antes de invocar
+function drawPortal(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const charge = z.state === 'cast' ? 1 : 0;
+  const pulse = 0.5 + 0.5 * Math.sin(t * (charge ? 14 : 3));
+  // base e dois obeliscos
+  P(base, 0, 0.12, 0, 1.6, 0.24, 0.7, 0x5a5048);
+  for (const sg of [1, -1]) {
+    P(base, sg * 0.62, 1.1, 0, 0.32, 1.8, 0.32, 0x6a5e52);
+    P(base, sg * 0.62, 2.1, 0, 0.2, 0.2, 0.2, GOLD, 0.785, 0.785);
+    for (let k = 0; k < 4; k++) G.part(base, sg * 0.62, 0.5 + k * 0.38, 0.165, 0, 0, 0, 0, 0, 0.12, 0.06, 0.02, pulse > 0.5 || charge ? 0xc070ff : 0x7a3ab0);
+  }
+  P(base, 0, 1.96, 0, 1.56, 0.16, 0.36, 0x6a5e52);
+  // vórtice roxo no meio
+  const s = 0.8 + pulse * 0.12 + charge * 0.25;
+  G.part(base, 0, 1.1, 0, 0, t * 2, 0, 0, 0, s * 0.9, s * 1.5, 0.06, charge ? 0xe0a0ff : 0x8a3ad0);
+  G.part(base, 0, 1.1, 0.02, 0, -t * 3, 0, 0, 0, s * 0.5, s * 0.9, 0.06, 0x2a0a4a);
+  // fragmentos flutuantes
+  for (let k = 0; k < 4; k++) {
+    const a = t * (1 + charge * 2) + k * 1.57;
+    P(base, Math.sin(a) * 1.05, 1.2 + Math.sin(t * 2 + k) * 0.25, Math.cos(a) * 0.5, 0.14, 0.14, 0.14, 0x6a5e52, a, a);
+  }
+}
+BODIES.scorpion = drawScorpion;
+BODIES.portal = drawPortal;
+OTHER_COLORS.scorpion = [0x1a1a20, GOLD];
+OTHER_COLORS.portal = [0x6a5e52, 0x8a3ad0];
+
 // Desenha um inimigo. z = { type, def, look, pos, facing, scale, walk, hurtT, attackT, state, alive, deadT, fallDir, rise, flyY }
 export function drawEnemy(B, G, z, t) {
   const type = z.type;

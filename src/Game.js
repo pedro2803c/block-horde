@@ -981,6 +981,15 @@ export class Game {
   }
   damageZombie(z, dmg, dx, dz, src, knock = 0.8, quiet = false) {
     if (!z.alive) return;
+    // Esqueleto de Faraó: às vezes desvia do golpe com um passo lateral
+    if (z.def.dodge && src && !quiet && this.time >= (z.dodgeAt || 0) && Math.random() < z.def.dodge.chance) {
+      z.dodgeAt = this.time + z.def.dodge.cd;
+      const sd = Math.random() < 0.5 ? 1 : -1;
+      this.arena.move(z.pos, -dz * sd * 1.2, dx * sd * 1.2, z.radius);
+      for (let k = 0; k < 6; k++) this.parts.spawn(z.pos.x, rand(0.4, 1.4), z.pos.z, rand(-1, 1), rand(0.5, 1.5), rand(-1, 1), 0.06, 0xe8e0c8, 0.3, 0, 2);
+      this.audio.play('swing', { pos: z.pos, volume: 0.4, rate: 1.4 });
+      return;
+    }
     // passivas de quem causou o dano: Dano aumentado, Fúria total e Crítico
     if (src && src.ctl) {
       dmg *= this.dmgMul(src);
@@ -1011,8 +1020,9 @@ export class Game {
     z.hp -= dmg;
     z.hurtT = 0.08;
     if (src && src.ctl) src.hitT = 0.14; // marcador de acerto na mira
-    z.kx += dx * knock * (z.def.boss ? 0.1 : 1);
-    z.kz += dz * knock * (z.def.boss ? 0.1 : 1);
+    const kb = z.def.static ? 0 : z.def.boss ? 0.1 : 1; // Portal das Almas não sai do lugar
+    z.kx += dx * knock * kb;
+    z.kz += dz * knock * kb;
     const n = quiet ? (Math.random() < 0.3 ? 1 : 0) : Math.min(8, 2 + Math.floor(dmg / 8));
     const blood = z.def.blood || BLOOD;
     const bk = z.def.blood ? 0 : 1;
@@ -3451,9 +3461,9 @@ export class Game {
     if (def.summon) {
       z.summonCd -= dt;
       z.minions = z.minions.filter((m) => m.alive);
-      if (z.state === 'move' && z.summonCd <= 0 && td < 16 && z.minions.length < def.summon.max && this.countAlive() < this.aliveCap()) {
+      if (z.state === 'move' && z.summonCd <= 0 && (td < 16 || def.static) && z.minions.length < def.summon.max && this.countAlive() < this.aliveCap()) {
         z.state = 'cast';
-        z.stateT = 0.9;
+        z.stateT = def.summon.windup || 0.9; // Portal das Almas avisa por mais tempo
         this.audio.play('roar', { pos: z.pos, volume: 0.6, rate: 1.6 });
       }
       if (z.state === 'cast') {
