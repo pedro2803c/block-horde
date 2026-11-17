@@ -970,25 +970,43 @@ export class Game {
   // ------------------------------------------------------------------ dano
   // quiet: dano contínuo (fogo, ácido, laser) sem som de impacto nem jorro de sangue
   // Faraó Renegado: fases por vida, ondas de energia, explosões no chão, múmias e tempestade de areia
-  pharaohTick(z, td, dt) {
-    const A = this.arena;
+  // fases dos chefões por vida restante (66% e 33%): aviso, invulnerabilidade curta e explosão de partículas
+  bossPhase(z, dt, labels, colors, speedUp) {
     z.invulT = Math.max(0, (z.invulT || 0) - dt);
     const ph = z.hp > z.maxHp * 0.66 ? 1 : z.hp > z.maxHp * 0.33 ? 2 : 3;
     if (ph > (z.phase || 1)) {
       z.phase = ph;
       z.invulT = 1.2;
-      this.ui.banner(ph === 2 ? 'FARAÓ: INVOCAÇÃO DAS TROPAS!' : 'FARAÓ: PODER TOTAL DA CORRUPÇÃO!', 'bad');
+      this.ui.banner(labels[ph - 2], 'bad');
       this.audio.play('boss_roar', { volume: 1, priority: true, rate: ph === 3 ? 0.8 : 0.9 });
       this.noiseShake(1.3);
       for (let k = 0; k < 48; k++) {
         const a = (k / 48) * Math.PI * 2;
-        this.parts.spawn(z.pos.x, 1.5, z.pos.z, Math.sin(a) * 9, rand(1, 4), Math.cos(a) * 9, rand(0.12, 0.25), pick(ph === 3 ? [0xc070ff, 0xff2a1a] : [0xffd040, 0xe0c080]), 0.8, 4, 2);
+        this.parts.spawn(z.pos.x, 1.5, z.pos.z, Math.sin(a) * 9, rand(1, 4), Math.cos(a) * 9, rand(0.12, 0.25), pick(colors[ph - 2]), 0.8, 4, 2);
       }
-      if (ph === 3) z.speed *= 1.3;
+      if (ph === 3) z.speed *= speedUp;
       z.callCd = 0.6;
       z.stormCd = 1.5;
     }
-    const phase = z.phase || 1;
+    return z.phase || 1;
+  }
+  // invoca filhotes ao redor do chefão, em pontos livres
+  bossCall(z, types) {
+    for (const t of types) {
+      if (this.countAlive() >= this.aliveCap()) break;
+      for (let tries = 0; tries < 8; tries++) {
+        const a = rand(0, 6.28);
+        const x = z.pos.x + Math.sin(a) * (z.radius + 1.4);
+        const zz = z.pos.z + Math.cos(a) * (z.radius + 1.4);
+        if (this.arena.circleBlocked(x, zz, 0.35)) continue;
+        this.spawnZombie(t, x, zz);
+        break;
+      }
+    }
+    this.audio.play('roar', { pos: z.pos, volume: 0.8, rate: 1.4 });
+  }
+  pharaohTick(z, td, dt) {
+    const phase = this.bossPhase(z, dt, ['FARAÓ: INVOCAÇÃO DAS TROPAS!', 'FARAÓ: PODER TOTAL DA CORRUPÇÃO!'], [[0xffd040, 0xe0c080], [0xc070ff, 0xff2a1a]], 1.3);
     // ondas de energia: anel de projéteis dourados
     z.waveCd = (z.waveCd ?? 4) - dt;
     if (z.waveCd <= 0 && td < 18) {
@@ -1023,18 +1041,7 @@ export class Game {
       z.callCd = (z.callCd ?? 3) - dt;
       if (z.callCd <= 0 && this.countAlive() < this.aliveCap()) {
         z.callCd = phase === 3 ? 7 : 10;
-        const types = phase === 3 ? ['mummy', 'mummy', 'mummy', 'scarab'] : ['mummy', 'mummy', 'mummy'];
-        for (const t of types) {
-          for (let tries = 0; tries < 8; tries++) {
-            const a = rand(0, 6.28);
-            const x = z.pos.x + Math.sin(a) * (z.radius + 1.4);
-            const zz = z.pos.z + Math.cos(a) * (z.radius + 1.4);
-            if (A.circleBlocked(x, zz, 0.35)) continue;
-            this.spawnZombie(t, x, zz);
-            break;
-          }
-        }
-        this.audio.play('roar', { pos: z.pos, volume: 0.8, rate: 1.4 });
+        this.bossCall(z, phase === 3 ? ['mummy', 'mummy', 'mummy', 'scarab'] : ['mummy', 'mummy', 'mummy']);
       }
       // tempestade de areia: todos ficam lentos e levam dano aos poucos
       z.stormCd = (z.stormCd ?? 8) - dt;
@@ -1058,6 +1065,54 @@ export class Game {
         for (let k = 0; k < 6; k++) this.parts.spawn(p.pos.x + rand(-9, 9), rand(0.3, 3), p.pos.z + rand(-7, 7), rand(5, 9), rand(-0.3, 0.3), rand(-1, 1), rand(0.06, 0.14), pick([0xe0c080, 0xc8a060, 0xd4a020]), 0.8, 0, 0);
       }
     }
+  }
+
+  // Sobek, o Devorador: investidas mais frequentes, giro com a cauda, filhotes e fúria
+  // devolve true enquanto prepara o giro (ele fica parado e não faz outra coisa)
+  sobekTick(z, td, dt) {
+    const phase = this.bossPhase(z, dt, ['SOBEK: INVESTIDAS E INVOCAÇÕES!', 'SOBEK: FÚRIA DO DEVORADOR!'], [[0x4a7a3a, 0xd4a020], [0xff2a1a, 0x4a7a3a]], 1.35);
+    // fúria: ataca mais rápido
+    if (phase === 3) z.attackCd -= dt * 0.6;
+    // a partir da fase 2 investe com mais frequência
+    if (phase >= 2 && z.state === 'move') z.chargeCd = Math.min(z.chargeCd, phase === 3 ? 2.5 : 3.5);
+    // giro com a cauda: anuncia (0,7 s parado, anel verde no chão) e acerta tudo ao redor
+    z.tailCd = (z.tailCd ?? 5) - dt;
+    if (z.state === 'move' && z.tailCd <= 0 && td < 4.5) {
+      z.state = 'tail';
+      z.stateT = 0.7;
+      this.audio.play('roar', { pos: z.pos, volume: 0.9, rate: 0.7 });
+    }
+    if (z.state === 'tail') {
+      for (let k = 0; k < 3; k++) {
+        const a = rand(0, 6.28);
+        this.parts.spawn(z.pos.x + Math.sin(a) * 4.2, 0.1, z.pos.z + Math.cos(a) * 4.2, 0, rand(0.5, 1), 0, 0.12, 0x6ac040, 0.5, -0.5, 2);
+      }
+      z.facing += dt * 10 * (z.stateT < 0.25 ? 3 : 0.4);
+      if ((z.stateT -= dt) <= 0) {
+        z.state = 'move';
+        z.tailCd = phase === 3 ? 3.5 : 5.5;
+        for (const p of this.players) {
+          const d = Math.hypot(p.pos.x - z.pos.x, p.pos.z - z.pos.z);
+          if (p.alive && d < 4.2) this.damagePlayer(p, 30, z.pos.x, z.pos.z, 10, true);
+        }
+        for (let k = 0; k < 32; k++) {
+          const a = (k / 32) * Math.PI * 2;
+          this.parts.spawn(z.pos.x + Math.sin(a) * 1.5, 0.4, z.pos.z + Math.cos(a) * 1.5, Math.sin(a) * 8, rand(1, 2), Math.cos(a) * 8, rand(0.12, 0.22), pick([0x4a7a3a, 0x6ac040, 0xd4a020]), 0.5, 8, 0);
+        }
+        this.audio.play('swing', { pos: z.pos, volume: 1, rate: 0.5 });
+        this.noiseShake(0.8);
+      }
+      return true;
+    }
+    // fase 2+: crocodilos menores
+    if (phase >= 2) {
+      z.callCd = (z.callCd ?? 3) - dt;
+      if (z.callCd <= 0) {
+        z.callCd = phase === 3 ? 8 : 11;
+        this.bossCall(z, phase === 3 ? ['crocling', 'crocling', 'crocling', 'crocling'] : ['crocling', 'crocling', 'crocling']);
+      }
+    }
+    return false;
   }
 
   // onda de choque no chão: fere quem está no raio (além do alvo do golpe)
@@ -2502,7 +2557,9 @@ export class Game {
     }
     // o tipo novo aparece garantido na onda em que é liberado
     for (const t of ENEMY_ORDER) if (ENEMIES[t].from === w && !ENEMIES[t].boss && here(t) && !list.includes(t)) list.splice(Math.floor(list.length * 0.3), 0, t);
-    if (w % 5 === 0) list.splice(Math.floor(list.length * 0.6), 0, this.arena.def.boss || 'boss');
+    // chefão a cada 5 ondas; arenas com lista alternam (Templo: Faraó, Sobek...)
+    const bs = this.arena.def.boss;
+    if (w % 5 === 0) list.splice(Math.floor(list.length * 0.6), 0, Array.isArray(bs) ? bs[(w / 5 - 1) % bs.length] : bs || 'boss');
     return list;
   }
 
@@ -3286,7 +3343,7 @@ export class Game {
         vx = Math.sin(z.chargeDir);
         vz = Math.cos(z.chargeDir);
         speed = def.lunge.speed;
-      } else if (z.state === 'cast' || z.state === 'slam' || z.state === 'throw' || (z.state === 'wind' && def.lunge?.windup)) speed = 0;
+      } else if (z.state === 'cast' || z.state === 'slam' || z.state === 'throw' || z.state === 'tail' || (z.state === 'wind' && def.lunge?.windup)) speed = 0;
       // aranha: zigue-zague; invocador: mantém distância; esporo: finca raiz para atirar
       if (def.strafe && td > 2.2 && z.state === 'move') {
         const k = Math.sin(this.time * 3.2 + z.strafe) * 0.75;
@@ -3542,6 +3599,7 @@ export class Game {
     const def = z.def;
     const A = this.arena;
     if (def.bossKind === 'pharaoh') this.pharaohTick(z, td, dt);
+    if (def.bossKind === 'sobek' && this.sobekTick(z, td, dt)) return;
     if (z.state === 'wind' && def.lunge?.windup) {
       z.facing = z.chargeDir;
       if (Math.random() < dt * 20) this.parts.spawn(z.pos.x + rand(-0.5, 0.5), 0.2, z.pos.z + rand(-0.5, 0.5), 0, rand(0.5, 1.5), 0, 0.08, 0xffd040, 0.4, -1, 2);

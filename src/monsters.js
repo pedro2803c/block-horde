@@ -719,6 +719,73 @@ HUMANS.pharaoh = {
   ],
 };
 
+// Sobek, o Devorador (chefão): crocodilo humanoide, escamas verdes, armadura dourada, mandíbula aberta
+const CROC = 0x4a7a3a;
+const CROC_D = 0x35602a;
+HUMANS.sobek = {
+  zombie: true, skin: CROC, shirt: 0x2a2a30, sleeve: CROC, hands: CROC_D, pants: GOLD, boots: CROC_D, noFace: true, arms: 'brawl',
+  extras: [
+    // focinho comprido com mandíbula aberta, dentes e olhos vermelhos
+    ['head', 0, 0.28, 0.52, 0.44, 0.16, 0.56, CROC],
+    ['head', 0, 0.36, 0.3, 0.46, 0.08, 0.2, CROC_D],
+    ['head', 0, 0.06, 0.48, 0.4, 0.1, 0.5, CROC, 0.35],
+    ['head', 0, 0.16, 0.48, 0.36, 0.06, 0.46, 0x8a1010, 0.18],
+    ...[0.32, 0.46, 0.6, 0.74].flatMap((zz) => mirror(['head', 0.17, 0.19, zz, 0.04, 0.08, 0.04, TEETH])),
+    ...[0.36, 0.5, 0.64].flatMap((zz) => mirror(['head', 0.15, 0.12, zz - 0.02, 0.04, 0.07, 0.04, TEETH, 0.35])),
+    ...mirror(['head', 0.15, 0.44, 0.24, 0.12, 0.08, 0.06, 0xff2a1a, 0, 0.2, GLOW]),
+    // escamas no topo da cabeça e toucado listrado
+    ...[0.12, 0.3, 0.48].map((zz) => ['head', 0, 0.38, zz, 0.08, 0.06, 0.1, CROC_D]),
+    ['head', 0, 0.56, -0.08, 0.6, 0.1, 0.5, GOLD],
+    ['head', 0, 0.3, -0.31, 0.6, 0.5, 0.06, IMPERIAL],
+    ...[0.42, 0.26, 0.1].map((y) => ['head', 0, y, -0.345, 0.6, 0.05, 0.012, GOLD]),
+    ...mirror(['head', 0.3, 0.28, -0.1, 0.05, 0.46, 0.4, IMPERIAL], ['head', 0.33, 0.36, -0.1, 0.012, 0.05, 0.4, GOLD]),
+    // armadura dourada e azul no peito, ombros e braços; escamas nas costas
+    ['torso', 0, 0.48, 0.12, 0.72, 0.18, 0.2, GOLD],
+    ['torso', 0, 0.48, 0.225, 0.5, 0.05, 0.012, IMPERIAL],
+    ['torso', 0, 0.26, 0.172, 0.34, 0.2, 0.012, GOLD_L],
+    ['torso', 0, 0.02, 0, 0.66, 0.1, 0.4, GOLD],
+    ...[0.1, 0.3, 0.5].map((y) => ['torso', 0, y, -0.2, 0.2, 0.08, 0.08, CROC_D]),
+    ...mirror(
+      ['armL', 0.04, -0.02, 0, 0.38, 0.26, 0.38, GOLD],
+      ['armL', 0.04, 0.08, 0, 0.4, 0.05, 0.4, IMPERIAL],
+      ['armL', 0, -0.42, 0, 0.26, 0.1, 0.26, GOLD],
+      ['armL', 0.06, -0.7, 0.1, 0.05, 0.14, 0.05, TEETH, 0.4],
+      ['legL', 0, -0.14, 0.12, 0.26, 0.12, 0.04, IMPERIAL],
+    ),
+    // cauda grossa
+    ['torso', 0, -0.05, -0.36, 0.26, 0.24, 0.5, CROC],
+    ['torso', 0, -0.18, -0.72, 0.16, 0.16, 0.4, CROC_D],
+  ],
+};
+
+// Crocodilo do Nilo (filhote de Sobek): baixo, comprido, boca grande
+function drawCroc(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const sway = Math.sin(z.walk * 2) * 0.12;
+  P(base, 0, 0.3, 0, 0.5, 0.28, 0.9, CROC);
+  for (const zz of [-0.3, -0.05, 0.2]) P(base, 0, 0.46, zz, 0.12, 0.06, 0.12, CROC_D);
+  const tail = joint(base, 0, 0.3, -0.45, 0, sway, 0);
+  P(tail, 0, -0.02, -0.3, 0.3, 0.2, 0.6, CROC_D);
+  P(tail, 0, -0.04, -0.7, 0.16, 0.14, 0.4, CROC_D);
+  const jaw = z.attackT > 0 || z.state === 'lunge' ? 0.5 : 0.2;
+  const hd = joint(base, 0, 0.32, 0.45, 0, -sway * 0.5, 0);
+  P(hd, 0, 0.04, 0.3, 0.36, 0.14, 0.6, CROC);
+  P(hd, 0, -0.1, 0.26, 0.32, 0.08, 0.52, CROC_D, jaw);
+  P(hd, 0, -0.04, 0.28, 0.28, 0.04, 0.48, 0x8a1010, jaw * 0.5);
+  for (const sg of [1, -1]) {
+    G.part(hd, sg * 0.12, 0.14, 0.12, 0, 0, 0, 0, 0, 0.07, 0.05, 0.06, 0xff2a1a);
+    for (const zz of [0.2, 0.36, 0.52]) P(hd, sg * 0.15, -0.04, zz, 0.03, 0.06, 0.03, TEETH);
+  }
+  P(base, 0, 0.42, 0.42, 0.4, 0.06, 0.1, GOLD);
+  for (const [x, zz, ph] of [[0.28, 0.28, 0], [-0.28, 0.28, Math.PI], [0.28, -0.28, Math.PI], [-0.28, -0.28, 0]]) {
+    const a = Math.sin(z.walk * 2.4 + ph) * 0.5;
+    const leg = joint(base, x, 0.25, zz, a, 0, 0);
+    P(leg, 0, -0.12, 0, 0.12, 0.26, 0.14, CROC_D);
+  }
+}
+BODIES.crocling = drawCroc;
+OTHER_COLORS.crocling = [CROC, GOLD];
+
 // Escaravelho Gigante: carapaça azul e dourada, patas reforçadas, olhos vermelhos
 function drawScarab(B, G, base, z, col, t) {
   const P = (cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));

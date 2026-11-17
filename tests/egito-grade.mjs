@@ -5,11 +5,11 @@ import http from 'http'; import fs from 'fs';
 const srv = http.createServer((q, r) => { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); fs.createReadStream('portable/BlockHorde.html').pipe(r); });
 await new Promise((ok) => srv.listen(0, ok));
 const b = await chromium.launch({ channel: 'chrome' });
-const p = await b.newPage({ locale: 'pt-BR', viewport: { width: 1540, height: 760 } });
+const p = await b.newPage({ locale: 'pt-BR', viewport: { width: 1540, height: 920 } });
 await p.goto(`http://localhost:${srv.address().port}/`);
 await p.waitForFunction(() => window.__bh && document.body.innerText.includes('Jogar agora'));
 await p.evaluate((ang) => {
-  const T = ['mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'pharaoh'];
+  const T = ['mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'crocling', 'pharaoh', 'sobek'];
   const pv = __bh.ui.getPreview();
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:fixed;inset:0;z-index:99;background:#e8d8b0;display:grid;grid-template-columns:repeat(8,190px);gap:0;padding:10px';

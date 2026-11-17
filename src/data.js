@@ -142,13 +142,15 @@ export const ENEMIES = {
   chariot: { name: 'Carruagem Maldita', desc: 'Para, brilha e investe para atropelar; dispara projéteis de longe', icon: 'run', body: 'chariot', hp: 220, speed: 2.2, dmg: 18, rate: 1.4, reach: 1.4, scale: 1.1, radius: 0.8, score: 80, from: 8, weight: 0.45, lunge: { range: 10, speed: 10, cd: 4.5, windup: 0.8, time: 0.9 }, spit: { range: 11, dmg: 8, cd: 3, color: 0xffd040, splat: '#c8a020', arrow: true }, only: ['templo'], blood: [0xe8e0c8, 0xd4a020] },
   horus: { name: 'Hórus Corrompido', desc: 'Elite aérea: voa em círculos, dispara rajadas de energia e mergulha', icon: 'bat', body: 'horus', hp: 90, speed: 3.0, dmg: 12, rate: 1.0, reach: 1.1, scale: 1.1, radius: 0.45, score: 70, from: 8, weight: 0.6, fly: true, hover: 1.8, strafe: true, lunge: { range: 7, speed: 13, cd: 4, windup: 0.4 }, spit: { range: 11, dmg: 10, cd: 2.4, color: 0x3fe0ff, splat: '#2a9ab0', arrow: true }, only: ['templo'], blood: [0x3fe0ff, 0xd4a020] },
   pharaoh: { name: 'Faraó Renegado', desc: 'Chefão do Templo: 3 fases, tempestade de areia, múmias, ondas de energia e explosões no chão', icon: 'crown', hp: 2100, speed: 1.45, dmg: 40, rate: 1.3, reach: 2.4, scale: 2.6, score: 650, boss: true, bossKind: 'pharaoh', intro: 'O FARAÓ RENEGADO DESPERTOU!', riseIntro: 1.6, blood: [0xd8cba0, 0xd4a020] },
+  sobek: { name: 'Sobek, o Devorador', desc: 'Chefão do Templo: mordidas, investidas brutais, giro com a cauda e crocodilos menores', icon: 'crown', hp: 2300, speed: 1.5, dmg: 44, rate: 1.2, reach: 2.5, scale: 2.7, score: 700, boss: true, bossKind: 'sobek', intro: 'SOBEK, O DEVORADOR EMERGIU!', riseIntro: 1.6, blood: [0x4a7a3a, 0xd4a020] },
+  crocling: { name: 'Crocodilo do Nilo', desc: 'Filhote invocado por Sobek: pequeno, rápido e dá botes', icon: 'paw', body: 'crocling', hp: 30, speed: 3.0, dmg: 8, rate: 0.8, reach: 0.9, scale: 0.8, radius: 0.4, score: 10, from: 99, weight: 0, summonedOnly: true, lunge: { range: 4, speed: 10, cd: 3 }, only: ['templo'], blood: [0x4a7a3a, 0x2a4a1a] },
   boss: { name: 'Colosso', desc: 'Gigante, resistente e com múltiplos ataques', icon: 'crown', hp: 1500, speed: 1.5, dmg: 36, rate: 1.3, reach: 2.2, scale: 2.6, score: 500, boss: true, blood: [0x5a4a44, 0xff5a1a] },
   devourer: { name: 'O Devorador', desc: 'Zumbi gigante que destrói obstáculos e investe contra a horda', icon: 'crown', hp: 1700, speed: 1.55, dmg: 40, rate: 1.25, reach: 2.3, scale: 2.7, score: 600, boss: true, bossKind: 'devourer', blood: [0x5a7a24, 0x2a3a10] },
   mechworker: { name: 'O Operário Mutante', desc: 'Blindado com braços mecânicos: resiste a tiros e esmaga o chão', icon: 'crown', hp: 1900, speed: 1.3, dmg: 42, rate: 1.3, reach: 2.4, scale: 2.6, score: 600, boss: true, bossKind: 'mechworker', plating: 0.6, blood: [0x8a8a90, 0xe8a020] },
   guardian: { name: 'O Guardião da Floresta', desc: 'Madeira, raízes e fungos: prende os jogadores e solta esporos', icon: 'crown', hp: 1800, speed: 1.35, dmg: 38, rate: 1.3, reach: 2.5, scale: 2.8, score: 600, boss: true, bossKind: 'guardian', blood: [0x4a6a24, 0x8a4ad0] },
   general: { name: 'O General Infectado', desc: 'Comandante blindado: convoca reforços e enfurece a horda', icon: 'crown', hp: 2000, speed: 1.4, dmg: 40, rate: 1.25, reach: 2.4, scale: 2.6, score: 600, boss: true, bossKind: 'general', blood: [0x6a7a2a, 0xb01c1c] },
 };
-export const ENEMY_ORDER = ['walker', 'brute', 'spider', 'bat', 'runner', 'spitter', 'bloater', 'armored', 'dog', 'summoner', 'spore', 'reaper', 'wasp', 'specter', 'boss', 'devourer', 'mechworker', 'guardian', 'general', 'mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'pharaoh'];
+export const ENEMY_ORDER = ['walker', 'brute', 'spider', 'bat', 'runner', 'spitter', 'bloater', 'armored', 'dog', 'summoner', 'spore', 'reaper', 'wasp', 'specter', 'boss', 'devourer', 'mechworker', 'guardian', 'general', 'mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'crocling', 'pharaoh', 'sobek'];
 
 
 // Sobreviventes (apenas aparência; todos têm os mesmos atributos).
@@ -650,7 +652,7 @@ export const ARENAS = [
   },
   {
     id: 'templo', name: 'Templo Antigo', desc: 'Pedra, hieróglifos e armadilhas: dardos, lâminas, portais mágicos e uma câmara escondida.', floor: 'temple',
-    theme: 'temple', ambient: 'temple', weather: 'curse', boss: 'pharaoh', unlock: 12, spawnShare: 0.3, maxLights: 8,
+    theme: 'temple', ambient: 'temple', weather: 'curse', boss: ['pharaoh', 'sobek'], unlock: 12, spawnShare: 0.3, maxLights: 8,
     diff: { label: 'Extrema', tier: 4, hp: 1.38, speed: 1.1, count: 1.28 }, eventName: 'Maldição do templo',
     particles: ['motes', 'embers'],
     tip: 'Atraia a horda para as placas de pressão e as lâminas. A alavanca abre a câmara do desafio ao norte.', lampI: 8,
