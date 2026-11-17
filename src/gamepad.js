@@ -80,7 +80,7 @@ export function identify(gp) {
   else if (vendor === '054c' || /dualshock|dualsense|wireless controller|playstation/.test(low)) family = 'playstation';
   else if (vendor === '057e' || /pro controller|joy-con|nintendo|switch/.test(low)) family = 'nintendo';
   else if (vendor === '046d' || /logitech/.test(low)) family = 'xbox';
-  else if (vendor === '2dc8' || /8bitdo/.test(low)) family = /pro|switch/.test(low) ? 'nintendo' : 'xbox';
+  else if (vendor === '2dc8' || /8bitdo/.test(low)) family = /switch|ns/.test(low) ? 'nintendo' : 'xbox'; // no modo Switch o 8BitDo se apresenta como Pro Controller (057e)
   let maker = VENDORS[vendor] || (/xbox|xinput/.test(low) ? 'Microsoft (XInput)' : /8bitdo/.test(low) ? '8BitDo' : /logitech/.test(low) ? 'Logitech' : 'Não identificado');
   let model = PRODUCTS[`${vendor}:${product}`] || id.replace(/\(.*?\)/g, '').replace(/^[0-9a-f]{1,4}-[0-9a-f]{1,4}-/i, '').trim() || 'Controle';
   // XInput no Windows esconde o modelo: o navegador mostra todos como "Xbox 360"

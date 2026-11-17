@@ -88,3 +88,12 @@ Repetir para cada controle (Xbox One, Series, DS4, DualSense, Switch Pro, Joy-Co
 - [ ] Tutorial (academia): todos os passos concluídos só com o controle
 - [ ] Combate: mover, mirar, atirar, faca, 3 habilidades, ultimate, recarregar, trocar arma, árvore, pausa
 - [ ] Co-op com dois controles
+
+## Teste automático (`npm run test:controles`)
+
+Simula 10 modelos pela Gamepad API (Xbox XInput, Xbox One, Xbox Series BT, DualShock 4, DualSense, Switch Pro, Joy-Con par, 8BitDo Pro 2, Logitech F310, genérico USB fora do padrão) em Chrome, Edge e Firefox e roda: reconhecimento, ícones, confirmar no menu, mover, mirar, atirar, habilidade, vibração (chamada), árvore (abrir/comprar/fechar), pausa, navegação de menu, árvore pela pausa, desconexão e reconexão.
+
+- Antes: `npm run build:portable`. Filtros: `--browser=edge`, `--modelo=dualsense`, `--url=https://...`.
+- Resultado detalhado em `tests/resultado-controles.json`.
+- Controles reais ligados ao PC são ignorados durante o teste.
+- Limite: não passa por driver nem Bluetooth e não comprova vibração física.
