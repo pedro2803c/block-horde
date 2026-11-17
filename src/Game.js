@@ -1017,7 +1017,7 @@ export class Game {
         const a = off + (k / n) * Math.PI * 2;
         this.projectiles.push({ kind: 'acid', x: z.pos.x + Math.sin(a), y: 1.4, z: z.pos.z + Math.cos(a), vx: Math.sin(a) * 9, vy: 4, vz: Math.cos(a) * 9, t: 0, dmg: 14, color: phase === 3 ? 0xc070ff : 0xffd040, splat: '#c8a020' });
       }
-      this.audio.play('spit', { pos: z.pos, volume: 1, rate: 0.5 });
+      this.audio.play('eg_magic', { pos: z.pos, volume: 1, rate: 0.6 });
     }
     // explosões no chão: marca dourada e explosão 1 s depois (dá para sair)
     z.blastCd = (z.blastCd ?? 6) - dt;
@@ -1049,6 +1049,7 @@ export class Game {
         z.stormCd = phase === 3 ? 12 : 16;
         this.sandStormT = 5;
         this.ui.banner('TEMPESTADE DE AREIA!', 'bad');
+        this.audio.play('eg_sand', { volume: 0.9, priority: true });
       }
     }
     if (this.sandStormT > 0) {
@@ -1154,7 +1155,7 @@ export class Game {
         this.projectiles.push({ kind: 'acid', x: z.pos.x + Math.sin(a), y: 1.6, z: z.pos.z + Math.cos(a), vx: Math.sin(a) * (td / T), vy: 7 * T - 0.4 / T, vz: Math.cos(a) * (td / T), t: 0, dmg: 12, color: 0xc070ff, splat: '#7a2ab0' });
       }
       z.attackT = 0.35;
-      this.audio.play('spit', { pos: z.pos, volume: 0.9, rate: 0.7 });
+      this.audio.play('eg_magic', { pos: z.pos, volume: 0.9, rate: 0.8 });
     }
     // fase 2+: clones ilusórios
     if (phase >= 2) {
@@ -1207,7 +1208,7 @@ export class Game {
             this.later(1.2, () => {
               for (let j = 0; j < 14; j++) this.parts.spawn(x + rand(-0.6, 0.6), rand(0.2, 1.5), zz + rand(-0.6, 0.6), rand(-3, 3), rand(2, 5), rand(-3, 3), rand(0.15, 0.3), pick([0x8a7a5a, 0xc8b080, 0x6a5e52]), 1.2, 18, 0);
               for (const q of this.players) if (q.alive && Math.hypot(q.pos.x - x, q.pos.z - zz) < 1.5) this.damagePlayer(q, 18, x, zz, 3, true);
-              this.audio.play('stomp', { pos: { x, z: zz }, volume: 0.6, rate: 1.3 });
+              this.audio.play('eg_rumble', { pos: { x, z: zz }, volume: 0.6, rate: 1.2 });
             });
           }
         }
@@ -1229,7 +1230,7 @@ export class Game {
         z.stateT = 1;
         z.beamDir = Math.atan2(tgt.pos.x - z.pos.x, tgt.pos.z - z.pos.z);
         z.facing = z.beamDir;
-        this.audio.play('roar', { pos: z.pos, volume: 1, rate: 0.6 });
+        this.audio.play('eg_beam', { pos: z.pos, volume: 1, priority: true });
       }
     }
     if (z.state === 'beam') {
@@ -1339,7 +1340,9 @@ export class Game {
     else A.splat(z.pos.x + dx * 0.5, z.pos.z + dz * 0.5, 0.45 * z.scale + rand(0, 0.3));
     for (let k = 0; k < 14; k++) this.parts.spawn(z.pos.x, hy, z.pos.z, dx * rand(1, 5) + rand(-2.5, 2.5), rand(2, 6), dz * rand(1, 5) + rand(-2.5, 2.5), rand(0.08, 0.18), pick(blood), 1.5, 18, z.def.blood ? 0 : 1);
     for (let k = 0; k < 4; k++) this.parts.spawn(z.pos.x, 1 * z.scale, z.pos.z, rand(-3, 3), rand(3, 6), rand(-3, 3), rand(0.12, 0.2), pick([z.look.skin, z.look.shirt]), rand(1.5, 2.5), 18, 0);
-    this.audio.play(z.def.boss ? 'boss_roar' : 'zombie_die', { volume: z.def.boss ? 1 : 0.5, pos: z.pos, rate: rand(0.85, 1.15), priority: z.def.boss });
+    this.audio.play(z.def.boss ? 'boss_roar' : z.def.sfx?.die || 'zombie_die', { volume: z.def.boss ? 1 : 0.5, pos: z.pos, rate: rand(0.85, 1.15), priority: z.def.boss });
+    // elites do Egito podem deixar um item
+    if (z.def.loot && !this.demo && Math.random() < z.def.loot * (this.diff?.mul.resources || 1)) this.spawnPickup(this.rollField(), z.pos.x, z.pos.z, { x: z.pos.x, z: z.pos.z });
     if (src && src.ctl) src.killT = 0.25; // marcador vermelho de abate na mira
     // XP: quem matou ganha tudo; o parceiro ganha metade
     if (src && src.ctl) for (const q of this.players) this.gainXp(q, q === src ? z.def.score : Math.round(z.def.score / 2));
@@ -1366,6 +1369,14 @@ export class Game {
       this.sandStormT = 0;
       this.audio.setMusic('combat');
       this.ui.banner(`${z.def.name.toUpperCase()} DERROTADO!`, 'gold');
+      if (z.def.treasure && !this.demo) {
+        // Tesouro do Templo: pontos extras e suprimentos a mais
+        this.stats.score += z.def.treasure;
+        this.later(1.2, () => this.ui.banner(`TESOURO DO TEMPLO +${z.def.treasure}`, 'gold'));
+        for (let k = 0; k < 2; k++) this.spawnPickup(this.rollField(), z.pos.x + rand(-2, 2), z.pos.z + rand(-2, 2), { x: z.pos.x, z: z.pos.z });
+        for (let k = 0; k < 24; k++) this.parts.spawn(z.pos.x, 1.5, z.pos.z, rand(-4, 4), rand(3, 7), rand(-4, 4), rand(0.08, 0.16), pick([0xffd040, 0xf0c840, 0xffffff]), 1.2, 14, 2);
+        this.audio.play('coin', { volume: 0.9, priority: true });
+      }
       platform.happytime();
       this.noiseShake(1);
       // o Colosso deixa uma caixa de madeira e um kit médico
@@ -2762,6 +2773,7 @@ export class Game {
       }
       if (this.state === 'playing') this.ui.banner(def.intro || `${def.name.toUpperCase()} SURGIU!`, 'bad'); // a partida de fundo do menu não avisa
       this.audio.play('boss_roar', { volume: 1, priority: true });
+      if (def.introSfx && this.state === 'playing') this.audio.play(def.introSfx, { volume: 0.9, priority: true });
       this.audio.setMusic('boss');
     }
     return zb;
@@ -3479,7 +3491,7 @@ export class Game {
             z.attackT = 0.35;
             const T = def.spit.arrow ? Math.max(0.25, td / 18) : Math.max(0.5, td / 9);
             this.projectiles.push({ kind: 'acid', x: z.pos.x, y: 1.2, z: z.pos.z, vx: dx / T, vy: def.spit.arrow ? 7 * T : 4.5, vz: dz / T, t: 0, dmg: def.spit.dmg, color: def.spit.color, splat: def.spit.splat, poison: def.spit.poison, slow: def.spit.slow });
-            this.audio.play('spit', { pos: z.pos, volume: 0.7 });
+            this.audio.play(def.spit.sfx || 'spit', { pos: z.pos, volume: 0.7 });
           }
         }
       }
@@ -3555,7 +3567,7 @@ export class Game {
         if (z.attackCd <= 0) {
           z.attackCd = def.rate * this.diff.mul.aggression;
           z.attackT = 0.35;
-          this.audio.play('zombie_attack', { pos: z.pos, volume: 0.6 });
+          this.audio.play(def.sfx?.attack || 'zombie_attack', { pos: z.pos, volume: 0.6 });
           const target = tgt;
           this.later(0.18, () => {
             if (z.alive && Math.hypot(target.pos.x - z.pos.x, target.pos.z - z.pos.z) < reach * 1.3) {

@@ -18,7 +18,8 @@
     "test:farao": "node tests/farao.test.mjs",
     "test:sobek": "node tests/sobek.test.mjs",
     "test:bastet": "node tests/bastet.test.mjs",
-    "test:esfinge": "node tests/esfinge.test.mjs"
+    "test:esfinge": "node tests/esfinge.test.mjs",
+    "test:egito-som": "node tests/egito-som.test.mjs"
   },
   "dependencies": {
     "three": "^0.187.0"

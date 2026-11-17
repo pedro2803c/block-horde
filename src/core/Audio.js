@@ -193,6 +193,17 @@ const DEFS = {
   blade: [0.6, (c, o) => { noiseHit(c, o, 'bandpass', 900, 2600, 2, 0, 0.1, 0.45, 0.4); tone(c, o, 'sawtooth', 220, 260, 0, 0.1, 0.12, 0.4); }],
   door: [0.9, (c, o) => { tone(c, o, 'sawtooth', 90, 140, 0, 0.2, 0.18, 0.5); noiseHit(c, o, 'lowpass', 600, 1400, 1, 0, 0.2, 0.25, 0.5); click(c, o, 0.75, 900, 0.6, 0.06); }],
   portal: [1.2, (c, o) => { tone(c, o, 'sine', 220, 660, 0, 0.3, 0.3, 0.8); tone(c, o, 'sine', 330, 990, 0.05, 0.3, 0.22, 0.8); noiseHit(c, o, 'bandpass', 1200, 300, 3, 0, 0.3, 0.2, 0.8); }],
+  // Egito Antigo (Templo): sons próprios dos inimigos e chefões
+  eg_mummy: [1.4, (c, o) => { groan(c, o, { f: 64, dur: 1.3, formant: 300, vib: 2, bend: 0.5, vol: 0.7, grit: 12 }); noiseHit(c, o, 'bandpass', 1800, 900, 1.5, 0.1, 0.3, 0.18, 0.9); }],
+  eg_hiss: [0.9, (c, o) => { noiseHit(c, o, 'highpass', 4200, 6500, 2, 0, 0.08, 0.55, 0.75); noiseHit(c, o, 'bandpass', 3000, 2400, 6, 0, 0.05, 0.25, 0.6); }],
+  eg_jackal: [0.9, (c, o) => groan(c, o, { f: 320, dur: 0.85, formant: 1500, vib: 9, bend: 1.4, vol: 0.5, grit: 10 })],
+  eg_scarab: [0.35, (c, o) => { [0, 0.05, 0.1, 0.15].forEach((d) => click(c, o, d, 2600 + d * 4000, 0.4, 0.025)); }],
+  eg_arrow: [0.35, (c, o) => { tone(c, o, 'triangle', 330, 180, 0, 0.002, 0.45, 0.18); noiseHit(c, o, 'bandpass', 2400, 4200, 3, 0.02, 0.01, 0.35, 0.15); }],
+  eg_magic: [0.7, (c, o) => { tone(c, o, 'sine', 440, 1320, 0, 0.02, 0.3, 0.5); tone(c, o, 'triangle', 660, 1980, 0.04, 0.02, 0.18, 0.45); noiseHit(c, o, 'highpass', 5000, 8000, 1, 0, 0.02, 0.15, 0.4); }],
+  eg_horn: [2.6, (c, o) => { [[147, 0], [220, 0.05], [294, 0.1]].forEach(([f, d]) => tone(c, o, 'sawtooth', f * 0.98, f, d, 0.25, 0.22, 2.0)); tone(c, o, 'sine', 73, 70, 0, 0.3, 0.5, 2.2); }],
+  eg_sand: [3.0, (c, o) => { noiseHit(c, o, 'bandpass', 300, 1400, 0.8, 0, 0.8, 0.6, 2.1); noiseHit(c, o, 'highpass', 3000, 5000, 1, 0.3, 0.6, 0.25, 1.8); }],
+  eg_beam: [1.3, (c, o) => { tone(c, o, 'sawtooth', 90, 900, 0, 0.9, 0.3, 0.25); tone(c, o, 'square', 1200, 300, 0.9, 0.005, 0.4, 0.35); noiseHit(c, o, 'bandpass', 2000, 600, 2, 0.9, 0.005, 0.5, 0.35); }],
+  eg_rumble: [1.6, (c, o) => { tone(c, o, 'sine', 48, 30, 0, 0.05, 0.9, 1.3); noiseHit(c, o, 'lowpass', 500, 80, 1, 0, 0.05, 0.8, 1.4); [0.2, 0.45, 0.7].forEach((d) => click(c, o, d, 300, 0.5, 0.06)); }],
   crowd: [2.4, (c, o) => { noiseHit(c, o, 'bandpass', 700, 900, 0.6, 0, 0.4, 0.5, 1.9); noiseHit(c, o, 'bandpass', 1300, 1100, 0.8, 0.1, 0.4, 0.3, 1.8); }],
 };
 
