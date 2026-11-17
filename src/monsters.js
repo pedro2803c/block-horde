@@ -786,6 +786,43 @@ function drawCroc(B, G, base, z, col, t) {
 BODIES.crocling = drawCroc;
 OTHER_COLORS.crocling = [CROC, GOLD];
 
+// Bastet Sombria (chefão): felina humanoide preta, armadura roxa e dourada, olhos roxos, cajado-ankh
+const CAT = 0x1a1a22;
+const VIOLET = 0x5a2a8a;
+HUMANS.bastet = {
+  zombie: true, skin: CAT, shirt: VIOLET, sleeve: CAT, hands: CAT, pants: 0x2a1640, boots: GOLD, noFace: true, arms: 'brawl',
+  extras: [
+    // focinho felino, nariz, presas e olhos roxos brilhando
+    ['head', 0, 0.18, 0.32, 0.26, 0.14, 0.12, CAT],
+    ['head', 0, 0.24, 0.39, 0.08, 0.05, 0.02, 0x4a2a4a],
+    ['head', 0, 0.12, 0.385, 0.18, 0.04, 0.012, 0x3a0a3a],
+    ...mirror(['head', 0.06, 0.1, 0.39, 0.03, 0.06, 0.02, TEETH]),
+    ...mirror(['head', 0.13, 0.36, 0.276, 0.14, 0.07, 0.02, 0xd080ff, 0, 0.3, GLOW]),
+    // orelhas pontudas de gato com miolo roxo
+    ...mirror(['head', 0.18, 0.7, 0, 0.16, 0.3, 0.1, CAT, 0, -0.25], ['head', 0.17, 0.68, 0.055, 0.08, 0.18, 0.012, 0x8a3ad0, 0, -0.25]),
+    // toucado roxo e dourado
+    ['head', 0, 0.52, 0.29, 0.6, 0.06, 0.02, GOLD],
+    ['head', 0, 0.3, -0.31, 0.6, 0.5, 0.06, VIOLET],
+    ...[0.42, 0.26, 0.1].map((y) => ['head', 0, y, -0.345, 0.6, 0.05, 0.012, GOLD]),
+    ...mirror(['head', 0.3, 0.26, -0.05, 0.05, 0.42, 0.42, VIOLET], ['head', 0.33, 0.34, -0.05, 0.012, 0.05, 0.42, GOLD]),
+    // armadura: colar largo dourado, joia roxa, saia e ombreiras
+    ['torso', 0, 0.48, 0.12, 0.64, 0.16, 0.18, GOLD],
+    ['torso', 0, 0.48, 0.215, 0.44, 0.05, 0.012, VIOLET],
+    ['torso', 0, 0.3, 0.172, 0.16, 0.16, 0.012, 0xd080ff, 0, 0.785, GLOW],
+    ['torso', 0, 0.02, 0, 0.62, 0.1, 0.38, GOLD],
+    ...mirror(['armL', 0.04, -0.02, 0, 0.34, 0.2, 0.34, GOLD], ['armL', 0, -0.42, 0, 0.24, 0.08, 0.24, GOLD], ['armL', 0.06, -0.68, 0.1, 0.04, 0.14, 0.04, TEETH, 0.5]),
+    // cauda
+    ['torso', 0, -0.05, -0.3, 0.1, 0.1, 0.4, CAT, -0.4],
+    // cajado em forma de ankh com brilho roxo
+    ['armR', 0, -0.55, 0.12, 0.06, 1.3, 0.06, GOLD],
+    ['armR', 0, 0.2, 0.12, 0.34, 0.06, 0.06, GOLD],
+    ['armR', 0, 0.42, 0.12, 0.3, 0.06, 0.06, GOLD],
+    ...mirror(['armR', 0.15, 0.36, 0.12, 0.06, 0.22, 0.06, GOLD]),
+    ['armR', 0, 0.36, 0.12, 0.2, 0.14, 0.04, 0xd080ff, 0, 0, GLOW],
+  ],
+};
+HUMANS.bastetclone = HUMANS.bastet; // a ilusão tem a mesma aparência (menor)
+
 // Escaravelho Gigante: carapaça azul e dourada, patas reforçadas, olhos vermelhos
 function drawScarab(B, G, base, z, col, t) {
   const P = (cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));

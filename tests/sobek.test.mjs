@@ -61,7 +61,7 @@ const R = await p.evaluate(async () => {
   return out;
 });
 console.log(JSON.stringify(R, null, 1));
-const ok = R.rodizio.join() === 'pharaoh,sobek,pharaoh,sobek' && R.filhoteForaDoSorteio && R.entrada && R.caudaAnuncia && R.caudaAcerta && R.fase2 && R.invulneravel && R.investidaMaisFrequente && R.filhotes && R.fase3 && R.furiaMaisRapido && R.avisos.length === 2 && R.derrotado && !erros.length;
+const ok = R.rodizio.join() === 'pharaoh,sobek,bastet,pharaoh' && R.filhoteForaDoSorteio && R.entrada && R.caudaAnuncia && R.caudaAcerta && R.fase2 && R.invulneravel && R.investidaMaisFrequente && R.filhotes && R.fase3 && R.furiaMaisRapido && R.avisos.length === 2 && R.derrotado && !erros.length;
 console.log(erros.length ? 'erros: ' + erros.join(' | ') : '', ok ? '✓ Sobek ok' : '✗ falhou');
 await b.close();
 srv.close();

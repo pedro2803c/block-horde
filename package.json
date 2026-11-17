@@ -16,7 +16,8 @@
     "test:hud": "node tests/hud-mobile.test.mjs",
     "test:egito": "node tests/egito.test.mjs",
     "test:farao": "node tests/farao.test.mjs",
-    "test:sobek": "node tests/sobek.test.mjs"
+    "test:sobek": "node tests/sobek.test.mjs",
+    "test:bastet": "node tests/bastet.test.mjs"
   },
   "dependencies": {
     "three": "^0.187.0"

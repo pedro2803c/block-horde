@@ -1115,6 +1115,77 @@ export class Game {
     return false;
   }
 
+  // Bastet Sombria: teletransporte, leque de projéteis mágicos, clones (fase 2) e tempestade de energia (fase 3)
+  bastetTick(z, tgt, td, dt) {
+    const A = this.arena;
+    const phase = this.bossPhase(z, dt, ['BASTET: CLONES E ILUSÕES!', 'BASTET: TEMPESTADE DE ENERGIA SOMBRIA!'], [[0xc070ff, 0x1a1a22], [0xc070ff, 0xffd040]], 1.2);
+    const fx = (x, zz) => {
+      for (let k = 0; k < 18; k++) this.parts.spawn(x + rand(-0.6, 0.6), rand(0.4, 3), zz + rand(-0.6, 0.6), rand(-2, 2), rand(0, 2), rand(-2, 2), rand(0.08, 0.16), pick([0xc070ff, 0x8a3ad0, 0x1a1a22]), 0.6, -1, 2);
+    };
+    // teletransporte: some e reaparece a 5–7 m do alvo, num ponto livre
+    z.tpCd = (z.tpCd ?? 5) - dt;
+    if (z.tpCd <= 0 && z.state === 'move') {
+      z.tpCd = phase === 3 ? 3.5 : phase === 2 ? 4.5 : 6;
+      for (let tries = 0; tries < 10; tries++) {
+        const a = rand(0, 6.28);
+        const d = rand(5, 7);
+        const x = tgt.pos.x + Math.sin(a) * d;
+        const zz = tgt.pos.z + Math.cos(a) * d;
+        if (!A.inb(Math.floor(x), Math.floor(zz)) || A.circleBlocked(x, zz, z.radius)) continue;
+        fx(z.pos.x, z.pos.z);
+        z.pos.x = x;
+        z.pos.z = zz;
+        z.facing = Math.atan2(tgt.pos.x - x, tgt.pos.z - zz);
+        fx(x, zz);
+        this.audio.play('swing', { pos: z.pos, volume: 0.8, rate: 0.5 });
+        z.boltCd = Math.min(z.boltCd ?? 1, 0.5); // ataca logo depois de aparecer
+        break;
+      }
+    }
+    // leque de projéteis mágicos roxos
+    z.boltCd = (z.boltCd ?? 2) - dt;
+    if (z.boltCd <= 0 && td < 14) {
+      z.boltCd = phase === 3 ? 2 : 3;
+      const n = phase === 1 ? 3 : 5;
+      const base = Math.atan2(tgt.pos.x - z.pos.x, tgt.pos.z - z.pos.z);
+      const T = Math.max(0.3, td / 14);
+      for (let k = 0; k < n; k++) {
+        const a = base + (k - (n - 1) / 2) * 0.22;
+        this.projectiles.push({ kind: 'acid', x: z.pos.x + Math.sin(a), y: 1.6, z: z.pos.z + Math.cos(a), vx: Math.sin(a) * (td / T), vy: 7 * T - 0.4 / T, vz: Math.cos(a) * (td / T), t: 0, dmg: 12, color: 0xc070ff, splat: '#7a2ab0' });
+      }
+      z.attackT = 0.35;
+      this.audio.play('spit', { pos: z.pos, volume: 0.9, rate: 0.7 });
+    }
+    // fase 2+: clones ilusórios
+    if (phase >= 2) {
+      z.callCd = (z.callCd ?? 3) - dt;
+      const clones = this.zombies.filter((q) => q.alive && q.type === 'bastetclone').length;
+      if (z.callCd <= 0 && clones < 4) {
+        z.callCd = phase === 3 ? 9 : 12;
+        this.bossCall(z, phase === 3 ? ['bastetclone', 'bastetclone', 'bastetclone'] : ['bastetclone', 'bastetclone']);
+      }
+    }
+    // fase 3: tempestade de energia sombria — explosões roxas anunciadas ao redor de cada jogador
+    if (phase === 3) {
+      z.blastCd = (z.blastCd ?? 2) - dt;
+      if (z.blastCd <= 0) {
+        z.blastCd = 3.5;
+        for (const p of this.players) {
+          if (!p.alive) continue;
+          for (let k = 0; k < 3; k++) {
+            const x = p.pos.x + rand(-3, 3);
+            const zz = p.pos.z + rand(-3, 3);
+            for (let j = 0; j < 14; j++) {
+              const a = (j / 14) * Math.PI * 2;
+              this.parts.spawn(x + Math.sin(a) * 1.8, 0.1, zz + Math.cos(a) * 1.8, 0, rand(0.5, 1.2), 0, 0.12, 0xc070ff, 1, -0.4, 2);
+            }
+            this.later(1, () => this.explosion(x, zz, 2, 20, null));
+          }
+        }
+      }
+    }
+  }
+
   // onda de choque no chão: fere quem está no raio (além do alvo do golpe)
   quake(z, q) {
     for (let k = 0; k < 22; k++) {
@@ -2571,7 +2642,7 @@ export class Game {
       type,
       def,
       pos: new THREE.Vector3(x, 0, z),
-      hp: def.hp * hpMul * (this.players.length > 1 && def.boss ? 1.4 : 1) * (this.arena.def.diff?.hp || 1) * (def.boss ? this.diff.mul.bossHp : this.diff.mul.enemyHp),
+      hp: def.fixedHp ? def.hp : def.hp * hpMul * (this.players.length > 1 && def.boss ? 1.4 : 1) * (this.arena.def.diff?.hp || 1) * (def.boss ? this.diff.mul.bossHp : this.diff.mul.enemyHp),
       maxHp: 0,
       speed: def.speed * Math.min(1.3, 1 + 0.015 * (w - 1)) * rand(0.9, 1.1) * (this.arena.def.diff?.speed || 1) * this.diff.mul.enemySpeed,
       scale: def.scale,
@@ -3600,6 +3671,7 @@ export class Game {
     const A = this.arena;
     if (def.bossKind === 'pharaoh') this.pharaohTick(z, td, dt);
     if (def.bossKind === 'sobek' && this.sobekTick(z, td, dt)) return;
+    if (def.bossKind === 'bastet') this.bastetTick(z, tgt, td, dt);
     if (z.state === 'wind' && def.lunge?.windup) {
       z.facing = z.chargeDir;
       if (Math.random() < dt * 20) this.parts.spawn(z.pos.x + rand(-0.5, 0.5), 0.2, z.pos.z + rand(-0.5, 0.5), 0, rand(0.5, 1.5), 0, 0.08, 0xffd040, 0.4, -1, 2);

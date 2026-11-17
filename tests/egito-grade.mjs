@@ -9,7 +9,7 @@ const p = await b.newPage({ locale: 'pt-BR', viewport: { width: 1540, height: 92
 await p.goto(`http://localhost:${srv.address().port}/`);
 await p.waitForFunction(() => window.__bh && document.body.innerText.includes('Jogar agora'));
 await p.evaluate((ang) => {
-  const T = ['mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'crocling', 'pharaoh', 'sobek'];
+  const T = ['mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'crocling', 'bastetclone', 'pharaoh', 'sobek', 'bastet'];
   const pv = __bh.ui.getPreview();
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:fixed;inset:0;z-index:99;background:#e8d8b0;display:grid;grid-template-columns:repeat(8,190px);gap:0;padding:10px';
