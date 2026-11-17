@@ -174,7 +174,7 @@ export class Preview {
   enemy(target, type, angle, t, active) {
     const { B, G } = this;
     const z = this._ez || (this._ez = { pos: new THREE.Vector3(), minions: [] });
-    const show = { spider: 0.72, bat: 0.78, dog: 0.95, spore: 0.95, boss: 0.92, pharaoh: 0.92, sobek: 0.88, crocling: 0.9, bastet: 0.95, bastetclone: 1.1, brute: 1.05, summoner: 0.98, portal: 0.5, chariot: 0.5, horus: 0.62, scorpion: 0.85, construct: 0.75, anubis: 0.9 }[type] || 1.1;
+    const show = { spider: 0.72, bat: 0.78, dog: 0.95, spore: 0.95, boss: 0.92, pharaoh: 0.92, sobek: 0.88, crocling: 0.9, bastet: 0.95, bastetclone: 1.1, sphinx: 0.62, brute: 1.05, summoner: 0.98, portal: 0.5, chariot: 0.5, horus: 0.62, scorpion: 0.85, construct: 0.75, anubis: 0.9 }[type] || 1.1;
     const cycle = t % 1.6;
     Object.assign(z, {
       type, def: ENEMIES[type], look: enemyLook(type), facing: angle, scale: show, alive: true, rise: 0,

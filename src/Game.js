@@ -1186,6 +1186,80 @@ export class Game {
     }
   }
 
+  // A Esfinge Eterna: pedras caindo e construtos (fase 2+), raio de energia anunciado (fase 3)
+  // devolve true enquanto carrega o raio (fica parada)
+  sphinxTick(z, tgt, td, dt) {
+    const phase = this.bossPhase(z, dt, ['ESFINGE: A FÚRIA DO DESERTO!', 'ESFINGE: DESPERTAR COMPLETO!'], [[0xd8b070, 0xd4a020], [0xff2a1a, 0x3fe0ff]], 1.25);
+    // fase 2+: desmoronamento — pedras marcadas no chão caem 1,2 s depois
+    if (phase >= 2) {
+      z.rockCd = (z.rockCd ?? 2) - dt;
+      if (z.rockCd <= 0) {
+        z.rockCd = phase === 3 ? 3 : 4.5;
+        for (const p of this.players) {
+          if (!p.alive) continue;
+          for (let k = 0; k < phase + 2; k++) {
+            const x = p.pos.x + rand(-4, 4);
+            const zz = p.pos.z + rand(-4, 4);
+            for (let j = 0; j < 12; j++) {
+              const a = (j / 12) * Math.PI * 2;
+              this.parts.spawn(x + Math.sin(a) * 1.4, 0.1, zz + Math.cos(a) * 1.4, 0, rand(0.4, 1), 0, 0.12, 0xb08a40, 1.1, -0.3, 2);
+            }
+            this.later(1.2, () => {
+              for (let j = 0; j < 14; j++) this.parts.spawn(x + rand(-0.6, 0.6), rand(0.2, 1.5), zz + rand(-0.6, 0.6), rand(-3, 3), rand(2, 5), rand(-3, 3), rand(0.15, 0.3), pick([0x8a7a5a, 0xc8b080, 0x6a5e52]), 1.2, 18, 0);
+              for (const q of this.players) if (q.alive && Math.hypot(q.pos.x - x, q.pos.z - zz) < 1.5) this.damagePlayer(q, 18, x, zz, 3, true);
+              this.audio.play('stomp', { pos: { x, z: zz }, volume: 0.6, rate: 1.3 });
+            });
+          }
+        }
+        this.noiseShake(0.4);
+      }
+      // construtos de areia
+      z.callCd = (z.callCd ?? 4) - dt;
+      const cs = this.zombies.filter((q) => q.alive && q.type === 'construct').length;
+      if (z.callCd <= 0 && cs < 3) {
+        z.callCd = phase === 3 ? 12 : 16;
+        this.bossCall(z, phase === 3 ? ['construct', 'construct'] : ['construct']);
+      }
+    }
+    // fase 3: raio de energia em linha reta, anunciado por 1 s
+    if (phase === 3) {
+      z.beamCd = (z.beamCd ?? 2) - dt;
+      if (z.beamCd <= 0 && z.state === 'move' && td < 18) {
+        z.state = 'beam';
+        z.stateT = 1;
+        z.beamDir = Math.atan2(tgt.pos.x - z.pos.x, tgt.pos.z - z.pos.z);
+        z.facing = z.beamDir;
+        this.audio.play('roar', { pos: z.pos, volume: 1, rate: 0.6 });
+      }
+    }
+    if (z.state === 'beam') {
+      const sx = Math.sin(z.beamDir);
+      const sz = Math.cos(z.beamDir);
+      z.facing = z.beamDir;
+      if (Math.random() < dt * 30) {
+        const d = rand(1.5, 18);
+        this.parts.spawn(z.pos.x + sx * d, 0.12, z.pos.z + sz * d, 0, rand(0.3, 0.8), 0, 0.1, 0xff3a1a, 0.4, -0.3, 2);
+      }
+      if ((z.stateT -= dt) <= 0) {
+        z.state = 'move';
+        z.beamCd = 5;
+        for (let d = 1.5; d < 18; d += 0.6) this.parts.spawn(z.pos.x + sx * d, 1.4, z.pos.z + sz * d, rand(-0.5, 0.5), rand(0, 1), rand(-0.5, 0.5), rand(0.15, 0.25), pick([0x3fe0ff, 0xffffff, 0xffd040]), 0.4, 0, 2);
+        for (const p of this.players) {
+          if (!p.alive) continue;
+          const rx = p.pos.x - z.pos.x;
+          const rz = p.pos.z - z.pos.z;
+          const along = rx * sx + rz * sz;
+          const side = Math.abs(rx * sz - rz * sx);
+          if (along > 0 && along < 18 && side < 1.1) this.damagePlayer(p, 32, z.pos.x, z.pos.z, 8, true);
+        }
+        this.noiseShake(1);
+        this.audio.play('hit_armor', { pos: z.pos, volume: 1, rate: 0.4 });
+      }
+      return true;
+    }
+    return false;
+  }
+
   // onda de choque no chão: fere quem está no raio (além do alvo do golpe)
   quake(z, q) {
     for (let k = 0; k < 22; k++) {
@@ -3414,7 +3488,7 @@ export class Game {
         vx = Math.sin(z.chargeDir);
         vz = Math.cos(z.chargeDir);
         speed = def.lunge.speed;
-      } else if (z.state === 'cast' || z.state === 'slam' || z.state === 'throw' || z.state === 'tail' || (z.state === 'wind' && def.lunge?.windup)) speed = 0;
+      } else if (z.state === 'cast' || z.state === 'slam' || z.state === 'throw' || z.state === 'tail' || z.state === 'beam' || (z.state === 'wind' && def.lunge?.windup)) speed = 0;
       // aranha: zigue-zague; invocador: mantém distância; esporo: finca raiz para atirar
       if (def.strafe && td > 2.2 && z.state === 'move') {
         const k = Math.sin(this.time * 3.2 + z.strafe) * 0.75;
@@ -3672,6 +3746,7 @@ export class Game {
     if (def.bossKind === 'pharaoh') this.pharaohTick(z, td, dt);
     if (def.bossKind === 'sobek' && this.sobekTick(z, td, dt)) return;
     if (def.bossKind === 'bastet') this.bastetTick(z, tgt, td, dt);
+    if (def.bossKind === 'sphinx' && this.sphinxTick(z, tgt, td, dt)) return;
     if (z.state === 'wind' && def.lunge?.windup) {
       z.facing = z.chargeDir;
       if (Math.random() < dt * 20) this.parts.spawn(z.pos.x + rand(-0.5, 0.5), 0.2, z.pos.z + rand(-0.5, 0.5), 0, rand(0.5, 1.5), 0, 0.08, 0xffd040, 0.4, -1, 2);
@@ -3799,6 +3874,8 @@ export class Game {
         this.audio.play('stomp', { volume: 1, pos: z.pos, priority: true });
         this.noiseShake(1.2);
         const kind = def.bossKind;
+        // Esfinge: cada pancada solta uma onda de choque larga
+        if (kind === 'sphinx') this.quake(z, { radius: 6.5, dmg: 16 });
         // Operário Mutante: onda elétrica (dano extra + lentidão)
         if (kind === 'mechworker') {
           for (const p of this.players) {

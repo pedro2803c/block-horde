@@ -146,13 +146,14 @@ export const ENEMIES = {
   crocling: { name: 'Crocodilo do Nilo', desc: 'Filhote invocado por Sobek: pequeno, rápido e dá botes', icon: 'paw', body: 'crocling', hp: 30, speed: 3.0, dmg: 8, rate: 0.8, reach: 0.9, scale: 0.8, radius: 0.4, score: 10, from: 99, weight: 0, summonedOnly: true, lunge: { range: 4, speed: 10, cd: 3 }, only: ['templo'], blood: [0x4a7a3a, 0x2a4a1a] },
   bastet: { name: 'Bastet Sombria', desc: 'Chefão do Templo: teletransporte, projéteis mágicos, clones ilusórios e tempestade de energia', icon: 'crown', hp: 2000, speed: 2.0, dmg: 34, rate: 1.0, reach: 2.2, scale: 2.4, score: 700, boss: true, bossKind: 'bastet', intro: 'BASTET SOMBRIA SURGIU DAS SOMBRAS!', riseIntro: 1.2, blood: [0x8a3ad0, 0x1a1a22] },
   bastetclone: { name: 'Ilusão de Bastet', desc: 'Clone ilusório: frágil, mas ataca e lança magia', icon: 'ghost', hp: 40, speed: 2.6, dmg: 12, rate: 1.0, reach: 1.4, scale: 1.7, score: 15, from: 99, weight: 0, summonedOnly: true, fixedHp: true, spit: { range: 10, dmg: 8, cd: 2.8, color: 0xc070ff, splat: '#7a2ab0' }, only: ['templo'], blood: [0xc070ff, 0x4a2272] },
+  sphinx: { name: 'A Esfinge Eterna', desc: 'Chefão final do Templo: pancadas com ondas de choque, desmoronamento, construtos e raios de energia', icon: 'crown', body: 'sphinx', hp: 2800, speed: 1.1, dmg: 46, rate: 1.6, reach: 2.8, scale: 2.2, radius: 1.4, score: 900, boss: true, bossKind: 'sphinx', intro: 'A ESFINGE ETERNA DESPERTOU!', riseIntro: 1.8, blood: [0xd8b070, 0xd4a020] },
   boss: { name: 'Colosso', desc: 'Gigante, resistente e com múltiplos ataques', icon: 'crown', hp: 1500, speed: 1.5, dmg: 36, rate: 1.3, reach: 2.2, scale: 2.6, score: 500, boss: true, blood: [0x5a4a44, 0xff5a1a] },
   devourer: { name: 'O Devorador', desc: 'Zumbi gigante que destrói obstáculos e investe contra a horda', icon: 'crown', hp: 1700, speed: 1.55, dmg: 40, rate: 1.25, reach: 2.3, scale: 2.7, score: 600, boss: true, bossKind: 'devourer', blood: [0x5a7a24, 0x2a3a10] },
   mechworker: { name: 'O Operário Mutante', desc: 'Blindado com braços mecânicos: resiste a tiros e esmaga o chão', icon: 'crown', hp: 1900, speed: 1.3, dmg: 42, rate: 1.3, reach: 2.4, scale: 2.6, score: 600, boss: true, bossKind: 'mechworker', plating: 0.6, blood: [0x8a8a90, 0xe8a020] },
   guardian: { name: 'O Guardião da Floresta', desc: 'Madeira, raízes e fungos: prende os jogadores e solta esporos', icon: 'crown', hp: 1800, speed: 1.35, dmg: 38, rate: 1.3, reach: 2.5, scale: 2.8, score: 600, boss: true, bossKind: 'guardian', blood: [0x4a6a24, 0x8a4ad0] },
   general: { name: 'O General Infectado', desc: 'Comandante blindado: convoca reforços e enfurece a horda', icon: 'crown', hp: 2000, speed: 1.4, dmg: 40, rate: 1.25, reach: 2.4, scale: 2.6, score: 600, boss: true, bossKind: 'general', blood: [0x6a7a2a, 0xb01c1c] },
 };
-export const ENEMY_ORDER = ['walker', 'brute', 'spider', 'bat', 'runner', 'spitter', 'bloater', 'armored', 'dog', 'summoner', 'spore', 'reaper', 'wasp', 'specter', 'boss', 'devourer', 'mechworker', 'guardian', 'general', 'mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'crocling', 'bastetclone', 'pharaoh', 'sobek', 'bastet'];
+export const ENEMY_ORDER = ['walker', 'brute', 'spider', 'bat', 'runner', 'spitter', 'bloater', 'armored', 'dog', 'summoner', 'spore', 'reaper', 'wasp', 'specter', 'boss', 'devourer', 'mechworker', 'guardian', 'general', 'mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'crocling', 'bastetclone', 'pharaoh', 'sobek', 'bastet', 'sphinx'];
 
 
 // Sobreviventes (apenas aparência; todos têm os mesmos atributos).
@@ -654,7 +655,7 @@ export const ARENAS = [
   },
   {
     id: 'templo', name: 'Templo Antigo', desc: 'Pedra, hieróglifos e armadilhas: dardos, lâminas, portais mágicos e uma câmara escondida.', floor: 'temple',
-    theme: 'temple', ambient: 'temple', weather: 'curse', boss: ['pharaoh', 'sobek', 'bastet'], unlock: 12, spawnShare: 0.3, maxLights: 8,
+    theme: 'temple', ambient: 'temple', weather: 'curse', boss: ['pharaoh', 'sobek', 'bastet', 'sphinx'], unlock: 12, spawnShare: 0.3, maxLights: 8,
     diff: { label: 'Extrema', tier: 4, hp: 1.38, speed: 1.1, count: 1.28 }, eventName: 'Maldição do templo',
     particles: ['motes', 'embers'],
     tip: 'Atraia a horda para as placas de pressão e as lâminas. A alavanca abre a câmara do desafio ao norte.', lampI: 8,

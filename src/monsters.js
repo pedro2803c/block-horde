@@ -1208,6 +1208,55 @@ BODIES.horus = drawHorus;
 OTHER_COLORS.chariot = [GOLD, IMPERIAL];
 OTHER_COLORS.horus = [IMPERIAL, GOLD];
 
+// A Esfinge Eterna (chefão final): leão de pedra e ouro com cabeça de faraó, inscrições e olhos vermelhos
+function drawSphinx(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const STONE_S = 0xd8b070;
+  const STONE_SD = 0xb08a50;
+  const step = Math.sin(z.walk * 1.2) * 0.25;
+  const slam = z.state === 'slam' ? 0.4 : 0;
+  // corpo de leão deitado/andando
+  P(base, 0, 0.75, -0.3, 1.1, 0.8, 1.7, STONE_S);
+  P(base, 0, 1.18, -0.3, 1.0, 0.08, 1.5, STONE_SD);
+  for (const zz of [-0.8, -0.3, 0.2]) P(base, 0.56, 0.8, zz, 0.02, 0.3, 0.3, STONE_SD);
+  for (const zz of [-0.8, -0.3, 0.2]) P(base, -0.56, 0.8, zz, 0.02, 0.3, 0.3, STONE_SD);
+  // rachaduras brilhando
+  G.part(base, 0.565, 0.6, -0.55, 0, 0, 0, 0, 0, 0.02, 0.3, 0.04, 0xff8a1a);
+  G.part(base, -0.565, 0.9, 0.05, 0, 0, 0, 0, 0, 0.02, 0.04, 0.3, 0xff8a1a);
+  // cauda
+  P(base, 0, 0.5, -1.2, 0.14, 0.14, 0.5, STONE_SD, -0.5);
+  // patas dianteiras enormes (levantam na pancada)
+  for (const sg of [1, -1]) {
+    const leg = joint(base, sg * 0.42, 0.7, 0.5, step * sg - slam, 0, 0);
+    P(leg, 0, -0.3, 0.1, 0.36, 0.7, 0.4, STONE_S);
+    P(leg, 0, -0.62, 0.3, 0.42, 0.18, 0.6, STONE_SD);
+    for (const x of [-0.12, 0, 0.12]) P(leg, x, -0.62, 0.62, 0.08, 0.1, 0.06, 0xe8c888);
+    const back = joint(base, sg * 0.42, 0.6, -0.95, -step * sg, 0, 0);
+    P(back, 0, -0.28, 0, 0.36, 0.6, 0.4, STONE_S);
+  }
+  // peito e cabeça de faraó com toucado, barba, olhos vermelhos
+  P(base, 0, 1.15, 0.45, 0.9, 0.7, 0.5, STONE_S);
+  const hd = joint(base, 0, 1.6, 0.55, 0, Math.sin(t * 0.6) * 0.08, 0);
+  P(hd, 0, 0.1, 0, 0.62, 0.62, 0.56, STONE_S);
+  P(hd, 0, 0.44, -0.02, 0.7, 0.12, 0.62, GOLD);
+  P(hd, 0, 0.12, -0.3, 0.72, 0.62, 0.06, IMPERIAL);
+  for (const y of [0.28, 0.08, -0.12]) P(hd, 0, y, -0.335, 0.72, 0.05, 0.02, GOLD);
+  for (const sg of [1, -1]) {
+    P(hd, sg * 0.36, 0, -0.02, 0.06, 0.72, 0.56, IMPERIAL);
+    P(hd, sg * 0.395, 0.12, -0.02, 0.012, 0.06, 0.56, GOLD);
+    P(hd, sg * 0.395, -0.12, -0.02, 0.012, 0.06, 0.56, GOLD);
+    G.part(hd, sg * 0.15, 0.16, 0.285, 0, 0, sg * 0.3, 0, 0, 0.14, 0.07, 0.02, 0xff2a1a);
+    P(hd, sg * 0.15, 0.25, 0.285, 0.18, 0.04, 0.02, STONE_SD, 0, sg * 0.35);
+  }
+  P(hd, 0, 0.62, 0.22, 0.12, 0.2, 0.1, GOLD);
+  P(hd, 0, -0.08, 0.285, 0.3, 0.08, 0.02, 0x3a2a14);
+  P(hd, 0, -0.32, 0.22, 0.14, 0.34, 0.12, GOLD);
+  // brilho do raio carregando nos olhos e na boca
+  if (z.state === 'beam') G.part(hd, 0, -0.08, 0.32, 0, 0, 0, 0, 0, 0.36, 0.14, 0.06, 0x3fe0ff);
+}
+BODIES.sphinx = drawSphinx;
+OTHER_COLORS.sphinx = [0xd8b070, GOLD];
+
 // Desenha um inimigo. z = { type, def, look, pos, facing, scale, walk, hurtT, attackT, state, alive, deadT, fallDir, rise, flyY }
 export function drawEnemy(B, G, z, t) {
   const type = z.type;
