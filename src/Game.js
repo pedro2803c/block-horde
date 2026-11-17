@@ -64,7 +64,7 @@ const EVENT_INFO = {
 export class Game {
   constructor(canvas, uiRoot) {
     this.canvas = canvas;
-    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95, touchAuto: true, touchSize: 1, touchHaptic: true };
+    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95, touchAuto: true, touchSize: 1, touchHaptic: true, aimMode: 1 };
     try {
       Object.assign(this.settings, JSON.parse(platform.getItem(SETTINGS_KEY) || '{}'));
     } catch {
@@ -777,18 +777,20 @@ export class Game {
     return best;
   }
   aimTarget(p) {
+    const mode = this.settings.aimMode || 1; // 0=manual, 1=assistido, 2=automático
     let best = null;
-    let bd = 15;
+    let bd = mode === 2 ? 25 : 15;
+    const cone = mode === 0 ? 0.12 : mode === 1 ? 0.35 : Math.PI;
     for (const z of this.zombies) {
       if (!z.alive) continue;
       const dx = z.pos.x - p.pos.x;
       const dz = z.pos.z - p.pos.z;
       const d = Math.hypot(dx, dz);
       if (d > bd) continue;
-      if (Math.abs(angDiff(p.aim, Math.atan2(dx, dz))) < 0.3 && this.arena.los(p.pos.x, p.pos.z, z.pos.x, z.pos.z)) {
-        bd = d;
-        best = z;
-      }
+      const ang = Math.atan2(dx, dz);
+      if (mode !== 2 && Math.abs(angDiff(p.aim, ang)) > cone) continue;
+      if (!this.arena.los(p.pos.x, p.pos.z, z.pos.x, z.pos.z)) continue;
+      if (d < bd) { bd = d; best = z; }
     }
     return best;
   }
@@ -1814,7 +1816,12 @@ export class Game {
 
   // ponto de mira no chão: mouse no solo; no teclado, o alvo da assistência ou 8 m à frente
   aimPoint(p) {
-    if (p.ctl.mouse && !this.input.mouseIdle) return { x: this.mouseWorld.x, z: this.mouseWorld.z };
+    const mode = this.settings.aimMode || 1;
+    if (mode === 2) {
+      const t = this.aimTarget(p);
+      if (t) return { x: t.pos.x, z: t.pos.z };
+    }
+    if (p.ctl.mouse && !this.input.mouseIdle && mode !== 2) return { x: this.mouseWorld.x, z: this.mouseWorld.z };
     const t = this.aimTarget(p);
     if (t) return { x: t.pos.x, z: t.pos.z };
     return { x: p.pos.x + Math.sin(p.aim) * 8, z: p.pos.z + Math.cos(p.aim) * 8 };
