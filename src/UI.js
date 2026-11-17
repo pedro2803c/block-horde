@@ -103,6 +103,10 @@ export class UI {
     this.alertsEl = h('div', { class: 'alerts', 'aria-live': 'polite' });
     this.fpsEl = h('div', { class: 'fps hidden' });
     this.loadEl = null;
+    // ícones e textos de tela cheia acompanham a mudança (inclusive F11/ESC do navegador)
+    for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => {
+      if (this.screen === 'menu' || this.screen === 'pause') this.showScreen(this.screen, this.screenData, false);
+    });
     // celular: faixa única de avisos no topo (não recebe toques)
     this.noticeEl = h('div', { class: 'notices', 'aria-live': 'polite' });
     // som bloqueado pelo navegador até o primeiro clique/toque: avisa e libera ao tocar
@@ -222,8 +226,35 @@ export class UI {
         ...kids));
   }
 
+  // ------------------------------------------------------------ tela cheia
+  fsOn() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+  fsSupported() {
+    const d = document.documentElement;
+    return !!(d.requestFullscreen || d.webkitRequestFullscreen) && document.fullscreenEnabled !== false;
+  }
+  async toggleFullscreen() {
+    try {
+      if (this.fsOn()) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else {
+        const d = document.documentElement;
+        await (d.requestFullscreen || d.webkitRequestFullscreen).call(d, { navigationUI: 'hide' });
+        if (this.g.input.touchMode) screen.orientation?.lock?.('landscape').catch(() => {}); // celular: deitado
+      }
+    } catch {
+      this.alert('O navegador não permitiu a tela cheia.', 'info', 'info');
+    }
+  }
+  fsButton(cls = '') {
+    if (!this.fsSupported()) return null; // ex.: Safari do iPhone
+    const on = this.fsOn();
+    return btn(cls, on ? 'fullscreenExit' : 'fullscreen', on ? 'Sair da tela cheia' : 'Tela cheia', () => this.toggleFullscreen());
+  }
+
   scr_menu() {
     return h('div', { class: 'overlay menu' },
+      this.fsSupported() ? iconBtn('fs-btn', this.fsOn() ? 'fullscreenExit' : 'fullscreen', this.fsOn() ? 'Sair da tela cheia' : 'Tela cheia', () => this.toggleFullscreen()) : null,
       h('div', { class: 'menu-box' },
         h('div', {}, logo(), h('div', { class: 'logo-sub' }, 'Sobreviva à horda')),
         h('div', { class: 'menu-buttons' },
@@ -1055,6 +1086,7 @@ export class UI {
             btn('primary lg', 'play', 'Continuar', () => g.resume()),
             btn('tree-btn' + (n ? ' has-pts' : ''), 'tree', h('span', { class: 'btn-txt' }, treeLabel, n ? h('span', { class: 'pt-badge inline' }, `+${n}`) : null), () => g.openTree()),
             btn('', 'keyboard', 'Controles', () => this.showScreen('controls', { back: 'pause' })),
+            this.fsButton(),
             btn('', 'gear', 'Configurações', () => this.showScreen('settings', { back: 'pause' })),
             btn('', 'refresh', 'Reiniciar partida', () => g.restart()),
             btn('danger back', 'exit', 'Sair para o menu', () => g.toMenu()))),
