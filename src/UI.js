@@ -345,11 +345,16 @@ export class UI {
     },
     h('span', { class: 'check' }, icon('check')),
     h('span', { class: 'd-head' }, h('span', { class: 'd-ic' }, icon(d.icon)), h('span', {}, h('b', { class: 'd-name' }, `${i + 1}. ${d.name}`), h('span', { class: 'd-title' }, d.title))),
-    h('small', {}, d.desc),
-    h('span', { class: 'd-rows' }, DIFF_ROWS.map(([k, label]) => {
-      const v = d.mul[k];
-      return h('span', { class: 'd-row' }, h('span', {}, label), h('b', { class: v === 1 ? '' : 'd-chg' }, fmtMul(v)));
-    })))));
+    d.recommended ? h('span', { class: 'd-rec' }, icon('star'), 'Recomendada') : null,
+    (() => {
+      const c = h('canvas', { class: 'd-art', width: 220, height: 200, 'aria-hidden': 'true' });
+      const pv = this.getPreview();
+      if (pv) requestAnimationFrame(() => pv.enemy(c, d.mascot, 0.45, 1.3, false));
+      return c;
+    })(),
+    h('small', { class: 'd-desc' }, d.desc),
+    h('span', { class: 'd-threat', 'aria-label': `Nível de ameaça ${d.threat} de 4` }, h('span', { class: 'd-tl' }, 'Ameaça'), [1, 2, 3, 4].map((k) => h('i', { class: k <= d.threat ? 'on' : '' }, icon('skull')))),
+    h('span', { class: 'd-traits' }, d.traits.map(([ic, t]) => h('span', { class: 'd-trait' }, icon(ic), t))))));
   }
   scr_difficulty({ back, go, sel }) {
     const g = this.g;

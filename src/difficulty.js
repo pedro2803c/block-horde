@@ -4,22 +4,26 @@
 export const DIFFICULTIES = [
   {
     id: 'easy', name: 'Fácil', title: 'Explorador', color: '#2ecc71', icon: 'heart',
-    desc: 'Para conhecer as arenas e as armas com calma.',
+    desc: 'Explore as arenas, teste armas e aprenda a sobreviver.', threat: 1, mascot: 'walker',
+    traits: [['run', 'Inimigos mais lentos e frágeis'], ['users', 'Hordas menores'], ['medkit', 'Mais munição e cura'], ['crown', 'Chefes menos resistentes']],
     mul: { enemyHp: 0.7, enemyDmg: 0.6, enemySpeed: 0.88, aggression: 1.3, spawnRate: 0.75, count: 0.75, aliveCap: 0.7, bossHp: 0.65, resources: 1.4, xp: 0.75 },
   },
   {
     id: 'normal', name: 'Normal', title: 'Sobrevivente', color: '#29b6f6', icon: 'shield',
-    desc: 'A experiência pensada para o Block Horde.',
+    desc: 'O equilíbrio perfeito entre ação, estratégia e sobrevivência.', threat: 2, mascot: 'armored', recommended: true,
+    traits: [['fist', 'Inimigos equilibrados'], ['users', 'Hordas desafiadoras'], ['ammo', 'Recursos equilibrados'], ['star', 'Experiência original do Block Horde']],
     mul: { enemyHp: 1, enemyDmg: 1, enemySpeed: 1, aggression: 1, spawnRate: 1, count: 1, aliveCap: 1, bossHp: 1, resources: 1, xp: 1 },
   },
   {
     id: 'hard', name: 'Difícil', title: 'Guerreiro', color: '#ffc107', icon: 'fist',
-    desc: 'Hordas maiores e mais rápidas. Munição e cura ficam raras.',
+    desc: 'Prepare-se para hordas agressivas e combates intensos.', threat: 3, mascot: 'brute',
+    traits: [['bolt', 'Inimigos mais resistentes e rápidos'], ['users', 'Grupos maiores'], ['warning', 'Recursos escassos'], ['crown', 'Chefes mais perigosos']],
     mul: { enemyHp: 1.3, enemyDmg: 1.35, enemySpeed: 1.1, aggression: 0.85, spawnRate: 1.25, count: 1.25, aliveCap: 1.2, bossHp: 1.4, resources: 0.75, xp: 1.3 },
   },
   {
     id: 'insane', name: 'Insano', title: 'Pesadelo', color: '#e53935', icon: 'skull',
-    desc: 'Cada erro custa caro. Só para quem domina o jogo.',
+    desc: 'Sem piedade. Sobreviva se conseguir.', threat: 4, mascot: 'reaper',
+    traits: [['skull', 'Inimigos extremamente perigosos'], ['users', 'Hordas massivas'], ['warning', 'Recursos extremamente limitados'], ['crown', 'Chefes devastadores']],
     mul: { enemyHp: 1.7, enemyDmg: 1.8, enemySpeed: 1.2, aggression: 0.7, spawnRate: 1.5, count: 1.5, aliveCap: 1.4, bossHp: 2, resources: 0.5, xp: 1.75 },
   },
 ];
