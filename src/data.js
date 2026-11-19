@@ -35,7 +35,19 @@ export const WEAPONS = {
   ltower: { name: 'Torre de laser', cat: 'Defesa', kind: 'place', place: 'ltower', rate: 0.6, start: 1, pack: 1, sound: 'crate', color: 0xd82020 },
   ftower: { name: 'Torre de fogo', cat: 'Defesa', kind: 'place', place: 'ftower', rate: 0.6, start: 1, pack: 1, sound: 'crate', color: 0xe8701a },
   itower: { name: 'Torre de gelo', cat: 'Defesa', kind: 'place', place: 'itower', rate: 0.6, start: 1, pack: 1, sound: 'crate', color: 0x5ac8ff },
+  // Arsenal exclusivo do Templo Antigo. Os campos especiais são consumidos pelo combate compartilhado.
+  pharaoh: { name: 'Rifle do Faraó', cat: 'Rifle de assalto', kind: 'gun', dmg: 30, rate: 0.12, spread: 0.022, bloom: 0.003, bloomMax: 0.035, range: 32, pellets: 1, pierce: 2, mag: 36, reload: 1.7, start: 108, pack: 72, sound: 'eg_royal', color: 0xd4a020, special: { id: 'royal', name: 'Bênção Real', every: 8, cooldown: 9, el: 'energy', bonus: 1.7 } },
+  anubis_shotgun: { name: 'Espingarda Anúbis', cat: 'Curta distância', kind: 'gun', dmg: 11, rate: 0.72, spread: 0.26, range: 12, pellets: 8, pierce: 1, mag: 7, reload: 1.8, start: 42, pack: 28, sound: 'eg_judgment', color: 0x2a2a34, special: { id: 'judgment', name: 'Julgamento de Anúbis', every: 5, cooldown: 8, stun: 0.55 } },
+  scarab_smg: { name: 'SMG Escaravelho', cat: 'Submetralhadora', kind: 'gun', dmg: 8, rate: 0.075, spread: 0.065, bloom: 0.008, bloomMax: 0.1, range: 19, pellets: 1, pierce: 0, mag: 42, reload: 1.5, start: 210, pack: 140, sound: 'eg_scarab_gun', color: 0x2a6a70, special: { id: 'swarm', name: 'Enxame do Escaravelho', every: 20, cooldown: 12, bonus: 2.2 } },
+  sobek_launcher: { name: 'Lança-granadas de Sobek', cat: 'Explosiva', kind: 'lob', dmg: 95, rate: 0.72, radius: 3.4, speed: 15, bounces: 1, mag: 6, reload: 2.6, start: 12, pack: 8, sound: 'eg_river', color: 0x4a7a3a, special: { id: 'nile', name: 'Ácido do Rio Nilo', cooldown: 10, acid: { dps: 9, t: 3.5 } } },
+  sphinx_drill: { name: 'Perfuradora da Esfinge', cat: 'Suporte pesado', kind: 'gun', dmg: 18, rate: 0.07, spread: 0.045, bloom: 0.006, bloomMax: 0.09, range: 28, pellets: 1, pierce: 3, knock: 1.3, mag: 90, reload: 3.1, start: 180, pack: 120, slowFire: 0.6, sound: 'eg_sphinx', color: 0xb08a40, special: { id: 'wrath', name: 'Fúria da Esfinge', every: 24, cooldown: 14, bonus: 2.4 } },
+  desert_bow: { name: 'Arco do Deserto', cat: 'Precisão', kind: 'bolt', dmg: 76, rate: 0.78, speed: 34, pierce: 2, glow: 0xe8b020, mag: 8, reload: 1.8, start: 32, pack: 20, sound: 'eg_bow', color: 0x8a5a2a, special: { id: 'venom', name: 'Flecha Envenenada', cooldown: 7, poison: { dps: 7, t: 4 } } },
+  bastet_staff: { name: 'Bastão de Bastet', cat: 'Energia', kind: 'bolt', dmg: 38, rate: 0.26, speed: 27, pierce: 1, blast: 1.1, el: 'energy', glow: 0xc070ff, mag: 24, reload: 2, start: 72, pack: 48, sound: 'eg_shadow', color: 0x7a3ab0, special: { id: 'shadow', name: 'Garras das Sombras', every: 12, cooldown: 11, bonus: 1.8 } },
+  priest_staff: { name: 'Cajado do Sacerdote', cat: 'Maldição', kind: 'glob', dmg: 17, rate: 0.38, el: 'acid', corrode: { dps: 8, t: 3 }, puddle: { r: 1, life: 3, dps: 7 }, mag: 14, reload: 2, start: 42, pack: 28, sound: 'eg_curse', color: 0x8a3ad0, special: { id: 'curse', name: 'Maldição Profana', every: 6, cooldown: 9, slow: { t: 2, mul: 0.55 } } },
+  horus_spear: { name: 'Lança de Hórus', cat: 'Especial', kind: 'bolt', dmg: 52, rate: 0.2, speed: 38, pierce: 4, blast: 0.7, el: 'energy', glow: 0x3fe0ff, mag: 18, reload: 1.9, start: 54, pack: 36, sound: 'eg_divine', color: 0x3fe0ff, special: { id: 'divine', name: 'Rajada Divina', every: 10, cooldown: 10, bonus: 2 } },
+  mummy_blade: { name: 'Lâmina da Múmia', cat: 'Corpo a corpo', kind: 'gun', dmg: 54, rate: 0.48, spread: 0, range: 1.85, pellets: 1, pierce: 1, knock: 2.3, start: Infinity, pack: 0, sound: 'eg_sand_blade', color: 0xc8b890, melee: true, special: { id: 'resurrection', name: 'Ressurreição das Areias', every: 7, cooldown: 12, heal: 2 } },
 };
+export const TEMPLE_WEAPONS = ['pharaoh', 'anubis_shotgun', 'scarab_smg', 'sobek_launcher', 'sphinx_drill', 'desert_bow', 'bastet_staff', 'priest_staff', 'horus_spear', 'mummy_blade'];
 // Estruturas posicionáveis: hp = durabilidade · block: ocupa a célula (a horda ataca) · life: bateria (s) · range: detecção
 export const TRAPS = {
   barricade: { hp: 260, block: true },
@@ -50,8 +62,8 @@ export const TRAPS = {
 };
 // grupos das teclas 1–9, 0 e -: apertar de novo a mesma tecla alterna entre as armas do grupo
 export const WEAPON_GROUPS = [
-  ['pistol'], ['uzi'], ['shotgun'], ['rifle', 'lmg'], ['sniper', 'plasma'], ['rocket', 'glauncher'], ['flamer', 'cryo', 'acidgun'],
-  ['grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'dynamite'], ['barrel', 'barricade', 'spikes', 'efence'], ['mine', 'proxmine'], ['ltower', 'ftower', 'itower'],
+  ['pistol'], ['uzi', 'scarab_smg'], ['shotgun', 'anubis_shotgun'], ['rifle', 'lmg', 'pharaoh', 'sphinx_drill'], ['sniper', 'plasma', 'desert_bow'], ['rocket', 'glauncher', 'sobek_launcher'], ['flamer', 'cryo', 'acidgun', 'bastet_staff', 'priest_staff', 'horus_spear'],
+  ['grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'dynamite'], ['barrel', 'barricade', 'spikes', 'efence'], ['mine', 'proxmine', 'mummy_blade'], ['ltower', 'ftower', 'itower'],
 ];
 export const WEAPON_ORDER = WEAPON_GROUPS.flat();
 // teclas de atalho (solo): 1–9, 0 e -
@@ -108,6 +120,16 @@ export const UNLOCKS = [
   { level: 19, weapon: 'plasma', text: 'Rifle de plasma' },
   { level: 20, upgrade: 'doubleAmmo', text: 'Caixas de munição em dobro' },
   { level: 20, weapon: 'ltower', text: 'Torre de laser' },
+  { level: 2, weapon: 'scarab_smg', text: 'SMG Escaravelho', only: ['templo'] },
+  { level: 3, weapon: 'anubis_shotgun', text: 'Espingarda Anúbis', only: ['templo'] },
+  { level: 4, weapon: 'pharaoh', text: 'Rifle do Faraó', only: ['templo'] },
+  { level: 5, weapon: 'desert_bow', text: 'Arco do Deserto', only: ['templo'] },
+  { level: 6, weapon: 'sobek_launcher', text: 'Lança-granadas de Sobek', only: ['templo'] },
+  { level: 7, weapon: 'bastet_staff', text: 'Bastão de Bastet', only: ['templo'] },
+  { level: 8, weapon: 'priest_staff', text: 'Cajado do Sacerdote', only: ['templo'] },
+  { level: 9, weapon: 'horus_spear', text: 'Lança de Hórus', only: ['templo'] },
+  { level: 10, weapon: 'sphinx_drill', text: 'Perfuradora da Esfinge', only: ['templo'] },
+  { level: 11, weapon: 'mummy_blade', text: 'Lâmina da Múmia', only: ['templo'] },
 ];
 
 // Inimigos. body: forma do modelo (monsters.js). from: onda em que começa a aparecer; weight: frequência.

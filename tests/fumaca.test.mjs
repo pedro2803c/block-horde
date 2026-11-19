@@ -88,7 +88,7 @@ await p.evaluate(async () => {
   g.ui.showScreen('arena', { mode: 'solo', picks: [__bhTest.SURVIVORS[0]] }); await w(800);
   g.ui.showScreen('difficulty', { back: () => g.ui.showScreen('menu'), go: () => {} }); await w(300);
 });
-const telas = erros.slice(n1).map((e) => e.msg);
+const telas = erros.slice(n1).map((e) => e.msg + (e.stack ? ' @ ' + e.stack : ''));
 console.log(`${telas.length ? '✗' : '✓'} telas e menus ${telas.join(' | ')}`);
 fs.writeFileSync('tests/resultado-fumaca.json', JSON.stringify({ data: new Date().toISOString(), rel, telas }, null, 2));
 const bugs = rel.filter((r) => r.problemas.length).length + (telas.length ? 1 : 0);

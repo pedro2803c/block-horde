@@ -204,6 +204,17 @@ const DEFS = {
   eg_sand: [3.0, (c, o) => { noiseHit(c, o, 'bandpass', 300, 1400, 0.8, 0, 0.8, 0.6, 2.1); noiseHit(c, o, 'highpass', 3000, 5000, 1, 0.3, 0.6, 0.25, 1.8); }],
   eg_beam: [1.3, (c, o) => { tone(c, o, 'sawtooth', 90, 900, 0, 0.9, 0.3, 0.25); tone(c, o, 'square', 1200, 300, 0.9, 0.005, 0.4, 0.35); noiseHit(c, o, 'bandpass', 2000, 600, 2, 0.9, 0.005, 0.5, 0.35); }],
   eg_rumble: [1.6, (c, o) => { tone(c, o, 'sine', 48, 30, 0, 0.05, 0.9, 1.3); noiseHit(c, o, 'lowpass', 500, 80, 1, 0, 0.05, 0.8, 1.4); [0.2, 0.45, 0.7].forEach((d) => click(c, o, d, 300, 0.5, 0.06)); }],
+  eg_royal: [0.42, (c,o) => { tone(c,o,'sawtooth',680,180,0,0.004,0.42,0.22); tone(c,o,'sine',1360,540,0.02,0.003,0.28,0.2); }],
+  eg_judgment: [0.75, (c,o) => { noiseHit(c,o,'lowpass',1700,180,1,0,0.003,0.72,0.28); tone(c,o,'sine',110,55,0,0.003,0.65,0.25); }],
+  eg_scarab_gun: [0.25, (c,o) => { noiseHit(c,o,'bandpass',3200,1000,4,0,0.002,0.42,0.12); click(c,o,0,1500,0.45,0.025); }],
+  eg_river: [0.6, (c,o) => { tone(c,o,'sine',180,60,0,0.005,0.55,0.35); noiseHit(c,o,'lowpass',1200,220,1,0.01,0.004,0.48,0.3); }],
+  eg_sphinx: [0.48, (c,o) => { gun(c,o,{nf:2600,ne:320,dec:0.19,th:120,thd:0.13,vol:0.75,dist:12}); tone(c,o,'triangle',90,45,0,0.003,0.24,0.3); }],
+  eg_bow: [0.38, (c,o) => { noiseHit(c,o,'bandpass',2300,4700,3,0,0.004,0.38,0.2); tone(c,o,'triangle',420,190,0,0.002,0.28,0.22); }],
+  eg_shadow: [0.5, (c,o) => { tone(c,o,'sine',420,120,0,0.01,0.28,0.34); tone(c,o,'triangle',980,300,0.03,0.004,0.2,0.3); }],
+  eg_curse: [0.56, (c,o) => { tone(c,o,'sawtooth',290,130,0,0.015,0.18,0.4); noiseHit(c,o,'bandpass',1800,700,2,0.01,0.01,0.22,0.35); }],
+  eg_divine: [0.58, (c,o) => { tone(c,o,'sine',1100,220,0,0.003,0.38,0.42); tone(c,o,'triangle',1650,330,0.025,0.003,0.2,0.36); }],
+  eg_sand_blade: [0.46, (c,o) => { noiseHit(c,o,'bandpass',700,2600,2,0,0.04,0.36,0.3); tone(c,o,'sawtooth',190,310,0,0.04,0.12,0.25); }],
+  eg_venom: [0.4, (c,o) => { tone(c,o,'triangle',520,130,0,0.004,0.3,0.25); noiseHit(c,o,'highpass',2600,1100,2,0.01,0.004,0.28,0.2); }],
   crowd: [2.4, (c, o) => { noiseHit(c, o, 'bandpass', 700, 900, 0.6, 0, 0.4, 0.5, 1.9); noiseHit(c, o, 'bandpass', 1300, 1100, 0.8, 0.1, 0.4, 0.3, 1.8); }],
 };
 

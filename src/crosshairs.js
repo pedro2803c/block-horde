@@ -78,6 +78,8 @@ export const WEAPON_CROSSHAIR = {
   lmg: 'bracket', flamer: 'directional', glauncher: 'gold', plasma: 'gold', cryo: 'tactical', acidgun: 'directional',
   egrenade: 'gold', igrenade: 'gold', fgrenade: 'gold', tgrenade: 'gold',
   proxmine: 'tactical', spikes: 'tactical', efence: 'tactical', ltower: 'tactical', ftower: 'tactical', itower: 'tactical',
+  pharaoh: 'holo', anubis_shotgun: 'directional', scarab_smg: 'bracket', sobek_launcher: 'gold', sphinx_drill: 'bracket',
+  desert_bow: 'scope', bastet_staff: 'holo', priest_staff: 'directional', horus_spear: 'lockon', mummy_blade: 'classic',
 };
 
 export const CROSS_COLORS = [

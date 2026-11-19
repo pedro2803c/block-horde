@@ -633,6 +633,7 @@ export class Game {
   // ------------------------------------------------------------------ armas
   wstat(id) {
     const w = { ...WEAPONS[id] };
+    w.id = id;
     const u = this.upg;
     if (id === 'pistol' && u.pistolFast) w.rate = 0.15;
     if (id === 'uzi' && u.uziDmg) w.dmg *= 1.4;
@@ -862,6 +863,7 @@ export class Game {
       let dmg = w.dmg;
       if (w.pellets > 1) dmg *= Math.max(0.4, 1 - h.t / w.range);
       this.damageZombie(h.z, dmg, dx, dz, p, w.knock ?? (w.pellets > 1 ? 2.2 : 0.8));
+      this.weaponSpecial(p, h.z, w, dx, dz);
       endT = h.t;
       if (++pierced > (w.pierce || 0)) break;
     }
@@ -872,6 +874,32 @@ export class Game {
       if (wallProp && wallProp.def.coll === 'tall') this.damageProp(wallProp, w.dmg, p, dx, dz);
     }
     if (endT > 0.8) this.tracers.push({ x1: mx, z1: mz, x2: ox + dx * endT, z2: oz + dz * endT, life: w.heavy ? 0.14 : 0.06, w: w.heavy ? 0.08 : 0.035, color: w.heavy ? 0xc8ffd0 : 0xffe08a });
+  }
+
+  weaponSpecial(p, z, w, dx = 0, dz = 0) {
+    const s = w?.special;
+    if (!s || !p || !z?.alive) return;
+    p.egyptProc ||= {};
+    const n = (p.egyptProc[w.id] = (p.egyptProc[w.id] || 0) + 1);
+    if (s.every && n % s.every) return;
+    p.egyptCd ||= {};
+    if ((p.egyptCd[w.id] || 0) > this.time) return;
+    p.egyptCd[w.id] = this.time + (s.cooldown || 8);
+    const bossScale = z.def.boss ? 0.35 : 1;
+    if (s.bonus) this.damageZombie(z, w.dmg * (s.bonus - 1), dx, dz, p, 0.2, true);
+    if (s.stun) z.stunT = Math.max(z.stunT || 0, s.stun * bossScale);
+    if (s.acid) this.applyStatus(z, 'acid', s.acid, p);
+    if (s.poison) this.applyStatus(z, 'poison', s.poison, p);
+    if (s.slow) this.applyStatus(z, 'ice', 24, p);
+    if (s.heal) {
+      p.hp = Math.min(p.maxHp, p.hp + s.heal);
+      this.parts.spawn(p.pos.x, 1.1, p.pos.z, 0, 1.8, 0, 0.12, 0x2ecc71, 0.55, 0, 2);
+    }
+    const colors = { royal: 0xd4a020, judgment: 0xe53935, swarm: 0x29b6f6, nile: 0x2ecc71, wrath: 0xffc107, venom: 0x8aff4a, shadow: 0xc070ff, curse: 0x8a3ad0, divine: 0x3fe0ff, resurrection: 0xeaeDEF };
+    const c = colors[s.id] || 0xffc107;
+    for (let i = 0; i < 6; i++) this.parts.spawn(z.pos.x + rand(-0.35, 0.35), 1.15, z.pos.z + rand(-0.35, 0.35), rand(-1, 1), rand(1, 2.5), rand(-1, 1), 0.09, c, 0.45, 5, 2);
+    this.audio.play(s.id === 'judgment' ? 'eg_judgment' : s.id === 'nile' ? 'eg_river' : s.id === 'venom' ? 'eg_venom' : 'eg_magic', { volume: 0.28, pos: z.pos, rate: rand(0.9, 1.1) });
+    this.ui.toast(p.id, s.name, 'bolt');
   }
 
   place(p, kind, ang) {
@@ -2672,6 +2700,7 @@ export class Game {
     }
   }
   unlock(u) {
+    if (u.only && !u.only.includes(this.arenaDef?.id)) return;
     if (u.weapon) {
       this.unlocked.add(u.weapon);
       for (const p of this.players) {
@@ -2933,6 +2962,11 @@ export class Game {
       ['dynamite', has('dynamite') ? 8 : 0],
       ['shotgun', has('shotgun') ? 5 : 0],
       ['rifle', has('rifle') ? 5 : 0],
+      ['pharaoh', has('pharaoh') ? 5 : 0], ['anubis_shotgun', has('anubis_shotgun') ? 5 : 0],
+      ['scarab_smg', has('scarab_smg') ? 5 : 0], ['sobek_launcher', has('sobek_launcher') ? 4 : 0],
+      ['sphinx_drill', has('sphinx_drill') ? 3 : 0], ['desert_bow', has('desert_bow') ? 5 : 0],
+      ['bastet_staff', has('bastet_staff') ? 4 : 0], ['priest_staff', has('priest_staff') ? 4 : 0],
+      ['horus_spear', has('horus_spear') ? 3 : 0], ['mummy_blade', has('mummy_blade') ? 2 : 0],
       ['sniper', has('sniper') ? 6 : 0],
       ['axe', !axeOut && this.wave >= 4 ? 3 : 0],
       ['boots', 5],

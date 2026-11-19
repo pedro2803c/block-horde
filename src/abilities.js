@@ -46,10 +46,10 @@ export const levelCost = (next) => Math.ceil(next / 2); // 1, 1, 2, 2, 3 pontos
 // ---------------------------------------------------------------- árvore: 4 especializações
 // cada ramo é uma sequência: o próximo nó exige o anterior no nível 2
 export const BRANCHES = [
-  { id: 'assault', name: 'Assalto', tag: 'Ofensivo', color: '#ff5a4e', icon: 'burst', desc: 'Dano elevado e combate direto.', nodes: ['damage', 'crit', 'multishot'] },
-  { id: 'defense', name: 'Defesa', tag: 'Resistência', color: '#4fa8ff', icon: 'shield', desc: 'Mais proteção e sobrevivência.', nodes: ['vitality', 'armor'] },
-  { id: 'support', name: 'Suporte', tag: 'Cooperativo', color: '#60ff80', icon: 'medkit', desc: 'Cura, munição e sustentação do time.', nodes: ['regen', 'ammo'] },
-  { id: 'mobility', name: 'Mobilidade', tag: 'Velocidade', color: '#ffc93a', icon: 'run', desc: 'Velocidade, precisão e posicionamento.', nodes: ['agility', 'precision', 'cooldown'] },
+  { id: 'assault', name: 'Assalto', tag: 'Ofensivo', color: '#E53935', icon: 'burst', desc: 'Dano elevado e combate direto.', nodes: ['damage', 'crit', 'multishot'] },
+  { id: 'defense', name: 'Defesa', tag: 'Resistência', color: '#29B6F6', icon: 'shield', desc: 'Mais proteção e sobrevivência.', nodes: ['vitality', 'armor'] },
+  { id: 'support', name: 'Suporte', tag: 'Cooperativo', color: '#2ECC71', icon: 'medkit', desc: 'Cura, munição e sustentação do time.', nodes: ['regen', 'ammo'] },
+  { id: 'mobility', name: 'Mobilidade', tag: 'Velocidade', color: '#FFC107', icon: 'run', desc: 'Velocidade, precisão e posicionamento.', nodes: ['agility', 'precision', 'cooldown'] },
 ];
 export const NODE_REQ = 2; // nível do nó anterior para liberar o próximo
 export const ULT_REQ = { level: 5, cost: 2 }; // ultimate: nível 5 do personagem e 2 pontos

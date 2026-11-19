@@ -117,6 +117,16 @@ export const GUN_MODELS = {
     [0, -0.08, 0, 0.06, 0.1, 0.07, 0x1a1a1a],
     [-0.12, 0, 0, 0.18, 0.09, 0.07, 0x3a5a2a],
   ],
+  pharaoh: [[0.16, 0.03, 0, 0.35, 0.09, 0.09, 0xd4a020], [0.42, 0.03, 0, 0.35, 0.035, 0.035, 0xc8ccd4], [0.12, -0.08, 0, 0.09, 0.12, 0.08, 0x1c1c20], [0.05, 0.13, 0, 0.12, 0.04, 0.11, 0x3fe0ff, true]],
+  anubis_shotgun: [[0.12, 0.02, 0, 0.24, 0.11, 0.11, 0x2a2a34], [0.39, 0.03, 0, 0.38, 0.08, 0.08, 0x9a9ea6], [0.13, -0.09, 0, 0.1, 0.14, 0.09, 0x1c1c20], [-0.12, -0.02, 0, 0.22, 0.1, 0.08, 0x2a2a34], [0.27, 0.11, 0, 0.15, 0.035, 0.13, 0xd4a020]],
+  scarab_smg: [[0.14, 0.02, 0, 0.31, 0.11, 0.1, 0x2a6a70], [0.36, 0.03, 0, 0.13, 0.04, 0.04, 0x9a7040], [0.04, -0.12, 0, 0.08, 0.18, 0.08, 0x1c1c20], [0.15, 0.12, 0, 0.17, 0.035, 0.11, 0xd4a020, true]],
+  sobek_launcher: [[0.12, 0.02, 0, 0.32, 0.13, 0.13, 0x4a7a3a], [0.4, 0.03, 0, 0.32, 0.1, 0.1, 0x6a8a50], [0.52, 0.03, 0, 0.08, 0.14, 0.14, 0x2a4a2a], [0.13, -0.1, 0, 0.15, 0.15, 0.13, 0x9a7040], [0.18, 0.15, 0, 0.12, 0.04, 0.14, 0x3fe0ff, true]],
+  sphinx_drill: [[0.18, 0.02, 0, 0.42, 0.13, 0.12, 0xb08a40], [0.48, 0.03, 0, 0.28, 0.07, 0.07, 0xd4a020], [0.68, 0.03, 0, 0.1, 0.1, 0.1, 0xe8e0c8], [0.12, -0.1, 0, 0.12, 0.16, 0.1, 0x2a2a34], [0.19, 0.12, 0, 0.2, 0.035, 0.12, 0xd4a020, true]],
+  desert_bow: [[0.15, 0, 0, 0.07, 0.52, 0.07, 0x8a5a2a], [0.16, 0, 0, 0.035, 0.4, 0.035, 0xe8e0c8], [0.19, 0.02, 0, 0.34, 0.035, 0.04, 0xd4a020]],
+  bastet_staff: [[0.2, 0, 0, 0.08, 0.65, 0.08, 0x6a3a82], [0.2, 0.34, 0, 0.24, 0.08, 0.08, 0xd4a020], [0.2, 0.45, 0, 0.15, 0.16, 0.12, 0xc070ff, true], [0.2, 0.51, 0, 0.05, 0.23, 0.05, 0xe8e0c8]],
+  priest_staff: [[0.2, 0, 0, 0.08, 0.62, 0.08, 0x4a2a62], [0.2, 0.32, 0, 0.24, 0.11, 0.1, 0x8a3ad0], [0.2, 0.4, 0, 0.11, 0.12, 0.1, 0xb050ff, true], [0.2, 0.48, 0, 0.18, 0.06, 0.12, 0xd4a020]],
+  horus_spear: [[0.2, 0, 0, 0.07, 0.72, 0.07, 0x9a7040], [0.2, 0.4, 0, 0.2, 0.2, 0.08, 0x3fe0ff, true], [0.2, 0.56, 0, 0.1, 0.22, 0.05, 0xe8e0c8], [0.2, 0.28, 0, 0.24, 0.04, 0.04, 0xd4a020]],
+  mummy_blade: [[0.05, 0, 0, 0.12, 0.08, 0.08, 0x9a7040], [0.22, 0, 0, 0.28, 0.07, 0.025, 0xc8b890], [0.37, 0.02, 0, 0.14, 0.1, 0.025, 0xe8e0c8], [0.22, 0.06, 0, 0.24, 0.025, 0.02, 0xd4a020, true]],
   knife: [
     [0, 0, 0, 0.13, 0.05, 0.05, 0x1a1a1a],
     [-0.02, 0, 0, 0.02, 0.055, 0.055, 0x2e2e32],
@@ -340,7 +350,9 @@ for (const [id, m] of Object.entries(TRAP_MODELS)) {
   MODELS[id] = all.map(([x, y, z, ...r]) => [x, y - top / 2, z, ...r]);
 }
 // armas e lâminas deitadas: o modelo da mão vira o modelo do chão (comprimento no eixo x)
-for (const id of ['pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'uzi', 'rocket', 'lmg', 'flamer', 'glauncher', 'plasma', 'cryo', 'acidgun']) {
+// armas exclusivas do Templo Antigo (catálogo, modelo no chão e ordem do arsenal)
+const TEMPLE_WEAPONS = ['pharaoh', 'anubis_shotgun', 'scarab_smg', 'sobek_launcher', 'sphinx_drill', 'desert_bow', 'bastet_staff', 'priest_staff', 'horus_spear', 'mummy_blade'];
+for (const id of ['pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'uzi', 'rocket', 'lmg', 'flamer', 'glauncher', 'plasma', 'cryo', 'acidgun', ...TEMPLE_WEAPONS]) {
   const m = GUN_MODELS[id];
   const lo = Math.min(...m.map((p) => p[0] - p[3] / 2));
   const c = lo + gunLen(m) / 2;
@@ -383,6 +395,16 @@ export const ITEMS = {
   igrenade: { name: 'Granada incendiária', cat: 'supply', icon: 'flame', ring: 0xff8a20, rarity: 'Incomum', weapon: 'igrenade', desc: 'Espalha fogo por 6 s: queima quem passa e detona barris.', get: 'Multiplicador x5 · pacotes nas caixas' },
   fgrenade: { name: 'Granada congelante', cat: 'supply', icon: 'snow', ring: 0x7ad8ff, rarity: 'Incomum', weapon: 'fgrenade', desc: 'Congela inimigos comuns na área e deixa os fortes lentos.', get: 'Multiplicador x8 · pacotes nas caixas' },
   tgrenade: { name: 'Granada tóxica', cat: 'supply', icon: 'spore', ring: 0x9aff4a, rarity: 'Incomum', weapon: 'tgrenade', desc: 'Nuvem venenosa por 8 s que corrói a horda (não fere o time).', get: 'Multiplicador x14 · pacotes nas caixas' },
+  pharaoh: { name: 'Rifle do Faraó', cat: 'weapon', icon: 'crown', ring: 0xd4a020, rarity: 'Épica', weapon: 'pharaoh', desc: 'Rifle de assalto. Bênção Real fortalece periodicamente um disparo.', get: 'Templo Antigo · multiplicador x4' },
+  anubis_shotgun: { name: 'Espingarda Anúbis', cat: 'weapon', icon: 'skull', ring: 0x8a6a3a, rarity: 'Rara', weapon: 'anubis_shotgun', desc: 'Escopeta de curto alcance. Julgamento de Anúbis pode interromper inimigos.', get: 'Templo Antigo · multiplicador x3' },
+  scarab_smg: { name: 'SMG Escaravelho', cat: 'weapon', icon: 'burst', ring: 0x29b6f6, rarity: 'Incomum', weapon: 'scarab_smg', desc: 'Submetralhadora rápida. Enxame do Escaravelho reforça rajadas periódicas.', get: 'Templo Antigo · multiplicador x2' },
+  sobek_launcher: { name: 'Lança-granadas de Sobek', cat: 'weapon', icon: 'burst', ring: 0x2ecc71, rarity: 'Épica', weapon: 'sobek_launcher', desc: 'Granadas em arco. Ácido do Rio Nilo deixa corrosão no impacto.', get: 'Templo Antigo · multiplicador x6' },
+  sphinx_drill: { name: 'Perfuradora da Esfinge', cat: 'weapon', icon: 'target', ring: 0xffc107, rarity: 'Lendária', weapon: 'sphinx_drill', desc: 'Metralhadora pesada perfurante. Fúria da Esfinge amplifica rajadas.', get: 'Templo Antigo · multiplicador x10' },
+  desert_bow: { name: 'Arco do Deserto', cat: 'weapon', icon: 'target', ring: 0xe8b020, rarity: 'Rara', weapon: 'desert_bow', desc: 'Arco de precisão. Flecha Envenenada aplica dano contínuo.', get: 'Templo Antigo · multiplicador x5' },
+  bastet_staff: { name: 'Bastão de Bastet', cat: 'weapon', icon: 'ghost', ring: 0xc070ff, rarity: 'Épica', weapon: 'bastet_staff', desc: 'Arma mágica. Garras das Sombras reforçam impactos de energia.', get: 'Templo Antigo · multiplicador x7' },
+  priest_staff: { name: 'Cajado do Sacerdote', cat: 'weapon', icon: 'hood', ring: 0x8a3ad0, rarity: 'Rara', weapon: 'priest_staff', desc: 'Projéteis de maldição deixam inimigos lentos e corroídos.', get: 'Templo Antigo · multiplicador x8' },
+  horus_spear: { name: 'Lança de Hórus', cat: 'weapon', icon: 'bolt', ring: 0x29b6f6, rarity: 'Lendária', weapon: 'horus_spear', desc: 'Energia perfurante. Rajada Divina fortalece disparos periódicos.', get: 'Templo Antigo · multiplicador x9' },
+  mummy_blade: { name: 'Lâmina da Múmia', cat: 'weapon', icon: 'burst', ring: 0xeaeDEF, rarity: 'Épica', weapon: 'mummy_blade', desc: 'Arma corpo a corpo. Ressurreição das Areias recupera vida em sequência.', get: 'Templo Antigo · multiplicador x11' },
   boots: { name: 'Botas de velocidade', cat: 'gear', icon: 'run', ring: 0x40c8ff, rarity: 'Rara', desc: '+15% de velocidade permanente (até cair).', get: 'Mapa e caixas de madeira' },
   exo: { name: 'Exoesqueleto temporário', cat: 'gear', icon: 'fist', ring: 0xffc107, rarity: 'Épica', desc: 'Por 20 s: -45% de dano recebido, golpes 60% mais fortes e imune a lentidão.', get: 'Caixas de madeira a partir da onda 4' },
   proxmine: { name: 'Mina de proximidade', cat: 'trap', icon: 'target', ring: 0xff3020, rarity: 'Rara', weapon: 'proxmine', desc: 'Detecta a 2,4 m, apita e explode em área grande (4 m).', get: 'Multiplicador x10 · cargas nas caixas' },
@@ -392,7 +414,7 @@ export const ITEMS = {
   ftower: { name: 'Torre de fogo', cat: 'trap', icon: 'flame', ring: 0xff7a30, rarity: 'Épica', weapon: 'ftower', desc: 'Lança chamas em quem chega a 4,5 m e incendeia. Bateria de 90 s.', get: 'Multiplicador x18' },
   itower: { name: 'Torre de gelo', cat: 'trap', icon: 'snow', ring: 0x5ac8ff, rarity: 'Épica', weapon: 'itower', desc: 'Dispara projéteis congelantes a até 8 m. Bateria de 90 s.', get: 'Multiplicador x16' },
 };
-export const ITEM_ORDER = ['medkit', 'ammo', 'drink', 'grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'supply', 'dynamite', 'pistol', 'uzi', 'rifle', 'lmg', 'shotgun', 'sniper', 'rocket', 'glauncher', 'flamer', 'plasma', 'cryo', 'acidgun', 'axe', 'knife', 'vest', 'helmet', 'boots', 'exo', 'backpack', 'binoculars', 'flashlight', 'radio', 'proxmine', 'spikes', 'efence', 'ltower', 'ftower', 'itower'];
+export const ITEM_ORDER = ['medkit', 'ammo', 'drink', 'grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'supply', 'dynamite', 'pistol', 'uzi', 'rifle', 'lmg', 'shotgun', 'sniper', 'rocket', 'glauncher', 'flamer', 'plasma', 'cryo', 'acidgun', 'axe', 'knife', ...TEMPLE_WEAPONS, 'vest', 'helmet', 'boots', 'exo', 'backpack', 'binoculars', 'flashlight', 'radio', 'proxmine', 'spikes', 'efence', 'ltower', 'ftower', 'itower'];
 export const ITEM_CATS = { supply: 'Suprimento', weapon: 'Arma', gear: 'Proteção', util: 'Utilitário', trap: 'Armadilha' };
 for (const id of ITEM_ORDER) {
   const it = ITEMS[id];

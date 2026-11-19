@@ -749,14 +749,35 @@ export class UI {
 
   // ------------------------------------------------------------ habilidades
   // árvore (durante a partida, Tab ou pausa): 4 ramos de passivas com 5 níveis e a ultimate
-  scr_tree({ k = 0 } = {}) {
+  scr_tree({ k = 0, sel = null } = {}) {
     const g = this.g;
     const p = g.players[k] || g.players[0];
     const back = () => g.resume();
-    const redraw = () => {
-      // mantém a posição da rolagem: comprar um nó lá embaixo não volta para o topo
+    const PASSIVE_DESC = {
+      damage: 'Aumenta o dano causado por todos os seus disparos.',
+      crit: 'Dá chance de seus tiros causarem dano dobrado.',
+      multishot: 'Dá chance de disparar um projétil extra sem gastar munição.',
+      vitality: 'Aumenta sua vida máxima e cura o equivalente na hora.',
+      armor: 'Reduz todo dano recebido de inimigos e explosões.',
+      regen: 'Recupera vida continuamente ao longo do tempo.',
+      ammo: 'Aumenta a quantidade de munição obtida nas caixas.',
+      agility: 'Aumenta sua velocidade de movimento na arena.',
+      precision: 'Reduz a dispersão dos tiros, deixando a mira mais fechada.',
+      cooldown: 'Reduz o tempo de recarga das suas habilidades ativas e ultimate.',
+    };
+    const allNodes = BRANCHES.flatMap((br) => br.nodes);
+    const defaultSel = sel && PASSIVES[sel] ? sel
+      : (this.treeSel && PASSIVES[this.treeSel] ? this.treeSel
+        : (allNodes.find((id) => g.nodeState(p, id) === 'ok') || allNodes[0]));
+    this.treeSel = defaultSel;
+    const flashId = this.treeFlash || null;
+    this.treeFlash = null;
+
+    const redraw = (nextSel = this.treeSel, flash = null) => {
       const sc = document.querySelector('.overlay.tree .panel')?.scrollTop || 0;
-      this.showScreen('tree', { k: p.id }, false);
+      this.treeSel = nextSel;
+      this.treeFlash = flash;
+      this.showScreen('tree', { k: p.id, sel: nextSel }, false);
       const restore = () => {
         const panel = document.querySelector('.overlay.tree .panel');
         if (panel) panel.scrollTop = sc;
@@ -764,46 +785,147 @@ export class UI {
       restore();
       requestAnimationFrame(restore);
     };
+
     // no celular o botão é grande e o dedo toca duas vezes sem querer: ignora o toque que abriu a tela
     this.treeT = performance.now();
     const arm = () => performance.now() - this.treeT > 350;
     const rec = new Set(BUILDS.find((b) => b.id === p.build)?.passives || []);
-    const pips = (n) => h('span', { class: 'pips' }, Array.from({ length: MAX_LEVEL }, (_, i) => h('i', { class: i < n ? 'on' : '' })));
+    const pips = (n) => h('span', { class: 'pips', 'aria-label': `Nível ${n} de ${MAX_LEVEL}` },
+      Array.from({ length: MAX_LEVEL }, (_, i) => h('i', { class: i < n ? 'on' : '' })));
+
+    const stateMeta = (st, lvl) => {
+      if (st === 'max') return { cls: 'max', label: 'Máximo', ic: 'check' };
+      if (st === 'locked') return { cls: 'locked', label: 'Bloqueada', ic: 'lock' };
+      if (st === 'ok' && lvl > 0) return { cls: 'evolvable', label: 'Evoluível', ic: 'bolt' };
+      if (st === 'ok') return { cls: 'available', label: 'Disponível', ic: 'star' };
+      if (lvl > 0) return { cls: 'unlocked', label: 'Desbloqueada', ic: 'check' };
+      return { cls: 'poor', label: 'Sem pontos', ic: 'lock' };
+    };
+
     const node = (id, i, br) => {
       const d = PASSIVES[id];
       const lvl = p.pas[id] || 0;
       const st = g.nodeState(p, id);
+      const meta = stateMeta(st, lvl);
       const cost = levelCost(lvl + 1);
-      return h('div', { class: `node st-${st}` + (rec.has(id) ? ' rec' : ''), style: `--bc:${br.color}` },
-        i ? h('i', { class: 'link' + ((p.pas[br.nodes[i - 1]] || 0) >= NODE_REQ ? ' open' : '') }) : null,
-        h('div', { class: 'node-head' }, icon(d.icon), h('b', {}, d.name), h('small', {}, String(d.n).padStart(2, '0'))),
+      const isSel = this.treeSel === id;
+      const prevId = i > 0 ? br.nodes[i - 1] : null;
+      const prevLvl = prevId ? (p.pas[prevId] || 0) : 0;
+      const linkOpen = prevLvl >= NODE_REQ;
+      const isFlash = flashId === id;
+
+      return h('div', { class: 'tree-node-wrap' + (isFlash ? ' flash' : ''), style: `--bc:${br.color}` },
+        i ? h('div', { class: 'tree-conn' + (linkOpen ? ' open' : ' locked') + (isFlash ? ' anim' : ''), 'aria-hidden': 'true' },
+          h('span', { class: 'conn-line' }),
+          !linkOpen ? h('span', { class: 'conn-req' }, `Nv.${NODE_REQ}`) : h('span', { class: 'conn-arrow' })) : null,
+        h('button', {
+          type: 'button',
+          class: `node st-${st} vm-${meta.cls}` + (isSel ? ' sel' : '') + (rec.has(id) ? ' rec' : '') + (isFlash ? ' just-bought' : ''),
+          'aria-pressed': isSel ? 'true' : 'false',
+          onclick: () => redraw(id),
+        },
+        h('div', { class: 'node-head' },
+          h('span', { class: 'node-ic' }, icon(d.icon)),
+          h('div', { class: 'node-titles' },
+            h('b', {}, d.name),
+            h('span', { class: `node-badge vm-${meta.cls}` }, icon(meta.ic), meta.label)),
+          h('span', { class: 'node-lvl' }, st === 'max' ? 'MÁX' : `${lvl}/${MAX_LEVEL}`)),
         pips(lvl),
-        h('div', { class: 'node-fx' }, lvl ? d.fmt(d.v(lvl)) : 'Não comprada'),
-        st === 'max' ? h('div', { class: 'node-next' }, 'Nível máximo') : h('div', { class: 'node-next' }, 'Próximo: ', d.fmt(d.v(lvl + 1))),
-        st === 'max' ? null : st === 'locked'
-          ? h('div', { class: 'node-lock' }, icon('lock'), `Requer ${PASSIVES[br.nodes[i - 1]].name} nível ${NODE_REQ}`)
-          : btn('sm' + (st === 'ok' ? ' primary' : ''), 'star', `Comprar · ${cost} pt${cost > 1 ? 's' : ''}`, () => { if (arm() && g.buyPassive(p, id)) redraw(); }, { disabled: st !== 'ok' }));
+        h('div', { class: 'node-foot' },
+          h('span', { class: 'node-fx-mini' }, lvl ? d.fmt(d.v(lvl)) : 'Nível 0'),
+          st === 'max' ? h('span', { class: 'node-cost max' }, 'Completo')
+            : h('span', { class: 'node-cost' + (st === 'ok' ? ' ok' : '') }, `${cost} pt${cost > 1 ? 's' : ''}`))));
     };
+
+    // Painel de detalhes da habilidade selecionada
+    const selId = this.treeSel;
+    const selD = PASSIVES[selId];
+    const selBr = BRANCHES.find((b) => b.nodes.includes(selId));
+    const selIdx = selBr.nodes.indexOf(selId);
+    const selLvl = p.pas[selId] || 0;
+    const selSt = g.nodeState(p, selId);
+    const selMeta = stateMeta(selSt, selLvl);
+    const selCost = levelCost(selLvl + 1);
+    const reqId = selIdx > 0 ? selBr.nodes[selIdx - 1] : null;
+    const reqMet = !reqId || (p.pas[reqId] || 0) >= NODE_REQ;
+
+    const detailAction = () => {
+      if (selSt === 'max') {
+        return h('div', { class: 'det-feedback ok' }, icon('check'), 'Habilidade no nível máximo.');
+      }
+      if (selSt === 'locked') {
+        return h('div', { class: 'det-feedback warn' }, icon('lock'), `Requer ${PASSIVES[reqId].name} no nível ${NODE_REQ} para desbloquear.`);
+      }
+      const canBuy = selSt === 'ok';
+      const label = selLvl === 0 ? `Desbloquear · ${selCost} pt${selCost > 1 ? 's' : ''}` : `Evoluir para Nv.${selLvl + 1} · ${selCost} pt${selCost > 1 ? 's' : ''}`;
+      return h('div', { class: 'det-buy-wrap' },
+        !canBuy ? h('div', { class: 'det-feedback warn' }, icon('lock'), `Pontos insuficientes (faltam ${selCost - p.pts}).`) : null,
+        btn('lg' + (canBuy ? ' primary' : ''), 'star', label, () => {
+          if (arm() && g.buyPassive(p, selId)) redraw(selId, selId);
+        }, { disabled: !canBuy }));
+    };
+
+    const detailPanel = h('aside', { class: 'tree-detail', style: `--bc:${selBr.color}`, 'aria-label': 'Detalhes da habilidade' },
+      h('div', { class: 'det-head' },
+        h('div', { class: 'det-ic' }, icon(selD.icon)),
+        h('div', { class: 'det-title' },
+          h('span', { class: 'det-branch' }, icon(selBr.icon), selBr.name),
+          h('h3', {}, selD.name),
+          h('span', { class: `node-badge vm-${selMeta.cls}` }, icon(selMeta.ic), selMeta.label))),
+      h('p', { class: 'det-desc' }, PASSIVE_DESC[selId] || ''),
+      h('div', { class: 'det-stats' },
+        h('div', { class: 'det-stat' },
+          h('span', { class: 'muted' }, 'Nível atual'),
+          h('div', { class: 'det-lvl-row' }, h('b', {}, `${selLvl} / ${MAX_LEVEL}`), pips(selLvl))),
+        h('div', { class: 'det-stat' },
+          h('span', { class: 'muted' }, 'Benefício atual'),
+          h('b', { class: selLvl ? 'val-on' : 'muted' }, selLvl ? selD.fmt(selD.v(selLvl)) : 'Ainda não desbloqueada')),
+        selSt !== 'max' ? h('div', { class: 'det-stat' },
+          h('span', { class: 'muted' }, 'Próxima melhoria'),
+          h('b', { class: 'val-next' }, selD.fmt(selD.v(selLvl + 1)))) : null,
+        selSt !== 'max' ? h('div', { class: 'det-stat' },
+          h('span', { class: 'muted' }, 'Custo'),
+          h('b', { class: p.pts >= selCost ? 'val-on' : 'val-warn' }, `${selCost} ponto${selCost > 1 ? 's' : ''}`)) : null,
+        reqId ? h('div', { class: 'det-stat' },
+          h('span', { class: 'muted' }, 'Pré-requisito'),
+          h('b', { class: reqMet ? 'val-on' : 'val-warn' }, `${PASSIVES[reqId].name} Nv.${NODE_REQ} (${reqMet ? 'Cumprido' : 'Pendente'})`)) : null),
+      detailAction());
+
     const ultId = p.slots[3];
     const ud = ULTIMATES[ultId];
     const us = g.ultState(p);
+    const keySet = ABILITY_LABELS[g.players.length > 1 ? (p.id ? 'p2' : 'p1') : 'solo'];
+    const buildObj = BUILDS.find((b) => b.id === p.build);
+    const equippedNames = p.slots.slice(0, 3).map((id, idx) => `${keySet[idx]}: ${ACTIVES[id]?.name || id}`).join(' · ');
+
     return this.win('tree', h('h2', { class: 'title slashed' }, 'Árvore de habilidades'), back,
       g.players.length > 1 ? h('div', { class: 'tabs' }, g.players.map((q) => h('button', { class: 'tab', role: 'tab', 'aria-selected': q === p ? 'true' : 'false', onclick: () => this.showScreen('tree', { k: q.id }) }, icon('user'), `J${q.id + 1} · ${q.look.name}`))) : null,
       h('div', { class: 'tree-top' },
-        h('span', { class: 'lvl big' }, `Nível ${p.lv}`),
-        h('div', { class: 'xpbar wide' }, h('i', { style: `width:${(p.xp / xpNeed(p.lv)) * 100}%` })),
-        h('small', { class: 'muted' }, `${p.xp} / ${xpNeed(p.lv)} XP`),
-        h('span', { class: 'pts-big' }, icon('star'), `${p.pts} ponto${p.pts === 1 ? '' : 's'}`)),
-      h('p', { class: 'muted tree-help', style: 'margin:0.2rem 0 0.8rem' }, 'Abates dão XP (o parceiro ganha metade). Cada nível dá 1 ponto. Níveis custam 1, 1, 2, 2 e 3 pontos; o próximo nó do ramo abre com o anterior no nível 2.' + (rec.size ? ' Estrela = recomendado para sua build.' : '')),
-      h('div', { class: 'tree-grid' }, BRANCHES.map((br) => h('div', { class: 'branch', style: `--bc:${br.color}` },
-        h('div', { class: 'branch-head' }, icon(br.icon), h('div', {}, h('b', {}, br.name), h('small', {}, `${br.tag} · ${br.desc}`))),
-        br.nodes.map((id, i) => node(id, i, br))))),
-      h('div', { class: `ult-row st-${us}`, style: `--bc:${ud.color}` },
-        icon(ud.icon), h('div', {}, h('b', {}, `Ultimate: ${ud.name}`), h('small', {}, ud.desc)),
-        us === 'on' ? h('span', { class: 'ok-tag' }, icon('check'), `Liberada (${ABILITY_LABELS[g.players.length > 1 ? (p.id ? 'p2' : 'p1') : 'solo'][3]})`)
-          : us === 'locked' ? h('span', { class: 'node-lock' }, icon('lock'), `Bloqueada até o nível ${ULT_REQ.level}`)
-            : btn('sm' + (us === 'ok' ? ' primary' : ''), 'star', `Liberar · ${ULT_REQ.cost} pts`, () => { if (arm() && g.buyUlt(p)) redraw(); }, { disabled: us !== 'ok' })),
-      h('div', { class: 'row' }, h('span', { class: 'muted tree-help' }, 'Habilidades equipadas e builds: menu principal → Habilidades.'), h('span', { class: 'grow' }), btn('primary back lg', 'play', g.input.touchMode ? 'Voltar ao jogo' : `Voltar ao jogo (${this.treeKey()})`, back)));
+        h('div', { class: 'tree-pts-hero' + (p.pts > 0 ? ' has-pts' : '') },
+          icon('star'),
+          h('div', {},
+            h('small', {}, 'PONTOS DE HABILIDADE DISPONÍVEIS'),
+            h('b', {}, `${p.pts} ponto${p.pts === 1 ? '' : 's'}`))),
+        h('div', { class: 'tree-xp-box' },
+          h('span', { class: 'lvl big' }, `Nível ${p.lv}`),
+          h('div', { class: 'xpbar wide' }, h('i', { style: `width:${(p.xp / xpNeed(p.lv)) * 100}%` })),
+          h('small', { class: 'muted' }, `${p.xp} / ${xpNeed(p.lv)} XP`))),
+      h('div', { class: 'tree-layout' },
+        h('div', { class: 'tree-main' },
+          h('div', { class: 'tree-grid' }, BRANCHES.map((br) => h('div', { class: 'branch', style: `--bc:${br.color}` },
+            h('div', { class: 'branch-head' }, icon(br.icon), h('div', {}, h('b', {}, br.name), h('small', {}, br.tag))),
+            h('div', { class: 'branch-nodes' }, br.nodes.map((id, i) => node(id, i, br)))))),
+          h('div', { class: `ult-row st-${us}`, style: `--bc:${ud.color}` },
+            icon(ud.icon), h('div', {}, h('b', {}, `Ultimate: ${ud.name}`), h('small', {}, ud.desc)),
+            us === 'on' ? h('span', { class: 'ok-tag' }, icon('check'), `Liberada (${keySet[3]})`)
+              : us === 'locked' ? h('span', { class: 'node-lock' }, icon('lock'), `Bloqueada até o nível ${ULT_REQ.level}`)
+                : btn('sm' + (us === 'ok' ? ' primary' : ''), 'star', `Liberar · ${ULT_REQ.cost} pts`, () => { if (arm() && g.buyUlt(p)) redraw(selId); }, { disabled: us !== 'ok' }))),
+        detailPanel),
+      h('div', { class: 'tree-footer' },
+        h('div', { class: 'tree-build-info' },
+          h('span', { class: 'muted' }, buildObj ? `Build: ${buildObj.name} · ` : '', `Equipadas: ${equippedNames} · Ult (${keySet[3]}): ${ud.name}`),
+          h('small', { class: 'muted' }, 'Passivas desbloqueadas aqui somam à sua build. Trocar equipadas: menu principal → Habilidades.')),
+        btn('primary back lg', 'play', g.input.touchMode ? 'Voltar ao jogo' : `Voltar ao jogo (${this.treeKey()})`, back)));
   }
 
   // montagem (menu): 3 ativas + 1 ultimate por jogador, builds prontas e interações
@@ -909,7 +1031,7 @@ export class UI {
       ...CROSSHAIR_ORDER.map((id) => h('button', { class: 'cross-opt' + (mode === id ? ' sel' : ''), 'aria-pressed': mode === id ? 'true' : 'false', title: CROSSHAIRS[id].desc, onclick: () => { s.crossMode = id; save(); } },
         sample(id), `${String(CROSSHAIRS[id].n).padStart(2, '0')} · ${CROSSHAIRS[id].name}`)),
     ];
-    const autoList = h('p', { class: 'cross-auto' }, WEAPON_ORDER.map((w, i) => [i ? ' · ' : '', h('b', {}, WEAPONS[w].name), ': ', CROSSHAIRS[WEAPON_CROSSHAIR[w]].name]));
+    const autoList = h('p', { class: 'cross-auto' }, WEAPON_ORDER.map((w, i) => [i ? ' · ' : '', h('b', {}, WEAPONS[w].name), ': ', CROSSHAIRS[WEAPON_CROSSHAIR[w] || 'classic'].name]));
     const swatches = h('div', { class: 'swatches ctrl' }, CROSS_COLORS.map(([v, name, hex]) =>
       h('button', { class: 'swatch' + (v === 'default' ? ' def' : '') + ((s.crossColor || 'default') === v ? ' sel' : ''), style: hex ? `--sw:${hex}` : undefined, title: name, 'aria-label': `Cor: ${name}`, onclick: () => { s.crossColor = v; save(); } })));
     // prévia: um "zumbi" anda; a mira atira, encontra o alvo, trava e acerta (em ciclo)
@@ -921,10 +1043,12 @@ export class UI {
     const t0 = performance.now();
     const loop = (now) => {
       if (this.screen !== 'settings' || !pv.isConnected) return;
-      const t = ((now - t0) / 1000) % 6;
-      const cyc = Math.floor((now - t0) / 6000);
+      // o carimbo do rAF pode ser anterior a t0 no 1º quadro: sem o max, cyc = -1 e a arma fica indefinida
+      const el = Math.max(0, now - t0);
+      const t = (el / 1000) % 6;
+      const cyc = Math.floor(el / 6000);
       const weapon = mode === 'auto' ? WEAPON_ORDER[cyc % WEAPON_ORDER.length] : null;
-      const id = weapon ? this.crossId(weapon) : mode;
+      const id = weapon ? this.crossId(weapon) : CROSSHAIRS[mode] ? mode : 'classic';
       this.styleXh(px, id, 64);
       const W = pv.clientWidth || 400;
       const zx = W * 0.68;
@@ -1178,7 +1302,7 @@ export class UI {
           h('div', { class: 'bar-line' }, icon('heart', 'heart'), el.hp.el),
           (el.armorLine = h('div', { class: 'bar-line armor-line hidden' }, icon('vest', 'vest'), el.armor.el)),
           (el.buffs = h('div', { class: 'buffs' })),
-          h('div', { class: 'pp-weapon' }, (el.wicon = h('span')), (el.wname = h('span', {})), (el.ammo = h('b', {}))),
+      h('div', { class: 'pp-weapon' }, (el.wicon = h('span')), (el.wname = h('span', {})), (el.ammo = h('b', {})), (el.special = h('small', { class: 'pp-special', 'aria-live': 'polite' }))),
           (el.reload = h('div', { class: 'reload-line hidden', role: 'status' }, icon('reload'), h('span', {}, 'Recarregando'), h('i', {}, h('b')))),
           (el.slots = h('div', { class: 'slots' })),
           (el.abil = h('div', { class: 'abil' }))),
@@ -1446,6 +1570,15 @@ export class UI {
     }
     // munição: carregador / reserva; pente quase vazio fica em vermelho
     const cw = WEAPONS[p.weapon];
+    if (el.special) {
+      const sp = cw.special;
+      const left = sp ? Math.max(0, (p.egyptCd?.[p.weapon] || 0) - g.time) : 0;
+      // só toca no DOM quando algo muda (evita reflow e leitura aria-live a cada quadro)
+      const txt = sp ? (left ? `${sp.name} · RECARGA` : `${sp.name} · PRONTA`) : '';
+      const tip = sp && left ? `Habilidade disponível em ${Math.ceil(left)} s` : sp ? 'Habilidade especial pronta' : '';
+      if (el.special._t !== txt) { el.special.textContent = el.special._t = txt; el.special.classList.toggle('cooldown', !!left); }
+      if (el.special._tip !== tip) el.special.title = el.special._tip = tip;
+    }
     const ammo = g.ammoText(p, p.weapon);
     if (el.ammo.lastChild?.textContent !== ammo) el.ammo.replaceChildren(icon('ammo'), ammo);
     tog(el.ammo, 'low', !!cw.mag && (p.clip[p.weapon] || 0) <= Math.ceil(cw.mag * 0.25));

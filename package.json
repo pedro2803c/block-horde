@@ -20,6 +20,8 @@
     "test:bastet": "node tests/bastet.test.mjs",
     "test:esfinge": "node tests/esfinge.test.mjs",
     "test:egito-som": "node tests/egito-som.test.mjs",
+    "test:armas-templo": "node tests/armas-templo.test.mjs",
+    "test:armas-templo-jogo": "node tests/armas-templo-game.test.mjs",
     "test:desempenho": "node tests/desempenho.test.mjs",
     "test:fumaca": "node tests/fumaca.test.mjs"
   },

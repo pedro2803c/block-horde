@@ -94,7 +94,7 @@ export const ArsenalMixin = {
   },
   applyStatus(z, el, amt, src) {
     if (!z.alive) return;
-    const r = this.resist(z, el);
+    const r = this.resist(z, el) * (z.def.boss && (el === 'poison' || el === 'acid') ? 0.45 : 1);
     if (el === 'fire') {
       z.burnDps = Math.max(z.burnT > 0 ? z.burnDps : 0, amt.dps * r);
       z.burnT = Math.max(z.burnT || 0, amt.t);
@@ -103,6 +103,10 @@ export const ArsenalMixin = {
       z.corrodeDps = Math.max(z.corrodeT > 0 ? z.corrodeDps : 0, amt.dps * r);
       z.corrodeT = Math.max(z.corrodeT || 0, amt.t);
       z.corrodeSrc = src;
+    } else if (el === 'poison') {
+      z.poisonDps = Math.max(z.poisonT > 0 ? z.poisonDps : 0, amt.dps * r);
+      z.poisonT = Math.max(z.poisonT || 0, amt.t);
+      z.poisonSrc = src;
     } else if (el === 'ice') {
       if (z.frozenT > 0) return;
       // chefões nunca congelam: ficam no máximo 36% mais lentos
@@ -124,12 +128,13 @@ export const ArsenalMixin = {
   // retorna o multiplicador de velocidade; -1 se o inimigo morreu no dano contínuo
   updateStatus(z, dt) {
     let mul = 1;
-    if (z.burnT > 0 || z.corrodeT > 0) {
+    if (z.burnT > 0 || z.corrodeT > 0 || z.poisonT > 0) {
       z.stTick = (z.stTick || 0) + dt;
       if (z.stTick >= 0.5) {
         z.stTick = 0;
         if (z.burnT > 0) this.damageZombie(z, z.burnDps * 0.5, 0, 0, z.burnSrc, 0, true);
         if (z.alive && z.corrodeT > 0) this.damageZombie(z, z.corrodeDps * 0.5, 0, 0, z.corrodeSrc, 0, true);
+        if (z.alive && z.poisonT > 0) this.damageZombie(z, z.poisonDps * 0.5, 0, 0, z.poisonSrc, 0, true);
         if (!z.alive) return -1;
       }
     }
@@ -142,6 +147,10 @@ export const ArsenalMixin = {
     if (z.corrodeT > 0) {
       z.corrodeT -= dt;
       if (Math.random() < dt * 10) this.parts.spawn(z.pos.x + rand(-0.3, 0.3), rand(0.3, top), z.pos.z + rand(-0.3, 0.3), 0, rand(-0.5, 0.5), 0, 0.06, pick(HAZARD_COLORS.acid), 0.6, 6, 2);
+    }
+    if (z.poisonT > 0) {
+      z.poisonT -= dt;
+      if (Math.random() < dt * 8) this.parts.spawn(z.pos.x + rand(-0.3, 0.3), rand(0.4, top), z.pos.z + rand(-0.3, 0.3), 0, rand(0.2, 0.8), 0, 0.07, 0x8aff4a, 0.5, 0, 2);
     }
     if (z.chill > 0) {
       z.chill = Math.max(0, z.chill - dt * 14);
@@ -283,6 +292,7 @@ export const ArsenalMixin = {
     for (const z of this.zombies) {
       if (!z.alive || !inCone(z.pos.x, z.pos.z, z.radius)) continue;
       this.damageZombie(z, w.dmg, dx, dz, p, 0.25, true);
+      this.weaponSpecial(p, z, w, dx, dz);
       this.applyStatus(z, 'fire', w.burn, p);
     }
     for (const b of this.placeables) if (!b.dead && b.kind === 'barrel' && inCone(b.x, b.z, 0.3)) {
@@ -328,7 +338,10 @@ export const ArsenalMixin = {
       if (d > r + z.radius) continue;
       const nx = (z.pos.x - pr.x) / (d || 1);
       const nz = (z.pos.z - pr.z) / (d || 1);
-      if (w.dmg) this.damageZombie(z, w.dmg * Math.max(0.4, 1 - d / (r + 0.5)), nx, nz, owner, kind === 'g_fire' ? 2 : 0.5);
+      if (w.dmg) {
+        this.damageZombie(z, w.dmg * Math.max(0.4, 1 - d / (r + 0.5)), nx, nz, owner, kind === 'g_fire' ? 2 : 0.5);
+        this.weaponSpecial(owner, z, w, nx, nz);
+      }
       if (!z.alive) continue;
       if (kind === 'g_emp') this.applyStatus(z, 'emp', 1, owner);
       else if (kind === 'g_frost') this.applyStatus(z, 'ice', 120, owner);
@@ -405,6 +418,7 @@ export const ArsenalMixin = {
         const dx = Math.sin(pr.ang);
         const dz = Math.cos(pr.ang);
         this.damageZombie(z, w.dmg, dx, dz, pr.owner, w.el === 'energy' ? 1.6 : 0.4);
+        this.weaponSpecial(pr.owner, z, w, dx, dz);
         if (w.el === 'ice') this.applyStatus(z, 'ice', w.chill, pr.owner);
         if (w.el === 'energy') this.plasmaBurst(nx, nz, w, pr.owner, z);
         if (++pr.pierced > (w.pierce || 0)) {
@@ -439,6 +453,7 @@ export const ArsenalMixin = {
           const d = Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z);
           if (d > 1.0 + z.radius) continue;
           this.damageZombie(z, w.dmg * (d < z.radius + 0.3 ? 1 : 0.6), (z.pos.x - pr.x) / (d || 1), (z.pos.z - pr.z) / (d || 1), pr.owner, 0.4);
+          this.weaponSpecial(pr.owner, z, w);
           this.applyStatus(z, 'acid', w.corrode, pr.owner);
         }
         const gx = Math.min(A.W - 1, Math.max(1, pr.x));
