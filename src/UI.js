@@ -142,6 +142,18 @@ export class UI {
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Escape' && this.g.state === 'menu') this.screenEl.querySelector('.win-head .close')?.click();
     });
+    // árvore de habilidades: setas movem o foco entre nós e botões (Tab é a tecla que fecha a árvore)
+    const ARROWS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+    window.addEventListener('keydown', (e) => {
+      if (this.screen !== 'tree' || this.g.state !== 'paused') return;
+      if (ARROWS[e.code]) {
+        e.preventDefault();
+        this.g.pad?.move(ARROWS[e.code]);
+      } else if ((e.code === 'Enter' || e.code === 'NumpadEnter') && e.defaultPrevented && !e.repeat) {
+        const el = document.activeElement;
+        if (el?.tagName === 'BUTTON' && this.screenEl.contains(el)) el.click();
+      }
+    });
   }
 
   // miniaturas das arenas: uma por vez, com folga entre elas para a tela não travar.
@@ -773,8 +785,12 @@ export class UI {
     const flashId = this.treeFlash || null;
     this.treeFlash = null;
 
-    const redraw = (nextSel = this.treeSel, flash = null) => {
+    const redraw = (nextSel = this.treeSel, flash = null, reveal = false) => {
       const sc = document.querySelector('.overlay.tree .panel')?.scrollTop || 0;
+      // teclado/controle: o foco volta ao mesmo elemento depois de redesenhar
+      const act = document.activeElement;
+      const keep = act?.closest?.('.overlay.tree') ? (act.dataset.node ? `[data-node="${act.dataset.node}"]` : act.dataset.tree ? `[data-tree="${act.dataset.tree}"]` : null) : null;
+      const padRing = act?.classList?.contains('pad-focus');
       this.treeSel = nextSel;
       this.treeFlash = flash;
       this.showScreen('tree', { k: p.id, sel: nextSel }, false);
@@ -783,7 +799,17 @@ export class UI {
         if (panel) panel.scrollTop = sc;
       };
       restore();
-      requestAnimationFrame(restore);
+      // se o botão sumiu (ex.: habilidade chegou ao máximo), o foco vai para o nó selecionado
+      const el = keep && (document.querySelector(`.overlay.tree ${keep}`) || document.querySelector(`.overlay.tree [data-node="${nextSel}"]`));
+      if (el) {
+        el.focus({ preventScroll: true });
+        if (padRing) el.classList.add('pad-focus');
+      }
+      requestAnimationFrame(() => {
+        restore();
+        // tela estreita: o painel de detalhes fica abaixo da árvore; leva o jogador até ele
+        if (reveal && matchMedia('(max-width: 980px)').matches) document.querySelector('.overlay.tree .tree-detail')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
     };
 
     // no celular o botão é grande e o dedo toca duas vezes sem querer: ignora o toque que abriu a tela
@@ -812,17 +838,20 @@ export class UI {
       const prevId = i > 0 ? br.nodes[i - 1] : null;
       const prevLvl = prevId ? (p.pas[prevId] || 0) : 0;
       const linkOpen = prevLvl >= NODE_REQ;
+      const linkNext = !linkOpen && prevLvl > 0; // próximo desbloqueio: falta pouco para o Nv.2
       const isFlash = flashId === id;
 
       return h('div', { class: 'tree-node-wrap' + (isFlash ? ' flash' : ''), style: `--bc:${br.color}` },
-        i ? h('div', { class: 'tree-conn' + (linkOpen ? ' open' : ' locked') + (isFlash ? ' anim' : ''), 'aria-hidden': 'true' },
+        i ? h('div', { class: 'tree-conn' + (linkOpen ? ' open' : linkNext ? ' next' : ' locked') + (isFlash ? ' anim' : ''), 'aria-hidden': 'true' },
           h('span', { class: 'conn-line' }),
           !linkOpen ? h('span', { class: 'conn-req' }, `Nv.${NODE_REQ}`) : h('span', { class: 'conn-arrow' })) : null,
         h('button', {
           type: 'button',
           class: `node st-${st} vm-${meta.cls}` + (isSel ? ' sel' : '') + (rec.has(id) ? ' rec' : '') + (isFlash ? ' just-bought' : ''),
           'aria-pressed': isSel ? 'true' : 'false',
-          onclick: () => redraw(id),
+          'data-node': id,
+          'aria-label': `${d.name}: ${meta.label}, nível ${lvl} de ${MAX_LEVEL}`,
+          onclick: () => redraw(id, null, true),
         },
         h('div', { class: 'node-head' },
           h('span', { class: 'node-ic' }, icon(d.icon)),
@@ -862,7 +891,7 @@ export class UI {
         !canBuy ? h('div', { class: 'det-feedback warn' }, icon('lock'), `Pontos insuficientes (faltam ${selCost - p.pts}).`) : null,
         btn('lg' + (canBuy ? ' primary' : ''), 'star', label, () => {
           if (arm() && g.buyPassive(p, selId)) redraw(selId, selId);
-        }, { disabled: !canBuy }));
+        }, { disabled: !canBuy, 'data-tree': 'buy' }));
     };
 
     const detailPanel = h('aside', { class: 'tree-detail', style: `--bc:${selBr.color}`, 'aria-label': 'Detalhes da habilidade' },

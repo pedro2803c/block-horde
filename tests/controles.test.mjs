@@ -124,7 +124,7 @@ async function roteiro(page, m) {
   let comprou = false;
   for (let k = 0; k < 12 && !comprou; k++) {
     const t = await ev(() => (document.activeElement?.disabled ? '' : document.activeElement?.innerText || ''));
-    if (/Comprar/.test(t)) {
+    if (/Comprar|Desbloquear|Evoluir para/.test(t)) { // texto do botão de compra da árvore atual
       await tap(0);
       comprou = await ev(() => Object.keys(__bh.players[0].pas).length > 0);
       break;

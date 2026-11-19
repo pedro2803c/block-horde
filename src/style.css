@@ -546,6 +546,9 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 .tree-conn { position: relative; height: 22px; display: flex; align-items: center; justify-content: center; }
 .tree-conn .conn-line { width: 4px; height: 100%; background: #2E3440; border-radius: 2px; transition: background 0.25s, box-shadow 0.25s; }
 .tree-conn.open .conn-line { background: var(--bc); box-shadow: 0 0 8px var(--bc); }
+/* próximo desbloqueio: o anterior já tem nível, falta chegar ao Nv.2 */
+.tree-conn.next .conn-line { background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--bc) 70%, transparent) 0 4px, transparent 4px 8px); }
+.tree-conn.next .conn-req { color: #EAEDEF; border-color: color-mix(in srgb, var(--bc) 70%, #2E3440); }
 .tree-conn.anim .conn-line { animation: connPulse 0.6s ease-out; }
 .tree-conn .conn-req { position: absolute; padding: 1px 6px; border-radius: 99px; background: #0E1117; border: 1px solid #2E3440; color: var(--muted); font-size: 0.64rem; font-weight: 700; }
 .tree-conn .conn-arrow { position: absolute; width: 8px; height: 8px; border-right: 2px solid var(--bc); border-bottom: 2px solid var(--bc); transform: rotate(45deg); bottom: 3px; }
@@ -553,7 +556,7 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 
 .node { position: relative; width: 100%; text-align: left; display: flex; flex-direction: column; gap: 0.35rem; padding: 0.55rem 0.6rem; border-radius: var(--r); background: linear-gradient(180deg, #222733, #1B1F28); border: 2px solid #2E3440; color: #EAEDEF; cursor: pointer; transition: transform 0.12s, border-color 0.15s, box-shadow 0.15s; min-height: 0; }
 .node:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--bc) 75%, #EAEDEF); }
-.node:focus-visible { outline: 2px solid #FFC107; outline-offset: 2px; }
+.node:focus-visible, .node.pad-focus { outline: 2px solid #FFC107; outline-offset: 2px; }
 .node.sel { border-color: var(--bc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--bc) 45%, transparent), 0 0 16px color-mix(in srgb, var(--bc) 30%, transparent); background: linear-gradient(180deg, #293040, #1B1F28); }
 .node.rec::after { content: '★'; position: absolute; top: 4px; right: 7px; color: #FFC107; font-size: 0.85rem; }
 .node.just-bought { animation: nodeUnlock 0.5s ease-out; }
@@ -581,7 +584,7 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 .pips i { flex: 1; height: 6px; border-radius: 3px; background: #0E1117; border: 1px solid #2E3440; }
 .pips i.on { background: var(--bc); border-color: var(--bc); box-shadow: 0 0 5px var(--bc); }
 .node-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; font-size: 0.72rem; }
-.node-fx-mini { color: #EAEDEF; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.node-fx-mini { color: #EAEDEF; font-weight: 600; min-width: 0; line-height: 1.2; overflow-wrap: anywhere; } /* sem reticências: o efeito não pode ficar cortado */
 .node-cost { color: var(--muted); font-weight: 700; flex: none; }
 .node-cost.ok { color: #FFC107; }
 .node-cost.max { color: #2ECC71; }

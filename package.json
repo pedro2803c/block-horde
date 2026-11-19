@@ -23,7 +23,8 @@
     "test:armas-templo": "node tests/armas-templo.test.mjs",
     "test:armas-templo-jogo": "node tests/armas-templo-game.test.mjs",
     "test:desempenho": "node tests/desempenho.test.mjs",
-    "test:fumaca": "node tests/fumaca.test.mjs"
+    "test:fumaca": "node tests/fumaca.test.mjs",
+    "test:arvore": "node tests/arvore.test.mjs"
   },
   "dependencies": {
     "three": "^0.187.0"
