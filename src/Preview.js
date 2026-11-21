@@ -51,7 +51,7 @@ export class Preview {
     cam.position.set(0.35, 1.45, 1.75);
     cam.lookAt(0, 1.18, 0);
     this.renderer.setSize(this.w, this.w, false);
-    this.draw(target, look, 0.25, 0, false);
+    this.draw(target, look, 0.25, 0, false, true);
     this.renderer.setSize(this.w, this.h, false);
     cam.aspect = this.w / this.h;
     cam.updateProjectionMatrix();
@@ -173,6 +173,9 @@ export class Preview {
   // inimigo do bestiário: escala de vitrine para caber no cartão; o ativo anda e ataca
   enemy(target, type, angle, t, active) {
     const { B, G } = this;
+    const cam = this.camera;
+    cam.position.set(0, 1.5, 3.8);
+    cam.lookAt(0, 1.0, 0);
     const z = this._ez || (this._ez = { pos: new THREE.Vector3(), minions: [] });
     const show = { spider: 0.72, bat: 0.78, dog: 0.95, spore: 0.95, boss: 0.92, pharaoh: 0.92, sobek: 0.88, crocling: 0.9, bastet: 0.95, bastetclone: 1.1, sphinx: 0.62, brute: 1.05, summoner: 0.98, portal: 0.5, chariot: 0.5, horus: 0.62, scorpion: 0.85, construct: 0.75, anubis: 0.9 }[type] || 1.1;
     const cycle = t % 1.6;
@@ -260,8 +263,14 @@ export class Preview {
   }
 
   // desenha o personagem e copia para o canvas 2D de destino
-  draw(target, look, angle, t, active) {
+  // close = true mantém a câmera do retrato (o cartão usa um enquadramento mais fechado)
+  draw(target, look, angle, t, active, close = false) {
     const { B, G } = this;
+    const cam = this.camera;
+    if (!close) {
+      cam.position.set(0, 1.3, 3.3);
+      cam.lookAt(0, 0.76, 0);
+    }
     B.begin();
     G.begin();
     drawCharacter(B, 0, 0, 0, angle, 1, look, {

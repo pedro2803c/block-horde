@@ -28,6 +28,26 @@ const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padSt
 const tip = () => TIPS[Math.floor(Math.random() * TIPS.length)];
 const EVENT_LABEL = { rain: 'CHUVA', blackout: 'APAGÃO', fog: 'NEBLINA', alarm: 'REFORÇOS', hordealarm: 'ALARME', overload: 'SOBRECARGA', toxicfog: 'NÉVOA TÓXICA' };
 
+// Quantidade de colunas da escolha de sobreviventes: aproveita a largura,
+// evita uma linha com um único cartão e equilibra o tamanho das linhas.
+function pickColumns(n, width, gap, min) {
+  if (n <= 1) return 1;
+  const max = Math.max(1, Math.min(n, Math.floor((width + gap) / (min + gap))));
+  let best = 1;
+  let bestScore = Infinity;
+  for (let c = 1; c <= max; c++) {
+    const rows = Math.ceil(n / c);
+    const last = n - c * (rows - 1);
+    const orphan = c > 1 && last === 1;
+    const score = rows * 10 + (c - last) * 5 + (orphan ? 10 : 0) - c * 0.01;
+    if (score < bestScore) {
+      bestScore = score;
+      best = c;
+    }
+  }
+  return best;
+}
+
 // ---- componentes do design system ----
 // botão: btn('primary lg', 'play', 'Jogar', onclick)
 const btn = (cls, ic, label, onclick, extra = {}) => h('button', { class: cls, onclick, ...extra }, ic ? icon(ic) : null, label);
@@ -216,6 +236,8 @@ export class UI {
 
   // ------------------------------------------------------------ telas
   showScreen(name, data = {}, focus = true) {
+    this.pickRO?.disconnect();
+    this.pickRO = null;
     this.screen = name;
     this.screenData = data;
     document.body.classList.toggle('screen-open', !!name);
@@ -225,7 +247,11 @@ export class UI {
     this.bannerEl.className = 'banner';
     const el = this['scr_' + name](data);
     this.screenEl.append(el);
-    if (focus) (el.querySelector('[data-focus]') || el.querySelector('button.primary'))?.focus({ preventScroll: true });
+    // o clique ainda pode devolver o foco ao botão antigo: foca no quadro seguinte
+    if (focus) requestAnimationFrame(() => {
+      if (this.screen !== name) return;
+      (el.querySelector('[data-focus]') || el.querySelector('button.primary'))?.focus({ preventScroll: true });
+    });
   }
 
   // janela padrão: borda vermelha, título com "///" e botão X que volta
@@ -293,17 +319,18 @@ export class UI {
     const who = picks.length;
     const back = () => (who ? this.showScreen('pick', { mode, picks: picks.slice(0, -1) }) : this.showScreen('menu'));
     const items = [];
-    const grid = h('div', { class: 'pick-grid' },
+    const firstFree = SURVIVORS.findIndex((s) => !picks.includes(s));
+    const grid = h('div', { class: 'pick-grid', style: `--cols:${Math.min(SURVIVORS.length, 5)}` },
       SURVIVORS.map((s, k) => {
         const taken = picks.includes(s);
         const canvas = h('canvas', { class: 'model', width: 220, height: 280, 'aria-hidden': 'true' });
-        const item = { look: s, canvas, angle: 0.5 + k * 0.9, active: false };
+        const item = { look: s, canvas, angle: 0, sway: true, phase: k * 0.85, active: false };
         items.push(item);
         const pi = picks.indexOf(s);
         return h('button', {
           class: 'pick-card' + (taken ? ' taken' : ''),
           disabled: taken,
-          'data-focus': k === 0 && !taken ? '' : undefined,
+          'data-focus': k === firstFree ? '' : undefined,
           'aria-label': `${s.name}, ${s.role}`,
           onpointerenter: () => (item.active = true),
           onpointerleave: () => (item.active = false),
@@ -314,13 +341,32 @@ export class UI {
             if (np.length >= need) this.showScreen('arena', { mode, picks: np });
             else this.showScreen('pick', { mode, picks: np });
           },
-        }, taken ? h('span', { class: 'badge' + (pi ? ' p2' : '') }, icon('user'), `J${pi + 1}`) : null, canvas, h('strong', {}, s.name), h('small', {}, s.role));
+        }, taken ? h('span', { class: 'badge' + (pi ? ' p2' : '') }, icon('user'), `J${pi + 1}`) : null,
+        h('span', { class: 'pick-stage' }, canvas),
+        h('span', { class: 'pick-meta' }, h('strong', {}, s.name), h('small', {}, s.role)));
       }));
+    this.balancePicks(grid, SURVIVORS.length);
     this.runPreviews(items);
     return this.win('pick', mode === 'coop' ? `Jogador ${who + 1}: escolha` : 'Escolha seu sobrevivente', back,
-      h('p', { class: 'muted', style: 'margin:0 0 1rem' }, mode === 'coop' ? (who === 0 ? 'Jogador 1 usa WASD + Espaço. Jogador 2 usa as setas + Enter.' : `Jogador 1 escolheu ${picks[0].name}.`) : 'Todos têm os mesmos atributos; muda só a aparência.'),
+      h('p', { class: 'muted pick-intro' }, mode === 'coop' ? (who === 0 ? 'Jogador 1 usa WASD + Espaço. Jogador 2 usa as setas + Enter.' : `Jogador 1 escolheu ${picks[0].name}.`) : 'Todos têm os mesmos atributos; muda só a aparência.'),
       grid,
       h('div', { class: 'row' }, btn('back', 'back', 'Voltar', back)));
+  }
+
+  // distribui os cartões conforme a largura real; linhas incompletas ficam centralizadas
+  balancePicks(grid, n) {
+    const apply = () => {
+      if (!grid.isConnected || !grid.clientWidth) return;
+      const cs = getComputedStyle(grid);
+      const gap = parseFloat(cs.columnGap) || 14;
+      const min = parseFloat(cs.getPropertyValue('--pick-min')) || 166;
+      grid.style.setProperty('--cols', pickColumns(n, grid.clientWidth, gap, min));
+    };
+    apply();
+    this.pickRO?.disconnect();
+    this.pickRO = new ResizeObserver(apply);
+    this.pickRO.observe(grid);
+    requestAnimationFrame(apply);
   }
 
   // modelos 3D girando nos cartões; o cartão sob o mouse vira de frente, anda e mira
@@ -339,7 +385,11 @@ export class UI {
        frame++;
       for (const it of items) {
         if (it.active) it.angle += Math.atan2(Math.sin(-it.angle), Math.cos(-it.angle)) * Math.min(1, dt * 8);
-        else it.angle += dt * 0.7;
+        else if (it.sway) {
+          // parado: fica de frente, só balança de leve (nunca de costas)
+          const target = Math.sin(t * 0.55 + (it.phase || 0)) * 0.17;
+          it.angle += (target - it.angle) * Math.min(1, dt * 4);
+        } else it.angle += dt * 0.7;
         if (it.active || frame % 3 === 0) draw(pv, it, t);
       }
       requestAnimationFrame(loop);

@@ -164,14 +164,162 @@ button.icon-btn.sm .ic { width: 24px; height: 24px; }
 .skyline svg { width: 100%; height: 100%; display: block; }
 .version { position: absolute; right: 16px; bottom: 12px; color: var(--muted); font-size: 0.8rem; text-shadow: 0 1px 2px #000; z-index: 1; }
 
-/* ---------- cartões de personagem ---------- */
-.pick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.9rem; }
-.pick-card { flex-direction: column; gap: 0.15rem; min-height: 0; padding: 0.6rem 0.6rem 0.9rem; border-radius: var(--r-lg); --b-top: #283040; --b-bot: #171b23; --b-edge: var(--border-hi); }
-.pick-card strong { font: 400 1.6rem/1 var(--display); letter-spacing: 0.04em; }
-.pick-card small { color: var(--muted); font-weight: 600; }
-.pick-card .badge { position: absolute; top: 8px; left: 8px; }
-.pick-card.taken { opacity: 0.55; }
+/* modelos 3D em cartões (base) */
 .model { width: 100%; max-width: 190px; aspect-ratio: 220 / 280; height: auto; display: block; margin: 0 auto; }
+
+/* ---------- seleção de sobreviventes ---------- */
+.overlay.pick .panel { width: min(1180px, 100%); }
+.pick-intro { margin: 0 0 1rem; }
+.pick-grid {
+  --pick-min: 166px;
+  --pick-gap: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: var(--pick-gap);
+  width: 100%;
+}
+.pick-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc((100% - (var(--cols, 5) - 1) * var(--pick-gap)) / var(--cols, 5));
+  max-width: 264px;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.55rem 0.55rem 0.75rem;
+  border-radius: var(--r-lg);
+  --b-top: #2a3140;
+  --b-bot: #141821;
+  --b-edge: var(--border-hi);
+  overflow: hidden;
+  transition: transform 0.18s var(--ease), border-color 0.18s, box-shadow 0.18s;
+}
+/* faixa amarela no topo e luz de palco atrás do modelo */
+.pick-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 12% auto;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  opacity: 0;
+  transition: opacity 0.18s;
+  pointer-events: none;
+}
+.pick-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 64% 46% at 50% 60%, rgba(41, 182, 246, 0.13), transparent 72%);
+  pointer-events: none;
+}
+.pick-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+}
+.pick-card .model {
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 220 / 280;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.pick-meta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+.pick-card strong {
+  font: 400 clamp(1.25rem, 2.1vw, 1.75rem)/1 var(--display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+  transition: color 0.15s, text-shadow 0.15s;
+}
+.pick-card small {
+  color: var(--muted);
+  font: 600 clamp(0.78rem, 1.1vw, 0.95rem)/1.2 var(--body);
+  letter-spacing: 0.02em;
+}
+/* foco por teclado/controle: borda acesa sem parecer já escolhido */
+.pick-card:focus {
+  border-color: rgba(255, 193, 7, 0.65);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.14), inset 0 -4px 0 rgba(0, 0, 0, 0.22), 0 3px 0 rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 193, 7, 0.25), 0 0 18px rgba(255, 193, 7, 0.18);
+}
+/* cartão em foco: sobe, acende a borda e o nome */
+.pick-card:hover:not(:disabled), .pick-card:focus-visible {
+  z-index: 3;
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.18), inset 0 -4px 0 rgba(0, 0, 0, 0.2), 0 7px 0 rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 193, 7, 0.22), 0 0 30px rgba(255, 193, 7, 0.3);
+}
+.pick-card:hover:not(:disabled)::before, .pick-card:focus-visible::before { opacity: 1; }
+.pick-card:hover:not(:disabled) strong, .pick-card:focus-visible strong {
+  color: var(--primary);
+  text-shadow: 0 0 18px rgba(255, 193, 7, 0.4);
+}
+/* co-op: quem já escolheu fica marcado, não apagado */
+.pick-card.taken:disabled {
+  opacity: 1;
+  filter: none;
+  cursor: default;
+  border-color: var(--p1);
+  --b-top: #223143;
+  --b-bot: #111820;
+  box-shadow: inset 0 0 0 1px rgba(41, 182, 246, 0.35), 0 0 22px rgba(41, 182, 246, 0.18), 0 3px 0 rgba(0, 0, 0, 0.5);
+}
+.pick-card.taken .model { filter: grayscale(0.6) brightness(0.62); }
+.pick-card.taken strong { color: var(--muted); }
+.pick-card .badge {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  z-index: 2;
+  font-size: 0.82rem;
+  padding: 0.34rem 0.55rem;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45), 0 0 12px rgba(41, 182, 246, 0.35);
+}
+.pick-card .badge .ic { width: 16px; height: 16px; }
+
+/* seleção de sobreviventes: telas baixas (celular deitado) e estreitas */
+@media (max-height: 640px) and (orientation: landscape) {
+  .pick-grid { --pick-min: 118px; --pick-gap: 10px; }
+  .overlay.pick .pick-intro { display: none; }
+  .pick-card { padding: 0.4rem 0.4rem 0.55rem; gap: 0.15rem; }
+  .pick-card strong { font-size: 1.2rem; }
+  .pick-card small { font-size: 0.75rem; }
+}
+@media (max-height: 430px) and (orientation: landscape) {
+  .pick-grid { --pick-min: 80px; --pick-gap: 8px; }
+  .pick-card { padding: 0.35rem 0.35rem 0.45rem; }
+}
+@media (max-width: 520px) {
+  .pick-grid { --pick-min: 136px; --pick-gap: 10px; }
+  .pick-card { padding: 0.45rem 0.45rem 0.6rem; }
+  .overlay.pick .win-head .title { font-size: 1.35rem; }
+}
+@media (max-width: 360px) {
+  .pick-grid { --pick-min: 112px; --pick-gap: 8px; }
+  .overlay.pick .pick-intro { display: none; }
+  .overlay.pick .win-head .title { font-size: 1.3rem; }
+  .pick-card { padding: 0.35rem 0.35rem 0.45rem; }
+}
+@media (min-width: 1500px) {
+  .overlay.pick .panel { width: min(1320px, 100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pick-card { transition: none; }
+}
 
 /* bestiário */
 .menu-duo .wide { grid-column: 1 / -1; }
