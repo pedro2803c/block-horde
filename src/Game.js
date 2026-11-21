@@ -289,6 +289,14 @@ export class Game {
     this.time = 0;
     // ---- ambiente vivo da arena (mecânicas, clima e áudio) ----
     this.gateProps = arena.props.filter((p) => p.def.id === 'mgate');
+    this.romanGateProps = arena.props.filter((p) => p.def.id === 'roman_gate');
+    for (const gp of this.romanGateProps) {
+      gp.closed = false;
+      gp.broken = false;
+      gp.hp = gp.maxHp = 120;
+      arena.setPropBlock(gp, false);
+    }
+    this.romanGatesClosed = false;
     for (const gp of this.gateProps) {
       gp.closed = false;
       gp.broken = false;
@@ -1668,6 +1676,20 @@ export class Game {
     for (let k = 0; k < 14; k++) this.parts.spawn(gp.x + rand(-0.5, 0.5), rand(0.3, 2), gp.z + rand(-0.5, 0.5), rand(-3, 3), rand(1, 4), rand(-3, 3), rand(0.07, 0.14), pick([0xe8b020, 0x3a3e44, 0xd8d0c0]), 0.9, 16, 0);
     this.ui.banner('PORTÃO ARROMBADO!', 'bad');
   }
+  toggleRomanGates() {
+    this.romanGatesClosed = !this.romanGatesClosed;
+    let n = 0;
+    for (const gp of this.romanGateProps) {
+      if (gp.broken) continue;
+      gp.closed = this.romanGatesClosed;
+      if (gp.closed) gp.hp = gp.maxHp = 120;
+      this.arena.setPropBlock(gp, gp.closed);
+      n++;
+    }
+    this.audio.play('hit_armor', { volume: 0.8, rate: 0.55 });
+    this.audio.play('stomp', { volume: 0.35, rate: 1.6 });
+    this.ui.banner(this.romanGatesClosed ? `PORTÕES ROMANOS FECHADOS (${n})` : 'PORTÕES ROMANOS ABERTOS', this.romanGatesClosed ? 'info' : 'good');
+  }
   updateArenaSystems(dt) {
     const A = this.arena;
     const theme = A.def.theme;
@@ -1739,6 +1761,29 @@ export class Game {
       } else if (id === 'bell') {
         const p = this.nearPlayer(pr, 1.4);
         if (p) this.holdUse(pr, p, dt, 1.5, 'Tocando o sino...', (who) => this.ringBell(pr, who));
+        else if (pr.holdT) pr.holdT = Math.max(0, pr.holdT - dt * 2);
+      } else if (id === 'roman_portal') {
+        for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) < 0.7) {
+          const others = this.arena.props.filter((q) => q.def.id === 'roman_portal' && q !== pr && !q.dead);
+          if (others.length) {
+            const dst = others[Math.floor(Math.random() * others.length)];
+            p.pos.x = dst.x;
+            p.pos.z = dst.z;
+            this.audio.play('eg_magic', { volume: 0.6, pos: dst, rate: 1.2 });
+            for (let k = 0; k < 12; k++) this.parts.spawn(dst.x, 1.2, dst.z, rand(-1, 1), rand(1, 3), rand(-1, 1), 0.09, 0x7a3ab0, 0.5, 8, 2);
+          }
+        }
+      } else if (id === 'roman_elevator') {
+        pr.t = (pr.t || 0) + dt;
+        for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z) < 0.7) {
+          p.pos.y = (p.pos.y || 0) + Math.sin(pr.t * 1.5) * 0.02;
+        }
+      } else if (id === 'roman_platform') {
+        pr.t = (pr.t || 0) + dt;
+        pr.dy = Math.sin(pr.t * 1.2 + pr.seed) * 0.6;
+      } else if (id === 'roman_lever') {
+        const p = this.nearPlayer(pr, 1.3);
+        if (p) this.holdUse(pr, p, dt, 1.0, 'Acionando a alavanca...', () => this.toggleRomanGates());
         else if (pr.holdT) pr.holdT = Math.max(0, pr.holdT - dt * 2);
       } else if (id === 'acar') {
         if (pr.alarmT > 0) pr.alarmT = Math.max(0, pr.alarmT - dt);
