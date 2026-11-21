@@ -127,6 +127,16 @@ export const GUN_MODELS = {
   priest_staff: [[0.2, 0, 0, 0.08, 0.62, 0.08, 0x4a2a62], [0.2, 0.32, 0, 0.24, 0.11, 0.1, 0x8a3ad0], [0.2, 0.4, 0, 0.11, 0.12, 0.1, 0xb050ff, true], [0.2, 0.48, 0, 0.18, 0.06, 0.12, 0xd4a020]],
   horus_spear: [[0.2, 0, 0, 0.07, 0.72, 0.07, 0x9a7040], [0.2, 0.4, 0, 0.2, 0.2, 0.08, 0x3fe0ff, true], [0.2, 0.56, 0, 0.1, 0.22, 0.05, 0xe8e0c8], [0.2, 0.28, 0, 0.24, 0.04, 0.04, 0xd4a020]],
   mummy_blade: [[0.05, 0, 0, 0.12, 0.08, 0.08, 0x9a7040], [0.22, 0, 0, 0.28, 0.07, 0.025, 0xc8b890], [0.37, 0.02, 0, 0.14, 0.1, 0.025, 0xe8e0c8], [0.22, 0.06, 0, 0.24, 0.025, 0.02, 0xd4a020, true]],
+  roman_gladius: [[0.22, 0, 0, 0.34, 0.06, 0.04, 0xc8c0a0], [0.05, 0, 0, 0.12, 0.05, 0.05, 0x8a6a3a], [0.4, 0, 0, 0.08, 0.1, 0.03, 0xd4a020, true]],
+  roman_pilum: [[0.25, 0, 0, 0.55, 0.04, 0.04, 0x8a6a3a], [0.55, 0, 0, 0.12, 0.02, 0.02, 0xc8ccd4], [0.05, 0, 0, 0.1, 0.05, 0.05, 0x6a4a2a]],
+  roman_centurion_bow: [[0.12, 0, 0, 0.06, 0.5, 0.06, 0x8a5a2a], [0.13, 0, 0, 0.03, 0.38, 0.03, 0xe8e0c8], [0.16, 0.02, 0, 0.3, 0.03, 0.04, 0xd4a020]],
+  roman_colosseum_shotgun: [[0.18, 0.02, 0, 0.32, 0.1, 0.1, 0x5a3a22], [0.42, 0.03, 0, 0.34, 0.09, 0.09, 0x9a9ea6], [0.12, -0.09, 0, 0.1, 0.13, 0.09, 0x1c1c20], [0.28, 0.1, 0, 0.14, 0.03, 0.12, 0xd4a020]],
+  roman_legion_smg: [[0.14, 0.02, 0, 0.32, 0.11, 0.1, 0x2a2a2e], [0.38, 0.03, 0, 0.14, 0.04, 0.04, 0x9a7040], [0.04, -0.12, 0, 0.08, 0.18, 0.08, 0x1c1c20], [0.16, 0.12, 0, 0.18, 0.035, 0.11, 0xd4a020, true]],
+  roman_emperor_rifle: [[0.16, 0.03, 0, 0.38, 0.09, 0.09, 0xc6b289], [0.42, 0.03, 0, 0.36, 0.035, 0.035, 0xc8ccd4], [0.12, -0.08, 0, 0.09, 0.12, 0.08, 0x1c1c20], [0.06, 0.13, 0, 0.13, 0.04, 0.12, 0xd4a020, true]],
+  roman_vestal_flamer: [[0.15, 0.02, 0, 0.28, 0.1, 0.1, 0xd04a1a], [0.35, 0.03, 0, 0.3, 0.08, 0.08, 0x9a9ea6], [0.55, 0.03, 0, 0.12, 0.12, 0.12, 0xffc040, true]],
+  roman_siege_glauncher: [[0.12, 0.02, 0, 0.32, 0.13, 0.13, 0x4a5236], [0.4, 0.03, 0, 0.32, 0.1, 0.1, 0x6a6a70], [0.52, 0.03, 0, 0.08, 0.14, 0.14, 0x2a4a2a], [0.13, -0.1, 0, 0.15, 0.15, 0.13, 0x9a7040]],
+  roman_ballista: [[0.14, 0, 0, 0.07, 0.55, 0.07, 0x6a4a2a], [0.15, 0, 0, 0.035, 0.42, 0.035, 0xe8e0c8], [0.18, 0.02, 0, 0.32, 0.035, 0.04, 0xb08040, true]],
+  roman_colossus_hammer: [[0.2, 0, 0, 0.12, 0.08, 0.08, 0x6a6a70], [0.32, 0, 0, 0.28, 0.12, 0.12, 0x8a8a90], [0.32, 0.18, 0, 0.22, 0.06, 0.2, 0xd4a020, true]],
   knife: [
     [0, 0, 0, 0.13, 0.05, 0.05, 0x1a1a1a],
     [-0.02, 0, 0, 0.02, 0.055, 0.055, 0x2e2e32],
@@ -352,7 +362,8 @@ for (const [id, m] of Object.entries(TRAP_MODELS)) {
 // armas e lâminas deitadas: o modelo da mão vira o modelo do chão (comprimento no eixo x)
 // armas exclusivas do Templo Antigo (catálogo, modelo no chão e ordem do arsenal)
 const TEMPLE_WEAPONS = ['pharaoh', 'anubis_shotgun', 'scarab_smg', 'sobek_launcher', 'sphinx_drill', 'desert_bow', 'bastet_staff', 'priest_staff', 'horus_spear', 'mummy_blade'];
-for (const id of ['pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'uzi', 'rocket', 'lmg', 'flamer', 'glauncher', 'plasma', 'cryo', 'acidgun', ...TEMPLE_WEAPONS]) {
+const COLISEUM_WEAPONS = ['roman_gladius', 'roman_pilum', 'roman_centurion_bow', 'roman_colosseum_shotgun', 'roman_legion_smg', 'roman_emperor_rifle', 'roman_vestal_flamer', 'roman_siege_glauncher', 'roman_ballista', 'roman_colossus_hammer'];
+for (const id of ['pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'uzi', 'rocket', 'lmg', 'flamer', 'glauncher', 'plasma', 'cryo', 'acidgun', ...TEMPLE_WEAPONS, ...COLISEUM_WEAPONS]) {
   const m = GUN_MODELS[id];
   const lo = Math.min(...m.map((p) => p[0] - p[3] / 2));
   const c = lo + gunLen(m) / 2;
@@ -405,6 +416,16 @@ export const ITEMS = {
   priest_staff: { name: 'Cajado do Sacerdote', cat: 'weapon', icon: 'hood', ring: 0x8a3ad0, rarity: 'Rara', weapon: 'priest_staff', desc: 'Projéteis de maldição deixam inimigos lentos e corroídos.', get: 'Templo Antigo · multiplicador x8' },
   horus_spear: { name: 'Lança de Hórus', cat: 'weapon', icon: 'bolt', ring: 0x29b6f6, rarity: 'Lendária', weapon: 'horus_spear', desc: 'Energia perfurante. Rajada Divina fortalece disparos periódicos.', get: 'Templo Antigo · multiplicador x9' },
   mummy_blade: { name: 'Lâmina da Múmia', cat: 'weapon', icon: 'burst', ring: 0xeaeDEF, rarity: 'Épica', weapon: 'mummy_blade', desc: 'Arma corpo a corpo. Ressurreição das Areias recupera vida em sequência.', get: 'Templo Antigo · multiplicador x11' },
+  roman_gladius: { name: 'Gládio Legionário', cat: 'weapon', icon: 'fist', ring: 0xc8c0a0, rarity: 'Épica', weapon: 'roman_gladius', desc: 'Lâmina curta. Golpe da Legião quebra armadura em sequência.', get: 'Coliseu · multiplicador x2' },
+  roman_pilum: { name: 'Lança Pilum', cat: 'weapon', icon: 'run', ring: 0x8a6a3a, rarity: 'Rara', weapon: 'roman_pilum', desc: 'Arremesso tático que perfura múltiplos inimigos e atordoa.', get: 'Coliseu · multiplicador x3' },
+  roman_centurion_bow: { name: 'Arco Centurião', cat: 'weapon', icon: 'target', ring: 0xd4a020, rarity: 'Rara', weapon: 'roman_centurion_bow', desc: 'Projéteis de energia que marcam o alvo. Flecha da Águia aumenta dano recebido.', get: 'Coliseu · multiplicador x4' },
+  roman_colosseum_shotgun: { name: 'Escopeta do Coliseu', cat: 'weapon', icon: 'burst', ring: 0xff7a30, rarity: 'Épica', weapon: 'roman_colosseum_shotgun', desc: 'Escopeta incendiária. Explosão da Arena causa dano em área.', get: 'Coliseu · multiplicador x5' },
+  roman_legion_smg: { name: 'SMG da Legião', cat: 'weapon', icon: 'run', ring: 0xb0b48a, rarity: 'Épica', weapon: 'roman_legion_smg', desc: 'Submetralhadora rápida. Marcha Imperial acelera o disparo.', get: 'Coliseu · multiplicador x6' },
+  roman_emperor_rifle: { name: 'Rifle do Imperador', cat: 'weapon', icon: 'crown', ring: 0xd4a020, rarity: 'Lendária', weapon: 'roman_emperor_rifle', desc: 'Rifle preciso. Decreto de César marca o alvo para mais dano.', get: 'Coliseu · multiplicador x7' },
+  roman_vestal_flamer: { name: 'Lança-chamas Vestal', cat: 'weapon', icon: 'flame', ring: 0xff7a30, rarity: 'Épica', weapon: 'roman_vestal_flamer', desc: 'Jato de fogo sagrado. Fogo Sagrado deixa área em chamas.', get: 'Coliseu · multiplicador x8' },
+  roman_siege_glauncher: { name: 'Lança-granadas de Cerco', cat: 'weapon', icon: 'burst', ring: 0xc8b060, rarity: 'Épica', weapon: 'roman_siege_glauncher', desc: 'Granadas em arco. Bombardeio de Cerco atordoa e danifica área.', get: 'Coliseu · multiplicador x9' },
+  roman_ballista: { name: 'Besta Romana', cat: 'weapon', icon: 'target', ring: 0xb08040, rarity: 'Lendária', weapon: 'roman_ballista', desc: 'Virote perfurante que atravessa vários inimigos.', get: 'Coliseu · multiplicador x10' },
+  roman_colossus_hammer: { name: 'Martelo do Colosso', cat: 'weapon', icon: 'fist', ring: 0x6a6a70, rarity: 'Lendária', weapon: 'roman_colossus_hammer', desc: 'Martelo pesado. Impacto do Colosso atordoa e imobiliza.', get: 'Coliseu · multiplicador x11' },
   boots: { name: 'Botas de velocidade', cat: 'gear', icon: 'run', ring: 0x40c8ff, rarity: 'Rara', desc: '+15% de velocidade permanente (até cair).', get: 'Mapa e caixas de madeira' },
   exo: { name: 'Exoesqueleto temporário', cat: 'gear', icon: 'fist', ring: 0xffc107, rarity: 'Épica', desc: 'Por 20 s: -45% de dano recebido, golpes 60% mais fortes e imune a lentidão.', get: 'Caixas de madeira a partir da onda 4' },
   proxmine: { name: 'Mina de proximidade', cat: 'trap', icon: 'target', ring: 0xff3020, rarity: 'Rara', weapon: 'proxmine', desc: 'Detecta a 2,4 m, apita e explode em área grande (4 m).', get: 'Multiplicador x10 · cargas nas caixas' },
@@ -414,7 +435,7 @@ export const ITEMS = {
   ftower: { name: 'Torre de fogo', cat: 'trap', icon: 'flame', ring: 0xff7a30, rarity: 'Épica', weapon: 'ftower', desc: 'Lança chamas em quem chega a 4,5 m e incendeia. Bateria de 90 s.', get: 'Multiplicador x18' },
   itower: { name: 'Torre de gelo', cat: 'trap', icon: 'snow', ring: 0x5ac8ff, rarity: 'Épica', weapon: 'itower', desc: 'Dispara projéteis congelantes a até 8 m. Bateria de 90 s.', get: 'Multiplicador x16' },
 };
-export const ITEM_ORDER = ['medkit', 'ammo', 'drink', 'grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'supply', 'dynamite', 'pistol', 'uzi', 'rifle', 'lmg', 'shotgun', 'sniper', 'rocket', 'glauncher', 'flamer', 'plasma', 'cryo', 'acidgun', 'axe', 'knife', ...TEMPLE_WEAPONS, 'vest', 'helmet', 'boots', 'exo', 'backpack', 'binoculars', 'flashlight', 'radio', 'proxmine', 'spikes', 'efence', 'ltower', 'ftower', 'itower'];
+export const ITEM_ORDER = ['medkit', 'ammo', 'drink', 'grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'supply', 'dynamite', 'pistol', 'uzi', 'rifle', 'lmg', 'shotgun', 'sniper', 'rocket', 'glauncher', 'flamer', 'plasma', 'cryo', 'acidgun', 'axe', 'knife', ...TEMPLE_WEAPONS, ...COLISEUM_WEAPONS, 'vest', 'helmet', 'boots', 'exo', 'backpack', 'binoculars', 'flashlight', 'radio', 'proxmine', 'spikes', 'efence', 'ltower', 'ftower', 'itower'];
 export const ITEM_CATS = { supply: 'Suprimento', weapon: 'Arma', gear: 'Proteção', util: 'Utilitário', trap: 'Armadilha' };
 for (const id of ITEM_ORDER) {
   const it = ITEMS[id];

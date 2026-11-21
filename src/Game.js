@@ -426,6 +426,7 @@ export class Game {
       healT: 0,
       // efeitos de terreno e mecânicas de arena
       rootT: 0,
+      stunT: 0,
       slowT: 0,
       slowMul: 1,
       shockCd: 0,
@@ -891,6 +892,10 @@ export class Game {
     if (s.acid) this.applyStatus(z, 'acid', s.acid, p);
     if (s.poison) this.applyStatus(z, 'poison', s.poison, p);
     if (s.slow) this.applyStatus(z, 'ice', 24, p);
+    if (s.armorBreak) z.armorBreakT = Math.max(z.armorBreakT || 0, 4); // fratura: reduz armadura
+    if (s.mark) { z.markT = Math.max(z.markT || 0, s.mark.t || 4); z.markMul = Math.max(z.markMul || 1, s.mark.mul || 1.3); } // marca: mais dano recebido
+    if (s.haste) { p.hasteT = Math.max(p.hasteT || 0, 4); p.hasteMul = Math.max(p.hasteMul || 1, s.haste); }
+    if (s.area) this.spawnHazard('fire', z.pos.x, z.pos.z, s.area.radius || 2.5, s.area.life || 5, s.area.dps || 12, p);
     if (s.heal) {
       p.hp = Math.min(p.maxHp, p.hp + s.heal);
       this.parts.spawn(p.pos.x, 1.1, p.pos.z, 0, 1.8, 0, 0.12, 0x2ecc71, 0.55, 0, 2);
@@ -1297,7 +1302,13 @@ export class Game {
     }
     this.noiseShake(0.35);
     this.audio.play('stomp', { volume: 0.7, pos: z.pos });
-    for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - z.pos.x, p.pos.z - z.pos.z) < q.radius) this.damagePlayer(p, q.dmg, z.pos.x, z.pos.z, 4, true);
+    for (const p of this.players) if (p.alive && Math.hypot(p.pos.x - z.pos.x, p.pos.z - z.pos.z) < q.radius) {
+      this.damagePlayer(p, q.dmg, z.pos.x, z.pos.z, 4, true);
+      if (q.stun && !(p.exoT > 0)) {
+        p.stunT = Math.max(p.stunT || 0, q.stun);
+        for (let k = 0; k < 6; k++) this.parts.spawn(p.pos.x + rand(-0.3, 0.3), 1.9, p.pos.z + rand(-0.3, 0.3), rand(-1.5, 1.5), rand(0.5, 1.5), rand(-1.5, 1.5), 0.08, 0xffd040, 0.5, 0, 2);
+      }
+    }
   }
   damageZombie(z, dmg, dx, dz, src, knock = 0.8, quiet = false) {
     if (!z.alive) return;
@@ -1326,7 +1337,7 @@ export class Game {
     const hy = z.def.fly ? (z.flyY || 1.4) + 0.2 : 0.9 * z.scale;
     // Guardião Anúbis protege aliados próximos (não a si mesmo)
     if (!z.def.aura) {
-      const gd = this.zombies.find((q) => q.alive && q.def.aura && q !== z && Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z) < q.def.aura.radius);
+      const gd = this.zombies.find((q) => q.alive && q.def.aura?.mul && q !== z && Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z) < q.def.aura.radius);
       if (gd) {
         dmg *= gd.def.aura.mul;
         if (Math.random() < 0.5) this.parts.spawn(z.pos.x, hy, z.pos.z, rand(-1, 1), rand(1, 2), rand(-1, 1), 0.07, pick([0xf0c840, 0x4a8aff]), 0.35, 0, 2);
@@ -2748,6 +2759,24 @@ export class Game {
     return list;
   }
 
+  // ponto aberto dentro da arena para unidades de cerco fixas (ex.: Catapulta no Coliseu)
+  // sem bloquear portões nem corredores estreitos
+  siegeSpot(rad = 0.9) {
+    const A = this.arena;
+    const alive = this.players.filter((p) => p.alive);
+    for (let tries = 0; tries < 40; tries++) {
+      const x = rand(5, A.W - 5);
+      const z = rand(5, A.D - 5);
+      if (A.circleBlocked(x, z, rad + 0.55)) continue;
+      if (A.gates.some((g) => Math.hypot(g.x - x, g.z - z) < 3.5)) continue;
+      if (A.props.some((pr) => !pr.dead && Math.hypot(pr.x - x, pr.z - z) < rad + 1.1)) continue;
+      if (alive.length && alive.some((p) => Math.hypot(p.pos.x - x, p.pos.z - z) < 7.5)) continue;
+      if (this.zombies.some((q) => q.alive && q.def.static && Math.hypot(q.pos.x - x, q.pos.z - z) < 4)) continue;
+      return { x, z };
+    }
+    return null;
+  }
+
   spawnZombie(type, x, z) {
     const def = ENEMIES[type];
     const w = Math.max(1, this.wave);
@@ -2774,10 +2803,13 @@ export class Game {
       chargeCd: 4,
       slamCd: 3,
       throwCd: rand(3, 5),
+      lobCd: rand(1.5, 3),
       lungeCd: rand(1, 2),
       summonCd: rand(2, 4),
       sporeCd: rand(1.5, 3),
       blinkCd: rand(2, 4),
+      contactCd: rand(0, 0.6),
+      auraT: rand(0, 0.3),
       stunT: 0,
       shockT: 0,
       buffT: 0,
@@ -2905,7 +2937,12 @@ export class Game {
           this.audio.play('groan1', { volume: 0.45, pos: bush, rate: rand(0.8, 1) });
         }
       }
-      this.spawnZombie(this.toSpawn.shift(), sx, sz);
+      const nextType = this.toSpawn.shift();
+      if (ENEMIES[nextType]?.siegeSpot) {
+        const sp = this.siegeSpot(ENEMIES[nextType].radius || 0.9);
+        if (sp) { sx = sp.x; sz = sp.z; }
+      }
+      this.spawnZombie(nextType, sx, sz);
     }
     if (!this.toSpawn.length && alive === 0) {
       this.waveState = 'intermission';
@@ -3376,10 +3413,11 @@ export class Game {
     // metralhadora pesada atirando: passos curtos
     const cw = WEAPONS[p.weapon];
     if (cw.slowFire && p.firingT > 0.3 && !(p.exoT > 0)) speed *= cw.slowFire;
-    // exoesqueleto: imune a raízes e lentidão
+    // exoesqueleto: imune a raízes, lentidão e atordoamento
     if (p.exoT > 0) {
       p.rootT = 0;
       p.slowT = 0;
+      p.stunT = 0;
     }
     // terreno contaminado, piso elétrico e efeitos de chefe
     if (ter === T_TOXIC) speed *= 0.65;
@@ -3387,6 +3425,10 @@ export class Game {
     if (p.rootT > 0) {
       p.rootT -= dt;
       speed *= 0.12;
+    }
+    if (p.stunT > 0) {
+      p.stunT -= dt;
+      speed = 0;
     }
     if (p.slowT > 0) {
       p.slowT -= dt;
@@ -3520,16 +3562,42 @@ export class Game {
             vx = -vx; // recua para manter distância
             vz = -vz;
           } else if (td < 6) speed = 0;
-          if (z.spitCd <= 0) {
-            z.spitCd = def.spit.cd * rand(0.8, 1.2);
+          // preparação visível (spit.windup): para, mira e brilha antes de soltar; spit.recover: fica parado depois
+          if (z.spitCd <= 0 && def.spit.windup && !(z.aimT > 0)) {
+            z.aimT = def.spit.windup;
+            z.spitCd = def.spit.cd * rand(0.8, 1.2) + def.spit.windup;
+          }
+          if (z.aimT > 0) {
+            speed = 0;
+            z.facing = Math.atan2(dx, dz);
+            if (Math.random() < dt * 18) this.parts.spawn(z.pos.x + Math.sin(z.facing) * 0.5, 1.3, z.pos.z + Math.cos(z.facing) * 0.5, 0, rand(0.2, 0.6), 0, 0.06, 0xfff0a0, 0.3, 0, 2);
+          }
+          if (z.aimT > 0 ? (z.aimT -= dt) <= 0 : z.spitCd <= 0) {
+            z.aimT = 0;
+            if (!def.spit.windup) z.spitCd = def.spit.cd * rand(0.8, 1.2);
+            if (def.spit.recover) z.recoverT = def.spit.recover;
             z.attackT = 0.35;
             const T = def.spit.arrow ? Math.max(0.25, td / 18) : Math.max(0.5, td / 9);
-            this.projectiles.push({ kind: 'acid', x: z.pos.x, y: 1.2, z: z.pos.z, vx: dx / T, vy: def.spit.arrow ? 7 * T : 4.5, vz: dz / T, t: 0, dmg: def.spit.dmg, color: def.spit.color, splat: def.spit.splat, poison: def.spit.poison, slow: def.spit.slow });
+            this.projectiles.push({ kind: 'acid', x: z.pos.x, y: 1.2, z: z.pos.z, vx: dx / T, vy: def.spit.arrow ? 7 * T : 4.5, vz: dz / T, t: 0, dmg: def.spit.dmg * (z.auraDmg || 1), color: def.spit.color, splat: def.spit.splat, poison: def.spit.poison, slow: def.spit.slow, pierce: def.spit.pierce });
             this.audio.play(def.spit.sfx || 'spit', { pos: z.pos, volume: 0.7 });
           }
         }
       }
+      if (z.aimT > 0 && !(def.spit && td < def.spit.range)) z.aimT = 0; // alvo saiu do alcance: desiste da mira
+      if (z.recoverT > 0) {
+        z.recoverT -= dt;
+        speed = 0;
+      }
       this.enemyAbilities(z, tgt, td, dx, dz, dt);
+      // dano por contato espectral (def.contact): corre em paralelo ao golpe normal, com recarga própria
+      if (def.contact) {
+        z.contactCd -= dt;
+        if (z.contactCd <= 0 && td < z.radius + tgt.radius + def.contact.radius) {
+          z.contactCd = def.contact.cd;
+          this.damagePlayer(tgt, def.contact.dmg * (z.auraDmg || 1), z.pos.x, z.pos.z, 2, true);
+          for (let k = 0; k < 5; k++) this.parts.spawn(tgt.pos.x + rand(-0.3, 0.3), rand(0.9, 1.8), tgt.pos.z + rand(-0.3, 0.3), rand(-1, 1), rand(0.5, 2), rand(-1, 1), 0.07, pick([0x70e8ff, 0xc0f4ff]), 0.4, 0, 2);
+        }
+      }
       if (z.state === 'lunge') {
         vx = Math.sin(z.chargeDir);
         vz = Math.cos(z.chargeDir);
@@ -3544,12 +3612,70 @@ export class Game {
         vx = nx / l;
         vz = nz / l;
       }
+      // formação/matilha (def.formation): coesão com os do mesmo tag; cálculo a cada 0,3 s, não por quadro
+      if (def.formation && z.state === 'move') {
+        const F = def.formation;
+        if (!((z.formT -= dt) > 0)) {
+          z.formT = 0.3;
+          let cx = 0, cz = 0, n = 0;
+          for (const q of this.zombies) {
+            if (q === z || !q.alive) continue;
+            const qd = Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z);
+            if (q.def.formation?.tag === F.tag && qd < F.radius) {
+              cx += q.pos.x;
+              cz += q.pos.z;
+              n++;
+            }
+          }
+          z.formN = n;
+          z.formX = n ? cx / n : 0;
+          z.formZ = n ? cz / n : 0;
+        }
+        if (z.formN > 0 && td > 2.5) {
+          const ox = z.formX - z.pos.x;
+          const oz = z.formZ - z.pos.z;
+          const od = Math.hypot(ox, oz);
+          let nx = vx, nz = vz;
+          if (od > (F.flank ? 3 : 1.4)) {
+            nx += (ox / od) * 0.35; // não se afasta do bloco
+            nz += (oz / od) * 0.35;
+          }
+          if (F.flank) {
+            if (z.flankSide === undefined) z.flankSide = ((this._flankN = (this._flankN || 0) + 1) % 3) - 1; // esquerda, centro, direita
+            const k = z.flankSide * Math.min(1.2, td / 5); // cada cão abre por um lado e fecha o cerco
+            nx -= vz * k;
+            nz += vx * k;
+          }
+          const l = Math.hypot(nx, nz) || 1;
+          vx = nx / l;
+          vz = nz / l;
+          // quem está à frente do bloco espera os outros (o líder não espera)
+          if (!F.lead && Math.hypot(tgt.pos.x - z.formX, tgt.pos.z - z.formZ) - td > 1.5) speed *= 0.75;
+        }
+      }
+      // auras de suporte: acelera e reforça o dano de quem está dentro do raio. Varredura a cada 0,3 s e
+      // sempre pelo maior valor, para duas fontes (centurião + estandarte) não multiplicarem entre si.
+      if (!((z.auraT -= dt) > 0)) {
+        z.auraT = 0.3;
+        let haste = 1;
+        let buff = 1;
+        for (const q of this.zombies) {
+          if (!q.alive || q === z || !q.def.aura) continue;
+          const qd = Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z);
+          if (qd >= q.def.aura.radius) continue;
+          if (q.def.aura.haste) haste = Math.max(haste, q.def.aura.haste);
+          if (q.def.aura.dmg) buff = Math.max(buff, q.def.aura.dmg);
+        }
+        z.auraHaste = haste;
+        z.auraDmg = buff;
+      }
       if (def.summon && td < 6 && A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z)) {
         vx = -dx / td;
         vz = -dz / td;
         speed *= 0.8;
       }
       if (def.spore && td < def.spore.range && A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z)) speed = 0;
+      speed *= z.auraHaste || 1; // estandarte/centurião: valor já sem empilhamento
       // investida do colosso
       if (def.boss) {
         z.chargeCd -= dt;
@@ -3605,7 +3731,7 @@ export class Game {
           const target = tgt;
           this.later(0.18, () => {
             if (z.alive && Math.hypot(target.pos.x - z.pos.x, target.pos.z - z.pos.z) < reach * 1.3) {
-              this.damagePlayer(target, def.dmg * (1 + 0.04 * (this.wave - 1)), z.pos.x, z.pos.z, def.boss ? 6 : 1.5);
+              this.damagePlayer(target, def.dmg * (1 + 0.04 * (this.wave - 1)) * (z.auraDmg || 1), z.pos.x, z.pos.z, def.boss ? 6 : 1.5);
               if (def.poison) {
                 target.poisonT = def.poison.t; // Serpente Sagrada
                 target.poisonDps = def.poison.dps;
@@ -3803,22 +3929,74 @@ export class Game {
       return;
     }
     if (z.state === 'lunge') {
+      if (def.lunge?.smash) {
+        const cdx = Math.sin(z.chargeDir);
+        const cdz = Math.cos(z.chargeDir);
+        for (const pr of A.props) {
+          if (pr.dead || !pr.def.hp || pr.def.boomOnly) continue;
+          if (Math.hypot(pr.x - z.pos.x, pr.z - z.pos.z) < z.radius + 1.15) this.damageProp(pr, 999, null, cdx, cdz, false);
+        }
+        for (const b of this.placeables) {
+          if (b.dead) continue;
+          if (Math.hypot(b.x - z.pos.x, b.z - z.pos.z) < z.radius + 0.95) {
+            if (b.kind === 'barrel') {
+              this.removePlaceable(b);
+              this.explosion(b.x, b.z, 3.6, 140, b.owner);
+            } else {
+              this.removePlaceable(b);
+              for (let k = 0; k < 8; k++) this.parts.spawn(b.x + rand(-0.3, 0.3), rand(0.2, 0.9), b.z + rand(-0.3, 0.3), rand(-3, 3), rand(1, 4), rand(-3, 3), 0.1, 0x8a6a3a, 0.7, 16, 0);
+              this.audio.play('crate', { pos: b, volume: 0.7 });
+            }
+          }
+        }
+      }
       if (!z.chargeHit && td < z.radius + tgt.radius + 0.35) {
         z.chargeHit = true;
-        this.damagePlayer(tgt, def.dmg * 1.4, z.pos.x, z.pos.z, 4, true);
+        this.damagePlayer(tgt, def.dmg * 1.4 * (z.auraDmg || 1), z.pos.x, z.pos.z, def.lunge?.stun ? 6 : 4, true);
+        if (def.lunge?.stun && !(tgt.exoT > 0)) {
+          tgt.stunT = Math.max(tgt.stunT || 0, def.lunge.stun);
+          this.noiseShake(0.45);
+          for (let k = 0; k < 8; k++) this.parts.spawn(tgt.pos.x + rand(-0.35, 0.35), 1.9, tgt.pos.z + rand(-0.35, 0.35), rand(-1.8, 1.8), rand(0.6, 1.8), rand(-1.8, 1.8), 0.08, 0xffd040, 0.55, 0, 2);
+        }
       }
       if ((z.stateT -= dt) <= 0) z.state = 'move';
       return;
     }
+    if (def.lob) {
+      z.lobCd -= dt;
+      if (z.state === 'move' && z.lobCd <= 0 && td <= def.lob.range && td >= (def.lob.minRange || 0)) {
+        z.state = 'throw';
+        z.stateT = def.lob.windup || 1.2;
+        z.throwAt = { x: tgt.pos.x, z: tgt.pos.z };
+        z.facing = Math.atan2(dx, dz);
+        this.audio.play('crate', { pos: z.pos, volume: 0.5, rate: 0.65 });
+      }
+      if (z.state === 'throw' && z.throwAt) {
+        z.facing += angDiff(z.facing, Math.atan2(z.throwAt.x - z.pos.x, z.throwAt.z - z.pos.z)) * Math.min(1, dt * 6);
+        if (Math.random() < dt * 22) this.parts.spawn(z.pos.x + rand(-0.4, 0.4), 2.0, z.pos.z + rand(-0.4, 0.4), rand(-0.8, 0.8), rand(0.8, 2.2), rand(-0.8, 0.8), 0.09, pick([def.lob.color || 0xff6a1a, 0xffd040]), 0.45, 0, 2);
+        if ((z.stateT -= dt) <= 0) {
+          z.state = 'move';
+          z.lobCd = def.lob.cd * rand(0.85, 1.15);
+          z.attackT = 0.45;
+          const ex = z.throwAt.x - z.pos.x;
+          const ez = z.throwAt.z - z.pos.z;
+          const T = Math.max(0.75, Math.hypot(ex, ez) / 11);
+          this.projectiles.push({ kind: 'rock', x: z.pos.x, y: 2.2, z: z.pos.z, vx: ex / T, vy: 7 * T - 2.2 / T, vz: ez / T, t: 0, T, dmg: def.lob.dmg * (z.auraDmg || 1), r: def.lob.radius || 1.9, color: def.lob.color || 0xff6a1a });
+          this.audio.play(def.sfx?.attack || 'throw', { pos: z.pos, volume: 0.85, rate: 0.6 });
+        }
+        return;
+      }
+    }
     if (def.lunge) {
       z.lungeCd -= dt;
-      if (z.state === 'move' && z.lungeCd <= 0 && td < def.lunge.range && td > 1.4 && A.walkable(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z, z.wallR)) {
+      const pathOk = def.lunge.smash ? A.los(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z) : A.walkable(z.pos.x, z.pos.z, tgt.pos.x, tgt.pos.z, z.wallR);
+      if (z.state === 'move' && z.lungeCd <= 0 && td < def.lunge.range && td > 1.4 && pathOk) {
         z.state = def.lunge.windup ? 'wind' : 'lunge'; // Carruagem e Hórus avisam antes de investir
         z.stateT = def.lunge.windup || def.lunge.time || 0.38;
         z.chargeHit = false;
         z.chargeDir = Math.atan2(dx, dz);
         z.facing = z.chargeDir;
-        z.lungeCd = def.lunge.cd * rand(0.8, 1.2);
+        z.lungeCd = def.lunge.cd * (def.lunge.jitter ? rand(1 - def.lunge.jitter, 1 + def.lunge.jitter) : rand(0.8, 1.2)); // besta: intervalo irregular
         this.audio.play('zombie_attack', { pos: z.pos, volume: 0.7, rate: 1.4 });
       }
     }
@@ -3832,7 +4010,8 @@ export class Game {
       }
       if (z.state === 'cast') {
         z.facing += angDiff(z.facing, Math.atan2(dx, dz)) * Math.min(1, dt * 8);
-        if (Math.random() < dt * 30) this.parts.spawn(z.pos.x + rand(-0.8, 0.8), 0.1, z.pos.z + rand(-0.8, 0.8), 0, rand(1.5, 3), 0, rand(0.08, 0.16), pick([0xc070ff, 0x8a3ad0]), 0.7, -1, 2);
+        const sc = def.summon.color || 0xc070ff;
+        if (Math.random() < dt * 30) this.parts.spawn(z.pos.x + rand(-0.8, 0.8), 0.1, z.pos.z + rand(-0.8, 0.8), 0, rand(1.5, 3), 0, rand(0.08, 0.16), pick([sc, def.summon.color ? 0xffe080 : 0x8a3ad0]), 0.7, -1, 2);
         if ((z.stateT -= dt) <= 0) {
           z.state = 'move';
           z.summonCd = def.summon.cd * rand(0.85, 1.2);
@@ -3870,7 +4049,7 @@ export class Game {
         const nx = z.pos.x + (dx / td) * step;
         const nz = z.pos.z + (dz / td) * step;
         z.blinkCd = def.blink.cd * rand(0.8, 1.2);
-        if (A.inb(Math.floor(nx), Math.floor(nz)) && !A.circleBlocked(nx, nz, 0.3)) {
+        if (A.inb(Math.floor(nx), Math.floor(nz)) && (def.blink.through || !A.circleBlocked(nx, nz, 0.3))) {
           for (let k = 0; k < 12; k++) this.parts.spawn(z.pos.x + rand(-0.3, 0.3), rand(0.6, 1.8), z.pos.z + rand(-0.3, 0.3), rand(-1.5, 1.5), rand(0, 1.5), rand(-1.5, 1.5), rand(0.06, 0.12), pick([def.blink.color || 0x70e8ff, 0xc0f4ff]), 0.5, -1, 2);
           z.pos.x = nx;
           z.pos.z = nz;
@@ -4074,9 +4253,10 @@ export class Game {
           pr.dead = true;
           if (pr.kind === 'spore') this.addCloud(pr.x, pr.z, pr.def);
           else {
+            const rr = pr.r || 1.9;
             for (const p of this.players) {
               const d = Math.hypot(p.pos.x - pr.x, p.pos.z - pr.z);
-              if (p.alive && d < 1.9) this.damagePlayer(p, pr.dmg * (1 - d / 3.8), pr.x, pr.z, 7, true);
+              if (p.alive && d < rr) this.damagePlayer(p, pr.dmg * (1 - d / (rr * 2)), pr.x, pr.z, 7, true);
             }
             for (let k = 0; k < 14; k++) this.parts.spawn(pr.x, 0.3, pr.z, rand(-4, 4), rand(2, 6), rand(-4, 4), rand(0.12, 0.28), pick([0x5a4a44, 0x6a5a52, 0xff5a1a]), 1, 18, 0);
             this.arena.scorch(pr.x, pr.z, 1.4);
@@ -4105,7 +4285,7 @@ export class Game {
           }
         // coberturas baixas (muretas, sacos de areia, barreiras, caixas) barram o ácido
         const ck = Math.floor(pr.x) + Math.floor(pr.z) * A.W;
-        if (A.inb(Math.floor(pr.x), Math.floor(pr.z)) && A.cover[ck] && pr.y < 0.95) hit = true;
+        if (!pr.pierce && A.inb(Math.floor(pr.x), Math.floor(pr.z)) && A.cover[ck] && pr.y < 0.95) hit = true; // flecha perfurante passa
         if (hit || pr.y <= 0.05 || A.tallAt(pr.x, pr.z)) {
           pr.dead = true;
           A.splat(pr.x, pr.z, 0.45, pr.splat || '#6aba2a', 0.7);
@@ -4298,6 +4478,7 @@ export class Game {
     for (const z of this.zombies) {
       drawEnemy(B, G, z, this.time);
       if (!z.alive) continue;
+      if (z.def.aura?.ring) ring(G, z.pos.x, z.pos.z, z.def.aura.radius, z.def.aura.ring, this.time); // raio da aura visível no chão
       this.drawStatus(G, z);
       // binóculos: marcador vermelho sobre cada inimigo
       if (scout) {
@@ -4309,9 +4490,9 @@ export class Game {
       // avisos no chão: investida, pancada e alvo da pedra do colosso
       if (z.state === 'wind') G.box(z.pos.x + Math.sin(z.facing) * 2, 0.03, z.pos.z + Math.cos(z.facing) * 2, 0.6, 0.02, 3, 0xff2020, z.facing);
       if (z.state === 'slam') ring(G, z.pos.x, z.pos.z, 3.8 * Math.min(1, (0.75 - z.stateT) / 0.6 + 0.3), 0xff3020, this.time);
-      if (z.state === 'throw' && z.throwAt) ring(G, z.throwAt.x, z.throwAt.z, 1.9, 0xff8020, this.time);
+      if (z.state === 'throw' && z.throwAt) ring(G, z.throwAt.x, z.throwAt.z, z.def.lob?.radius || 1.9, z.def.lob?.color || 0xff8020, this.time);
     }
-    for (const pr of this.projectiles) if (pr.kind === 'rock') ring(G, pr.x + pr.vx * Math.max(0, pr.T - pr.t), pr.z + pr.vz * Math.max(0, pr.T - pr.t), 1.9, 0xff8020, this.time);
+    for (const pr of this.projectiles) if (pr.kind === 'rock') ring(G, pr.x + pr.vx * Math.max(0, pr.T - pr.t), pr.z + pr.vz * Math.max(0, pr.T - pr.t), pr.r || 1.9, pr.color || 0xff8020, this.time);
     for (const c of this.clouds) {
       const f = Math.min(1, c.life / 0.6, (c.max - c.life) / 0.3 + 0.3);
       for (let k = 0; k < 9; k++) {
