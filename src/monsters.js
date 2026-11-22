@@ -324,7 +324,8 @@ const LOOKS = {};
 export function enemyLook(type) {
   if (LOOKS[type]) return LOOKS[type];
   const h = HUMANS[type];
-  const look = h ? { zombie: true, ...h } : { zombie: true, skin: OTHER_COLORS[type][0], shirt: OTHER_COLORS[type][1] };
+  const oc = OTHER_COLORS[type] || [0x6a7a72, 0x2e3a44]; // tipos sem aparência própria (ex.: laboratório)
+  const look = h ? { zombie: true, ...h } : { zombie: true, skin: oc[0], shirt: oc[1] };
   LOOKS[type] = look;
   return look;
 }
