@@ -122,6 +122,7 @@ export class UI {
     this.bannerEl = h('div', { class: 'banner', role: 'status' });
     this.alertsEl = h('div', { class: 'alerts', 'aria-live': 'polite' });
     this.fpsEl = h('div', { class: 'fps hidden' });
+    this.interactEl = h('div', { class: 'interact-prompt hidden' });
     this.loadEl = null;
     // ícones e textos de tela cheia acompanham a mudança (inclusive F11/ESC do navegador)
     for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => {
@@ -144,7 +145,7 @@ export class UI {
       this.soundEl.classList.toggle('hidden', !muted || this.g.state === 'paused' || (this.g.state === 'playing' && !this.g.pad?.usingPad)); // nunca por cima de menus da partida
       if (muted) this.soundEl.querySelector('.txt').textContent = this.g.input.touchMode ? 'Toque na tela para ativar o som' : this.g.pad?.usingPad ? 'Clique na tela ou aperte uma tecla para ativar o som' : 'Clique ou aperte uma tecla para ativar o som';
     }, 400);
-    root.append(this.hudEl, this.bannerEl, this.alertsEl, this.screenEl, this.noticeEl, this.fpsEl);
+    root.append(this.hudEl, this.bannerEl, this.alertsEl, this.screenEl, this.noticeEl, this.fpsEl, this.interactEl);
     this.fpsAcc = 0;
     this.fpsN = 0;
     this.buildHud();
@@ -1993,6 +1994,24 @@ export class UI {
     const b = el.classList.contains('hurt');
     el.classList.toggle('hurt', !b);
     el.classList.toggle('hurt2', b);
+  }
+  interactPrompt(show, text = '', x = 0, y = 0, state = 'available', key = 'E') {
+    const el = this.interactEl;
+    if (!show) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    // Remove previous state classes
+    el.classList.remove('state-available', 'state-inuse', 'state-recharge', 'state-unavailable', 'state-destroyed');
+    el.classList.add('state-' + state);
+    // Adaptive control hint: show the correct key/button for the device
+    const keyLabel = this.g.input.touchMode ? 'Tap' : key;
+    el.replaceChildren(
+      h('span', { class: 'interact-key', 'aria-label': 'Tecla de interação' }, keyLabel),
+      h('span', { class: 'interact-text' }, text)
+    );
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
   }
   toast(id, text, ic = 'medkit', kind = '') {
     if (this.g.input.touchMode) {

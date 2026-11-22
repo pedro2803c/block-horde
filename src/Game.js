@@ -1822,7 +1822,28 @@ export class Game {
       for (const z of this.zombies) if (z.alive && !z.def.fly && Math.hypot(z.pos.x - (pr.x + dx), z.pos.z - (pr.z + dz)) < 1.8) this.damageZombie(z, 80, 0, 0, null, 0);
     }
     // objetos interativos da expansão (laboratório, coliseu, templo e comuns)
-    this.updateWorldObjects(dt);
+    let _nearest = null, _bestD = 1.6;
+  const _pl = this.players.filter((p) => p.alive)[0];
+  if (_pl && A.props) for (const _pr of A.props) {
+    if (_pr.dead || _pr.def.beh !== 'interact') continue;
+    const _d = Math.hypot(_pr.x - _pl.pos.x, _pr.z - _pl.pos.z);
+    if (_d < _bestD) { _bestD = _d; _nearest = _pr; }
+  }
+  if (_nearest) {
+    const _v = new THREE.Vector3(_nearest.x, 1.2, _nearest.z);
+    _v.project(this.camera);
+    const _x = (_v.x * 0.5 + 0.5) * this.canvas.width;
+    const _y = (1 - (_v.y * 0.5 + 0.5)) * this.canvas.height;
+    const _key = this.input.touchMode ? 'Tap' : (this.pad && this.pad.usingPad ? 'A' : 'E');
+    // HUD overlap avoidance: avoid placing prompt over crosshair area (center screen)
+    const _cx = this.canvas.width / 2, _cy = this.canvas.height / 2;
+    let _px = _x, _py = _y;
+    if (Math.abs(_px - _cx) < 60 && Math.abs(_py - _cy) < 60) _py -= 70;
+    this.ui.interactPrompt(true, _nearest.def.name || 'Interagir', _px, _py, 'available', _key);
+  } else {
+    this.ui.interactPrompt(false);
+  }
+  this.updateWorldObjects(dt);
   }
   startGenerator(pr, p) {
     this.genOn = true;
