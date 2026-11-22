@@ -6,7 +6,7 @@ import { BARREL_MODEL } from './scenery.js';
 import { ACTIVES, ULTIMATES, PASSIVES, BRANCHES, MAX_LEVEL, NODE_REQ, ULT_REQ, levelCost, xpNeed, loadLoadouts, ABILITY_KEYS } from './abilities.js';
 import { Input } from './Input.js';
 import { UI } from './UI.js';
-import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, TRAPS, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS, profileNeed, matchXp } from './data.js';
+import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, TRAPS, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS, profileNeed, matchXp, isEnemyAllowedInArena } from './data.js';
 import { enemyLook, drawEnemy } from './monsters.js';
 import { ITEMS, GUN_MODELS, GUN_LEN, MELEE, GEAR, drawItem, rollTable } from './items.js';
 import { ArsenalMixin, WALK_TRAPS } from './arsenal.js';
@@ -380,8 +380,11 @@ export class Game {
       this.worldMount = null;
     }
     this.camTarget.set(center.x, 0, center.z);
-    if (demo) for (let k = 0; k < 26; k++) {
-      this.spawnZombie(pick(['walker', 'walker', ...ENEMY_ORDER.filter((t) => t !== 'boss')]), rand(4, arena.W - 4), rand(4, arena.D - 4));
+    if (demo) {
+      const demoPool = ['walker', 'walker', ...ENEMY_ORDER.filter((t) => !ENEMIES[t].boss && isEnemyAllowedInArena(t, arenaDef.id))];
+      for (let k = 0; k < 26; k++) {
+        this.spawnZombie(pick(demoPool), rand(4, arena.W - 4), rand(4, arena.D - 4));
+      }
     }
   }
 
@@ -2966,7 +2969,7 @@ export class Game {
     const n = Math.round((6 + w * 4) * (coop ? 1.35 : 1) * (this.arena.def.diff?.count || 1) * this.diff.mul.count);
     const list = [];
     // sorteio por peso entre os tipos já liberados; o zumbi comum fica mais raro com o tempo
-    const here = (t) => !ENEMIES[t].only || ENEMIES[t].only.includes(this.arena.def.id); // ex.: Egito só no Templo Antigo
+    const here = (t) => isEnemyAllowedInArena(t, this.arena.def.id);
     const pool = ENEMY_ORDER.filter((t) => !ENEMIES[t].boss && ENEMIES[t].from <= w && here(t)).map((t) => {
       const d = ENEMIES[t];
       const grow = Math.min(2, 1 + (w - d.from) * 0.12);
@@ -2990,9 +2993,14 @@ export class Game {
     }
     // o tipo novo aparece garantido na onda em que é liberado
     for (const t of ENEMY_ORDER) if (ENEMIES[t].from === w && !ENEMIES[t].boss && here(t) && !list.includes(t)) list.splice(Math.floor(list.length * 0.3), 0, t);
-    // chefão a cada 5 ondas; arenas com lista alternam (Templo: Faraó, Sobek...)
+    // chefão a cada 5 ondas; arenas com lista alternam (Templo: Faraó, Sobek... / Lab: 4 chefões exclusivos)
     const bs = this.arena.def.boss;
-    if (w % 5 === 0) list.splice(Math.floor(list.length * 0.6), 0, Array.isArray(bs) ? bs[(w / 5 - 1) % bs.length] : bs || 'boss');
+    if (w % 5 === 0) {
+      const bossId = Array.isArray(bs) ? bs[(w / 5 - 1) % bs.length] : bs || 'boss';
+      if (isEnemyAllowedInArena(bossId, this.arena.def.id)) {
+        list.splice(Math.floor(list.length * 0.6), 0, bossId);
+      }
+    }
     return list;
   }
 
@@ -3016,6 +3024,8 @@ export class Game {
 
   spawnZombie(type, x, z) {
     const def = ENEMIES[type];
+    const arenaId = this.arena?.def?.id;
+    if (!def || (arenaId && !isEnemyAllowedInArena(type, arenaId))) return null;
     const w = Math.max(1, this.wave);
     const hpMul = def.boss ? 1 + (w / 5 - 1) * 0.45 : 1 + 0.07 * (w - 1);
     const zb = {
@@ -4277,7 +4287,10 @@ export class Game {
               free = !A.circleBlocked(x, zz, 0.35);
             }
             if (!free) continue;
-            const m = this.spawnZombie(pick(def.summon.types), x, zz);
+            const allowedSummons = def.summon.types.filter((t) => isEnemyAllowedInArena(t, this.arena?.def?.id));
+            if (!allowedSummons.length) continue;
+            const m = this.spawnZombie(pick(allowedSummons), x, zz);
+            if (!m) continue;
             z.minions.push(m);
             for (let j = 0; j < 10; j++) this.parts.spawn(x, 0.3, zz, rand(-1.5, 1.5), rand(2, 4), rand(-1.5, 1.5), rand(0.1, 0.2), pick([0xc070ff, 0xe0a0ff]), 0.7, 3, 2);
           }
@@ -4403,6 +4416,20 @@ export class Game {
             this.parts.spawn(z.pos.x + Math.sin(a) * 1.2, 1.2, z.pos.z + Math.cos(a) * 1.2, Math.sin(a) * 3, rand(1, 2), Math.cos(a) * 3, 0.08, pick([0xb01c1c, 0xff5a1a]), 0.7, 0, 2);
           }
           this.audio.play('roar', { volume: 1, pos: z.pos, priority: true, rate: 0.7 });
+        }
+        // Chefões exclusivos do Laboratório (colossa, abominable, exogeneral)
+        if (kind === 'colossa') {
+          this.bossCall(z, ['lb_pack', 'lb_pack']);
+        }
+        if (kind === 'abominable') {
+          this.quake(z, { radius: 5.5, dmg: 22, stun: 0.8 });
+        }
+        if (kind === 'exogeneral') {
+          for (const q of this.zombies) {
+            if (!q.alive || q === z) continue;
+            if (Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z) < 13) q.buffT = 6;
+          }
+          this.bossCall(z, ['lb_hunter', 'lb_pack']);
         }
       }
       if (z.state === 'throw' && (z.stateT -= dt) <= 0) {

@@ -229,11 +229,40 @@ export const ENEMIES = {
    lb_demolisher: { name: 'Demolidor', desc: 'Quebra obstaculos e destroi coberturas: ataque pesado em area', icon: 'fist', hp: 200, speed: 1.2, dmg: 25, rate: 1.5, reach: 1.6, scale: 1.4, radius: 0.65, score: 60, from: 6, weight: 0.5, lunge: { range: 4, speed: 8, cd: 4.0, smash: true, stun: 0.8 }, quake: { radius: 2.5, dmg: 18 }, only: ['lab'], blood: [0x6a6a6a, 0x4a4a4a], sfx: { attack: 'stomp', die: 'eg_rumble' } },
    lb_aerial: { name: 'Aereo Mutante', desc: 'Inimigo aereo: voa, dispara rajadas de acido e mergulha', icon: 'bat', hp: 70, speed: 2.8, dmg: 10, rate: 0.9, reach: 1.0, scale: 1.0, radius: 0.4, score: 45, from: 5, weight: 0.7, fly: true, hover: 1.5, strafe: true, lunge: { range: 6, speed: 12, cd: 3.5, windup: 0.4 }, spit: { range: 10, dmg: 8, cd: 2.2, color: 0x4aff4a, splat: '#2a6a2a', sfx: 'throw' }, only: ['lab'], blood: [0x4aff4a, 0x2a6a2a], sfx: { attack: 'zombie_die', die: 'zombie_die' } },
    // ---- Chefoes do Laboratorio (only: ['lab']) ----
-   lb_colossa: { name: 'A Colossa Rainha', desc: 'Chefao: gigante, convoca matilha, golpes em area e regeneracao', icon: 'crown', hp: 2500, speed: 1.2, dmg: 42, rate: 1.5, reach: 2.6, scale: 2.8, score: 800, boss: true, bossKind: 'colossa', intro: 'A COLOSSA RAINHA DESPERTOU!', riseIntro: 1.6, blood: [0x8a3ad0, 0x4a1a6a], introSfx: 'eg_horn', treasure: 500 },
-   lb_core: { name: 'O Nucleo Infectado', desc: 'Chefao: nucleo estacionario que dispara projeteis, invoca inimigos e gera campos de forca', icon: 'crown', hp: 2200, speed: 0, dmg: 0, rate: 1, reach: 1, scale: 2.2, radius: 1.2, score: 750, boss: true, bossKind: 'core', static: true, intro: 'O NUCLEO INFECTADO ATIVOU!', riseIntro: 1.8, blood: [0x4aff4a, 0x2a6a2a], introSfx: 'eg_horn', treasure: 480 },
-   lb_abominable: { name: 'O Abominavel', desc: 'Chefao: bruto de forca, investidas devastadoras, ondas de choque e regeneracao', icon: 'crown', hp: 2800, speed: 1.3, dmg: 50, rate: 1.6, reach: 2.8, scale: 3.0, score: 900, boss: true, bossKind: 'abominable', intro: 'O ABOMINAVEL SURGIU DAS SOMBRAS!', riseIntro: 1.5, blood: [0x6a4a2a, 0x4a2a1a], introSfx: 'eg_horn', treasure: 550 },
-   lb_exogeneral: { name: 'O Exo General', desc: 'Chefao: comandante blindado, invoca reforcos, enfurece a horda e dispara rajadas de energia', icon: 'crown', hp: 2400, speed: 1.35, dmg: 44, rate: 1.2, reach: 2.4, scale: 2.6, score: 850, boss: true, bossKind: 'exogeneral', plating: 0.5, intro: 'O EXO GENERAL TOMOU O COMANDO!', riseIntro: 1.4, blood: [0x8a8a90, 0x4aff4a], introSfx: 'eg_horn', treasure: 520 },
+   lb_colossa: { name: 'A Colossa Rainha', desc: 'Chefao: gigante, convoca matilha, golpes em area e regeneracao', icon: 'crown', hp: 2500, speed: 1.2, dmg: 42, rate: 1.5, reach: 2.6, scale: 2.8, score: 800, boss: true, bossKind: 'colossa', only: ['lab'], intro: 'A COLOSSA RAINHA DESPERTOU!', riseIntro: 1.6, blood: [0x8a3ad0, 0x4a1a6a], introSfx: 'eg_horn', treasure: 500 },
+   lb_core: { name: 'O Nucleo Infectado', desc: 'Chefao: nucleo estacionario que dispara projeteis, invoca inimigos e gera campos de forca', icon: 'crown', hp: 2200, speed: 0, dmg: 0, rate: 1, reach: 1, scale: 2.2, radius: 1.2, score: 750, boss: true, bossKind: 'core', static: true, only: ['lab'], summon: { cd: 7, n: 2, max: 5, windup: 0.9, color: 0x4aff4a, types: ['lb_corrosive', 'lb_pack', 'lb_hunter'] }, intro: 'O NUCLEO INFECTADO ATIVOU!', riseIntro: 1.8, blood: [0x4aff4a, 0x2a6a2a], introSfx: 'eg_horn', treasure: 480 },
+   lb_abominable: { name: 'O Abominavel', desc: 'Chefao: bruto de forca, investidas devastadoras, ondas de choque e regeneracao', icon: 'crown', hp: 2800, speed: 1.3, dmg: 50, rate: 1.6, reach: 2.8, scale: 3.0, score: 900, boss: true, bossKind: 'abominable', only: ['lab'], intro: 'O ABOMINAVEL SURGIU DAS SOMBRAS!', riseIntro: 1.5, blood: [0x6a4a2a, 0x4a2a1a], introSfx: 'eg_horn', treasure: 550 },
+   lb_exogeneral: { name: 'O Exo General', desc: 'Chefao: comandante blindado, invoca reforcos, enfurece a horda e dispara rajadas de energia', icon: 'crown', hp: 2400, speed: 1.35, dmg: 44, rate: 1.2, reach: 2.4, scale: 2.6, score: 850, boss: true, bossKind: 'exogeneral', plating: 0.5, only: ['lab'], intro: 'O EXO GENERAL TOMOU O COMANDO!', riseIntro: 1.4, blood: [0x8a8a90, 0x4aff4a], introSfx: 'eg_horn', treasure: 520 },
 };
+
+// Categorias oficiais de exclusividade do Laboratório de Pesquisa (14 inimigos + 4 chefões)
+export const RESEARCH_LAB_EXCLUSIVE_ENEMIES = Object.freeze([
+  'lb_specter', 'lb_tremor', 'lb_launcher', 'lb_suppressor', 'lb_corrosive',
+  'lb_incendiary', 'lb_freezer', 'lb_hunter', 'lb_pack', 'lb_signaler',
+  'lb_puppeteer', 'lb_camouflaged', 'lb_demolisher', 'lb_aerial',
+]);
+export const RESEARCH_LAB_EXCLUSIVE_BOSSES = Object.freeze([
+  'lb_colossa', 'lb_core', 'lb_abominable', 'lb_exogeneral',
+]);
+const _LAB_EXCLUSIVE_SET = new Set([...RESEARCH_LAB_EXCLUSIVE_ENEMIES, ...RESEARCH_LAB_EXCLUSIVE_BOSSES]);
+
+// Validação central: verifica se um inimigo/chefão está autorizado na arena informada
+export function isEnemyAllowedInArena(type, arenaId) {
+  const def = ENEMIES[type];
+  if (!def) return false;
+  if (_LAB_EXCLUSIVE_SET.has(type)) return arenaId === 'lab';
+  if (def.only && arenaId && !def.only.includes(arenaId)) return false;
+  return true;
+}
+
+export function allowedEnemiesForArena(arenaId, { includeBosses = false } = {}) {
+  return ENEMY_ORDER.filter((t) => {
+    const def = ENEMIES[t];
+    if (!def) return false;
+    if (!includeBosses && def.boss) return false;
+    return isEnemyAllowedInArena(t, arenaId);
+  });
+}
 export const ENEMY_ORDER = ['walker', 'brute', 'spider', 'bat', 'runner', 'spitter', 'bloater', 'armored', 'dog', 'summoner', 'spore', 'reaper', 'wasp', 'specter', 'boss', 'devourer', 'mechworker', 'guardian', 'general', 'mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'crocling', 'bastetclone', 'rm_legion', 'rm_centurion', 'rm_archer', 'rm_gladiator', 'rm_hound', 'rm_praetor', 'rm_beast', 'rm_spirit', 'rm_standard', 'rm_engineer', 'rm_turret', 'rm_chariot', 'rm_eagle', 'rm_catapult', 'rm_elephant', 'pharaoh', 'sobek', 'bastet', 'sphinx', 'lb_specter', 'lb_tremor', 'lb_launcher', 'lb_suppressor', 'lb_corrosive', 'lb_incendiary', 'lb_freezer', 'lb_hunter', 'lb_pack', 'lb_signaler', 'lb_puppeteer', 'lb_camouflaged', 'lb_demolisher', 'lb_aerial', 'lb_colossa', 'lb_core', 'lb_abominable', 'lb_exogeneral'];
 
 
@@ -690,7 +719,7 @@ export const ARENAS = [
   },
   {
     id: 'lab', name: 'Laboratório de Pesquisa', desc: 'Salas de contenção, tanques biológicos e portas automáticas: os experimentos fugiram.', floor: 'lab',
-    theme: 'lab', ambient: 'lab', weather: 'breach', boss: 'devourer', unlock: 7, spawnShare: 0.25, maxLights: 8, lightMul: 1,
+    theme: 'lab', ambient: 'lab', weather: 'breach', boss: [...RESEARCH_LAB_EXCLUSIVE_BOSSES], unlock: 7, spawnShare: 0.25, maxLights: 8, lightMul: 1,
     diff: { label: 'Muito alta', tier: 3, hp: 1.25, speed: 1.07, count: 1.18 }, eventName: 'Quebra de contenção',
     particles: ['sparks', 'steam'],
     tip: 'Na quebra de contenção, segure o painel holográfico do átrio: tranca as portas e sela as cápsulas.', lampI: 10,
