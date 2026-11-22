@@ -1,4 +1,5 @@
 ﻿import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, SLOT_KEYS, UNLOCKS, SURVIVORS, ARENAS, TIPS, ENEMIES, ENEMY_ORDER, profileNeed } from './data.js';
+import { mountDef, mountForArena, MOUNT_USE_DIST } from './mounts.js';
 import { ITEMS, ITEM_ORDER, ITEM_CATS, MELEE } from './items.js';
 import { SCENERY, SCENERY_ORDER, SCENERY_CATS, SCENERY_BEH } from './scenery.js';
 import { CROSSHAIRS, CROSSHAIR_ORDER, WEAPON_CROSSHAIR, CROSS_COLORS, crosshairSvg } from './crosshairs.js';
@@ -1404,6 +1405,20 @@ export class UI {
       this.radar,
       this.hBoss,
       h('div', { class: 'players' }, this.pEls[0].root, this.pEls[1].root),
+      // indicador da montaria: nome + integridade quando o jogador está montado
+      (this.hMountIndicator = h('div', { class: 'mount-indicator hidden' },
+        h('span', { class: 'mount-indicator-icon' }, icon('vehicle')),
+        h('span', { class: 'mount-indicator-name' }, '—'),
+        h('span', { class: 'mount-indicator-hp' }, '--%'))),
+      // barra de integridade da montaria
+      (this.hMountBar = h('div', { class: 'mount-bar hidden' },
+        h('div', { class: 'mount-bar-label' }, 'Montaria'),
+        h('div', { class: 'mount-bar-fill' }),
+        h('small', { class: 'mount-bar-text' }, '--'))),
+      // waypoint para localizar a montaria ao entrar na arena
+      (this.hMountWaypoint = h('div', { class: 'mount-waypoint hidden' },
+        h('span', { class: 'mount-waypoint-icon' }, icon('target')),
+        h('span', { class: 'mount-waypoint-text' }, 'Montaria por perto — aperte C'))),
       this.xhs[0].el,
       this.xhs[1].el);
   }
@@ -1430,6 +1445,8 @@ export class UI {
       el.buffKey = '';
       el.lowWarned = false;
       if (pv) pv.portrait(el.avatar, p.look);
+      // HUD da montaria (atualizado também a cada quadro em updateHud)
+      this.updateMountHud();
       // barra de habilidades: 3 ativas + ultimate, com tecla e recarga
       const labels = ABILITY_LABELS[g.players.length > 1 ? (k ? 'p2' : 'p1') : 'solo'];
       el.ab = p.slots.map((id, i) => {
@@ -1457,6 +1474,65 @@ export class UI {
     this.pauseBtn.classList.toggle('has-pts', n > 0);
     this.pauseBtn.title = n > 0 ? `Pausar (P) · ${n} ponto${n > 1 ? 's' : ''} de habilidade` : 'Pausar (P)';
     this.pauseBtn.setAttribute('aria-label', this.pauseBtn.title);
+  }
+
+  // HUD da montaria: indicador, barra de integridade e waypoint de localização
+  updateMountHud() {
+    const g = this.g;
+    const p = g.players && g.players[0];
+    const esconder = () => {
+      this.hMountBar.classList.add('hidden');
+      this.hMountIndicator.classList.add('hidden');
+      this.hMountWaypoint.classList.add('hidden');
+    };
+    if (!p || !p.alive) return esconder();
+    const wm = g.worldMount;
+    const m = p.isMounted && wm ? wm.def : (p.isMounted && p.mountId !== null ? mountDef(p.mountId) : null);
+    if (m) {
+      const curHp = wm ? wm.hp : p.mountHp;
+      const maxHp = wm ? wm.maxHp : (m.maxHp || m.hp);
+      const pct = Math.max(0, Math.min(100, (curHp / maxHp) * 100));
+      this.hMountBar.classList.remove('hidden');
+      this.hMountBar.querySelector('.mount-bar-fill').style.width = `${pct}%`;
+      this.hMountBar.querySelector('.mount-bar-text').textContent = `${Math.round(pct)}%`;
+      this.hMountBar.classList.toggle('critical', pct < 30);
+      this.hMountIndicator.classList.remove('hidden');
+      this.hMountIndicator.querySelector('.mount-indicator-name').textContent = m.name;
+      this.hMountIndicator.querySelector('.mount-indicator-hp').textContent = `${Math.round(pct)}%`;
+      this.hMountIndicator.classList.toggle('critical', pct < 30);
+      this.hMountWaypoint.classList.add('hidden');
+      this.hMountWaypoint.classList.remove('near');
+      return;
+    }
+    this.hMountBar.classList.add('hidden');
+    this.hMountIndicator.classList.add('hidden');
+    // waypoint: aponta direção e distância real até a montaria 3D estacionada no mapa
+    if (wm && wm.def) {
+      if (!wm.alive) {
+        this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `${wm.def.name} — reforço em ${Math.ceil(wm.respawnT)}s`;
+        this.hMountWaypoint.classList.remove('near');
+        this.hMountWaypoint.classList.remove('hidden');
+      } else if (!wm.rider) {
+        const dx = wm.x - p.pos.x;
+        const dz = wm.z - p.pos.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist <= MOUNT_USE_DIST) {
+          this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `Aperte C para montar — ${wm.def.name}`;
+          this.hMountWaypoint.classList.add('near');
+        } else {
+          const ang = Math.atan2(dz, dx);
+          const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+          const idx = ((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8;
+          this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `${wm.def.name} · ${Math.round(dist)}m ${arrows[idx]}`;
+          this.hMountWaypoint.classList.remove('near');
+        }
+        this.hMountWaypoint.classList.remove('hidden');
+      } else {
+        this.hMountWaypoint.classList.add('hidden');
+      }
+    } else {
+      this.hMountWaypoint.classList.add('hidden');
+    }
   }
 
   updateHud(dt) {
@@ -1492,6 +1568,7 @@ export class UI {
       setT(this.hBossBar.val, `${fmt(Math.max(0, g.boss.hp))} / ${fmt(g.boss.maxHp)}`);
     }
     g.players.forEach((p, k) => this.updatePlayer(p, k));
+    this.updateMountHud();
     this.updatePauseBadge();
     this.radarT = (this.radarT || 0) - dt;
     if (this.radarT <= 0) {
@@ -1559,6 +1636,11 @@ export class UI {
       const kick = p.cxKick || 0;
       const base = w.kind === 'gun' ? Math.min(14, w.spread * 70 + (w.pellets > 1 ? 5 : 0)) : 2;
       this.styleXh(x, this.crossId(p.weapon));
+      // indicador posicional: quando montado, a mira muda para a cor da montaria
+      if (p.isMounted && p.mountId !== null) {
+        const mc = mountDef(p.mountId).color;
+        setV(x.el, '--xc', `#${mc.toString(16).padStart(6, '0')}`);
+      }
       if (g.players.length > 1 && !x.el.contains(x.tag)) x.el.append(x.tag);
       if (g.players.length === 1 && x.el.contains(x.tag)) x.tag.remove();
       this.setXhState(x, {

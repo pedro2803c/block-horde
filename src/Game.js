@@ -15,6 +15,7 @@ import { platform } from './platform.js';
 import { TouchControls } from './touch.js';
 import { ControllerManager } from './gamepad.js';
 import { diffOf } from './difficulty.js';
+import { mountDef, mountForArena, drawMount, MOUNT_USE_DIST } from './mounts.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -44,9 +45,9 @@ const compact = (arr, keep) => {
 };
 
 const CONTROLS = {
-  solo: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], reload: ['KeyG'], mouse: true },
-  p1: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], reload: ['KeyG'] },
-  p2: { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['Enter', 'NumpadEnter', 'Numpad0', 'KeyL'], next: ['ShiftRight', 'Period'], prev: ['Comma'], melee: ['KeyK', 'Slash', 'NumpadDecimal', 'Numpad1'], reload: ['KeyH', 'Numpad3'] },
+  solo: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], reload: ['KeyG'], mount: ['KeyC'], mouse: true },
+  p1: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], reload: ['KeyG'], mount: ['KeyC'] },
+  p2: { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['Enter', 'NumpadEnter', 'Numpad0', 'KeyL'], next: ['ShiftRight', 'Period'], prev: ['Comma'], melee: ['KeyK', 'Slash', 'NumpadDecimal', 'Numpad1'], reload: ['KeyH', 'Numpad3'], mount: ['KeyC'] },
 };
 
 // avisos dos eventos climáticos de cada arena
@@ -350,11 +351,34 @@ export class Game {
     this.loadouts = loadLoadouts();
     this.players = survivors.map((s, k) => this.makePlayer(s, k, survivors.length > 1));
     const center = { x: arena.W / 2, z: arena.D / 2 + 4 };
+    const montariaDaArena = mountForArena(arenaDef.id); // uma montaria 3D estacionada por arena
     this.players.forEach((p, k) => {
       // nasce num ponto livre (o centro de algumas arenas tem consoles e muros)
       const s = this.freeSpot(center.x + (k ? 1.2 : -1.2) * (survivors.length > 1), center.z, p.radius + 0.05);
       p.pos.set(s.x, 0, s.z);
+      p.mountId = montariaDaArena ? arenaDef.id : null;
     });
+    if (montariaDaArena) {
+      const ms = this.freeSpot(center.x + 3.2, center.z - 1.2, 1.35);
+      this.worldMount = {
+        id: arenaDef.id,
+        def: montariaDaArena,
+        x: ms.x,
+        z: ms.z,
+        spawnX: ms.x,
+        spawnZ: ms.z,
+        facing: -Math.PI * 0.25,
+        hp: montariaDaArena.maxHp,
+        maxHp: montariaDaArena.maxHp,
+        rider: null,
+        alive: true,
+        respawnT: 0,
+        hurtT: 0,
+        wheelT: 0,
+      };
+    } else {
+      this.worldMount = null;
+    }
     this.camTarget.set(center.x, 0, center.z);
     if (demo) for (let k = 0; k < 26; k++) {
       this.spawnZombie(pick(['walker', 'walker', ...ENEMY_ORDER.filter((t) => t !== 'boss')]), rand(4, arena.W - 4), rand(4, arena.D - 4));
@@ -442,6 +466,11 @@ export class Game {
       lavaT: 0,
       fireT: 0,
       onPlat: false,
+      // montaria
+      mountId: null,        // id da montara ('praca', 'armazem', etc.)
+      mountHp: 0,           // vida atual da montara
+      mountT: 0,            // timer de ação da montara (entrar/sair/ataque)
+      isMounted: false,     // jogador está sentado na montara
     };
     return p;
   }
@@ -1438,7 +1467,52 @@ export class Game {
   // special: explosões, ácido, nuvens, pedras, pancada, investida e botes (o capacete reduz)
   damagePlayer(p, dmg, fx, fz, knock = 0, special = false) {
     if (!p.alive || this.debugGod) return;
-    // Escudo tático e Investida bloqueiam tudo
+    // montaria recebe dano primeiro (instância da partida, sem mutar MOUNTS)
+    if (p.isMounted && this.worldMount && this.worldMount.rider === p) {
+      const wm = this.worldMount;
+      wm.hp -= dmg;
+      wm.hurtT = 0.14;
+      p.mountHp = Math.max(0, wm.hp);
+      if (wm.hp <= 0) {
+        const overflow = Math.max(0, -wm.hp);
+        // montaria destruída: desmonta o jogador e aplica eventual dano excedente
+        this.dismount(p, true);
+        if (overflow > 0) {
+          p.hp -= overflow;
+          p.hurtT = 0.15;
+          if (dmg > 0) this.pad.rumble(this.players.indexOf(p), Math.min(1, 0.35 + dmg / 30), 140);
+          if (dmg > 0) {
+            for (let k = 0; k < 5; k++) this.parts.spawn(p.pos.x, 1, p.pos.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, pick(BLOOD), 1, 16, 1);
+            this.audio.play('hurt', { volume: 0.7, priority: true });
+          }
+          this.noiseShake(0.2);
+          this.ui.playerHurt(p.id);
+          if (p.hp <= 0) {
+            p.hp = 0;
+            p.alive = false;
+            p.deadT = 0;
+            p.armor = 0;
+            p.helmet = false;
+            p.pack = false;
+            p.boots = false;
+            p.exoT = 0;
+            p.reloadT = 0;
+            p.energyT = 0;
+            p.meleeT = 0;
+            this.arena.splat(p.pos.x, p.pos.z, 0.8);
+            this.audio.play('zombie_die', { rate: 1.5, volume: 0.7, priority: true });
+            if (this.players.some((q) => q.alive)) this.ui.banner(`${p.look.name} CAIU! Volta na próxima onda.`, 'bad');
+            else this.later(1.8, () => this.gameOver());
+          }
+        }
+        return;
+      }
+      // montaria tomou dano, mas ainda está viva — feedback visual
+      this.audio.play('hit_armor', { volume: 0.55, priority: true });
+      this.noiseShake(0.15);
+      return;
+    }
+    // dano normal ao jogador (código existente continua a partir daqui)
     if (p.shieldT > 0 || p.dashT > 0) {
       for (let k = 0; k < 4; k++) this.parts.spawn(p.pos.x + rand(-0.5, 0.5), rand(0.6, 1.4), p.pos.z + rand(-0.5, 0.5), rand(-2, 2), rand(0, 2), rand(-2, 2), 0.07, 0x4fd0ff, 0.35, 0, 2);
       return;
@@ -1625,7 +1699,104 @@ export class Game {
       done(p);
     }
   }
-  triggerCarAlarm(pr) {
+  // --- montaria 3D ---
+  startMount(p, arenaId, force = false) {
+    const wm = this.worldMount;
+    const m = (wm && wm.def) || mountDef(arenaId);
+    if (!m || !wm) return;
+    if (p.isMounted) {
+      this.dismount(p);
+      return;
+    }
+    if (!wm.alive) {
+      this.ui.toast(p.id, `${m.name} em reforço (${Math.ceil(wm.respawnT)}s)`, 'gear', 'bad');
+      return;
+    }
+    if (wm.rider && wm.rider !== p) {
+      this.ui.toast(p.id, `${m.name} já está em uso`, 'gear', 'bad');
+      return;
+    }
+    const dist = Math.hypot(wm.x - p.pos.x, wm.z - p.pos.z);
+    if (!force && dist > MOUNT_USE_DIST) {
+      this.ui.toast(p.id, `Chegue perto de ${m.name} (${Math.round(dist)}m)`, 'gear');
+      return;
+    }
+    wm.rider = p;
+    p.pos.set(wm.x, 0, wm.z);
+    p.facing = wm.facing;
+    p.mountId = wm.id;
+    p.mountHp = wm.hp;
+    p.isMounted = true;
+    p.mountT = 0;
+    p.prevWeapon = p.weapon;
+    p.weapon = m.weapon;
+    p.ammo[m.weapon] = Infinity;
+    p.clip[m.weapon] = Infinity;
+    p.fireCd = 0;
+    this.audio.play('pickup', { volume: 0.65, pos: p.pos });
+    this.ui.toast(p.id, 'Montaria ativada: ' + m.name, 'gear');
+  }
+
+  dismount(p, destroyed = false) {
+    const wm = this.worldMount;
+    p.isMounted = false;
+    if (wm && wm.rider === p) {
+      wm.rider = null;
+      if (destroyed) {
+        wm.alive = false;
+        wm.hp = 0;
+        wm.respawnT = 25;
+        for (let k = 0; k < 18; k++) {
+          this.parts.spawn(wm.x, 0.8, wm.z, rand(-4, 4), rand(2, 6), rand(-4, 4), 0.16, pick([0xff8020, 0xffc107, 0x333840]), 0.9, 14, 2);
+        }
+        this.noiseShake(0.35);
+      } else {
+        // estaciona no local onde o jogador desmontou e coloca o jogador ao lado
+        const side = this.freeSpot(wm.x + Math.cos(wm.facing) * 1.45, wm.z - Math.sin(wm.facing) * 1.45, p.radius + 0.1);
+        p.pos.set(side.x, 0, side.z);
+      }
+    }
+    p.mountHp = 0;
+    const back = p.prevWeapon && WEAPONS[p.prevWeapon] ? p.prevWeapon : 'pistol';
+    p.weapon = back;
+    p.prevWeapon = null;
+    this.ui.toast(p.id, destroyed ? 'Montaria destruída! Nova em 25s' : 'Desmontado', 'gear', destroyed ? 'bad' : undefined);
+  }
+
+  updateWorldMount(dt) {
+    const wm = this.worldMount;
+    if (!wm) return;
+    wm.hurtT = Math.max(0, wm.hurtT - dt);
+    if (!wm.alive) {
+      wm.respawnT -= dt;
+      if (wm.respawnT <= 0) {
+        const s = this.freeSpot(wm.spawnX, wm.spawnZ, 1.35);
+        wm.x = s.x;
+        wm.z = s.z;
+        wm.facing = -Math.PI * 0.25;
+        wm.hp = wm.maxHp;
+        wm.alive = true;
+        wm.rider = null;
+        this.ui.toast(0, `${wm.def.name} disponível na arena!`, 'gear');
+      }
+      return;
+    }
+    if (wm.rider) {
+      const r = wm.rider;
+      if (!r.alive || !r.isMounted) {
+        wm.rider = null;
+        return;
+      }
+      wm.x = r.pos.x;
+      wm.z = r.pos.z;
+      wm.facing = r.facing;
+      const hs = Math.hypot(r.vel.x, r.vel.z);
+      wm.wheelT += hs * dt * 2.6;
+      r.mountHp = wm.hp;
+    }
+  }
+  // --- fim montaria ---
+  holdUse(pr, p, dt, need, label, done) {
     pr.alarmT = 6;
     this.audio.play('siren', { volume: 0.65, pos: pr, rate: 1.2 });
     this.ui.banner('ALARME DO CARRO! A HORDA OUVIU', 'bad');
@@ -3398,6 +3569,7 @@ export class Game {
       this.raycaster.ray.intersectPlane(this.aimPlane, this.mouseWorld);
     }
     for (const p of this.players) this.updatePlayer(p, dt);
+    this.updateWorldMount(dt);
     this.flowT -= dt;
     if (this.flowT <= 0) {
       this.flowT = 0.3;
@@ -3475,7 +3647,8 @@ export class Game {
     }
     const len = Math.hypot(mx, mz);
     const ter = this.arena.terrainAt(p.pos.x, p.pos.z);
-    let speed = 4.7 * (p.energyT > 0 ? 1.3 : 1) * (ter === T_WATER ? 0.6 : ter === T_BUSH ? 0.7 : 1) * (1 + this.pv(p, 'agility') / 100) * (p.furyT > 0 ? 1.3 : 1) * (p.boots ? 1.15 : 1);
+    // montaria: usa velocidade da montara em vez de velocidade do jogador
+    let speed = p.isMounted && p.mountId !== null ? mountDef(p.mountId).speed : 4.7 * (p.energyT > 0 ? 1.3 : 1) * (ter === T_WATER ? 0.6 : ter === T_BUSH ? 0.7 : 1) * (1 + this.pv(p, 'agility') / 100) * (p.furyT > 0 ? 1.3 : 1) * (p.boots ? 1.15 : 1);
     // metralhadora pesada atirando: passos curtos
     const cw = WEAPONS[p.weapon];
     if (cw.slowFire && p.firingT > 0.3 && !(p.exoT > 0)) speed *= cw.slowFire;
@@ -3577,6 +3750,16 @@ export class Game {
     if (wantMelee && p.meleeCd <= 0 && p.meleeT <= 0) this.melee(p);
     const wantFire = inp.any(c.fire) || (c.mouse && inp.mouse.left) || (tt && inp.touchMode && this.settings.touchAuto !== false && AUTO_FIRE.has(WEAPONS[p.weapon].kind));
     if (wantFire && p.fireCd <= 0 && p.meleeT <= 0) this.fire(p);
+
+    // --- montaria: entrar/sair com KeyC (borda de subida para não piscar) ---
+    const pressingMount = inp.anyHit(c.mount);
+    if (pressingMount && !p.isMounted && this.worldMount) {
+      this.startMount(p, this.worldMount.id);
+    } else if (pressingMount && p.isMounted) {
+      this.dismount(p);
+    }
+    // --- fim montaria ---
+
     if (p.energyT > 0 && hs > 1 && Math.random() < dt * 25) this.parts.spawn(p.pos.x + rand(-0.2, 0.2), 0.15, p.pos.z + rand(-0.2, 0.2), -p.vel.x * 0.2, rand(0.5, 1.5), -p.vel.z * 0.2, 0.08, pick([0x40c8ff, 0xffffff]), 0.35, 0, 2);
     // passos
     if (hs > 1 && Math.floor(p.walk / Math.PI) !== Math.floor((p.walk - hs * dt * 2.6) / Math.PI)) this.audio.play('step' + (1 + Math.floor(Math.random() * 3)), { volume: 0.18, pos: p.pos });
@@ -4513,8 +4696,13 @@ export class Game {
       const cloak = p.cloakT > 0;
       if (!cloak || Math.random() > 0.08) {
         const look = cloak ? p.holoLook || (p.holoLook = holoLook(p.look)) : p.look;
-        drawCharacter(cloak ? G : B, p.pos.x, 0, p.pos.z, p.facing, 0.95, look, {
-          walk: p.walk, swing: Math.min(1, hs / 4) * 0.8, aim: p.firingT > 0 || this.mode === 'solo', recoil: p.recoil, hurt: cloak ? 0 : p.hurtT,
+        const mountedDef = p.isMounted && this.worldMount && this.worldMount.rider === p ? this.worldMount.def : null;
+        const seatY = mountedDef ? mountedDef.seatY : 0;
+        const seatZ = mountedDef ? mountedDef.seatZ : 0;
+        const px = p.pos.x + Math.sin(p.facing) * seatZ;
+        const pz = p.pos.z + Math.cos(p.facing) * seatZ;
+        drawCharacter(cloak ? G : B, px, seatY, pz, p.facing, 0.95, look, {
+          walk: mountedDef ? 0 : p.walk, swing: mountedDef ? 0 : Math.min(1, hs / 4) * 0.8, aim: p.firingT > 0 || this.mode === 'solo', recoil: p.recoil, hurt: cloak ? 0 : p.hurtT,
           reload: p.reloadT > 0 ? 1 - p.reloadT / p.reloadMax : 0,
           gun: gl ? { len: gl, color: WEAPONS[p.weapon].color, model: GUN_MODELS[p.weapon] } : null, G,
           melee: m ? { model: GUN_MODELS[m.id], k: 1 - p.meleeT / p.meleeDur, a0: m.a0, a1: m.a1 } : null,
@@ -4539,6 +4727,11 @@ export class Game {
       G.box(p.pos.x + 0.48, 0.03, p.pos.z, 0.06, 0.02, 0.9, c);
       // indicador da direção de tiro
       G.box(p.pos.x + Math.sin(p.aim) * 0.85, 0.04, p.pos.z + Math.cos(p.aim) * 0.85, 0.12, 0.02, 0.12, c);
+    }
+    if (this.worldMount && this.worldMount.alive) {
+      const wm = this.worldMount;
+      const near = !wm.rider && this.players.some((pl) => pl.alive && Math.hypot(wm.x - pl.pos.x, wm.z - pl.pos.z) <= MOUNT_USE_DIST);
+      drawMount(B, G, wm, this.time, near);
     }
     const scout = this.scoutT > 0;
     for (const z of this.zombies) {

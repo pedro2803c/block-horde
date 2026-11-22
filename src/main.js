@@ -7,6 +7,7 @@ import '@fontsource/exo-2/latin-700.css';
 import '@fontsource/exo-2/latin-800.css';
 import '@fontsource/exo-2/latin-800-italic.css';
 import './style.css';
+import { MOUNTS, allMountIds, mountForArena } from './mounts.js';
 import { Game } from './Game.js';
 import { platform } from './platform.js';
 import { startI18n, detectLang } from './i18n.js';

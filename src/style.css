@@ -384,6 +384,34 @@ button.icon-btn.sm .ic { width: 24px; height: 24px; }
 .profile-line .pbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--primary-lo), var(--primary-hi)); }
 .profile-line small { color: var(--muted); }
 
+/* ---------- barra de integridade da montaria (Design System, canto inferior direito) ---------- */
+.mount-bar { position: absolute; bottom: 1rem; right: 1rem; min-width: 210px; display: flex; flex-direction: column; gap: 0.28rem; padding: 0.5rem 0.7rem; background: rgba(27, 31, 40, 0.92); border: 1px solid var(--border); border-radius: var(--r); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); z-index: 12; }
+.mount-bar.hidden { display: none !important; }
+.mount-bar-label { font: 600 0.7rem/1 var(--body); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.mount-bar-fill { width: 100%; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.mount-bar-fill::after { content: ''; display: block; height: 100%; background: linear-gradient(90deg, var(--success-lo), var(--success)); transition: width 0.2s; }
+.mount-bar-text { font: 700 0.72rem/1 var(--body); color: var(--text); align-self: flex-end; }
+.mount-bar.critical { border-color: var(--action); }
+.mount-bar.critical .mount-bar-fill::after { background: linear-gradient(90deg, var(--action-lo), var(--action)); }
+
+/* ---------- indicador da montaria no HUD ---------- */
+.mount-indicator { position: absolute; bottom: 4.9rem; right: 1rem; min-width: 210px; display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.7rem; background: rgba(27, 31, 40, 0.94); border: 1px solid var(--primary); border-radius: var(--r); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55); z-index: 12; }
+.mount-indicator.hidden { display: none !important; }
+.mount-indicator-icon { width: 1.05rem; height: 1.05rem; flex: none; color: var(--primary); display: inline-flex; }
+.mount-indicator-name { font: 700 0.8rem/1 var(--body); color: var(--primary); white-space: nowrap; flex: 1; }
+.mount-indicator-hp { font: 700 0.75rem/1 var(--body); color: var(--text); min-width: 2.6rem; text-align: right; }
+.mount-indicator.critical { border-color: var(--action); }
+.mount-indicator.critical .mount-indicator-name { color: var(--action); }
+
+/* ---------- waypoint de localização da montaria ---------- */
+.mount-waypoint { position: absolute; bottom: 1rem; right: 1rem; display: flex; align-items: center; gap: 0.55rem; padding: 0.5rem 0.8rem; background: rgba(27, 31, 40, 0.94); border: 1px solid var(--info); border-radius: var(--r); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55); z-index: 12; }
+.mount-waypoint.hidden { display: none !important; }
+.mount-waypoint-icon { width: 1.05rem; height: 1.05rem; flex: none; color: var(--info); display: inline-flex; }
+.mount-waypoint-text { font: 600 0.82rem/1 var(--body); color: var(--text); white-space: nowrap; }
+.mount-waypoint.near { background: rgba(27, 31, 40, 0.96); border-color: var(--primary); box-shadow: 0 0 16px rgba(255, 193, 7, 0.4); }
+.mount-waypoint.near .mount-waypoint-icon,
+.mount-waypoint.near .mount-waypoint-text { color: var(--primary); font-weight: 700; }
+
 /* ---------- tabelas, teclas ---------- */
 table { width: 100%; border-collapse: collapse; }
 th { font: 400 1.1rem/1 var(--display); letter-spacing: 0.06em; color: var(--muted); text-align: left; padding: 0.55rem 0.6rem; border-bottom: 2px solid var(--border); }

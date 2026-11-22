@@ -802,3 +802,19 @@ export const TIPS = [
   'Torres posicionáveis têm bateria de 90 s: coloque onde a horda vai passar.',
   'O fogo detona barris e queima caixas de madeira: cuidado onde você aponta o lança-chamas.',
 ];
+
+// Armas das montarias (registradas em WEAPONS para reaproveitar o pipeline de tiro)
+export const MOUNT_WEAPONS = {
+  m_mount_mg:     { name: 'Metralhadora', kind: 'gun',    dmg: 16, range: 24, rate: 0.10, pellets: 1, spread: 0.03, mag: Infinity, ammo: Infinity, color: 0xffd040, sound: 'shot_lmg', heavy: true, kick: 0.05 },
+  m_mount_fork:   { name: 'Garfos',        kind: 'gun',    dmg: 34, range: 5,  rate: 0.55, pellets: 1, spread: 0.12, mag: Infinity, ammo: Infinity, color: 0xffc107, sound: 'melee_hit', heavy: true },
+  m_mount_tusk:   { name: 'Presas',        kind: 'gun',    dmg: 40, range: 4,  rate: 0.50, pellets: 1, spread: 0.15, mag: Infinity, ammo: Infinity, color: 0xd8b080, sound: 'melee_hit', heavy: true },
+  m_mount_cannon: { name: 'Canhão',        kind: 'rocket', dmg: 95, range: 32, rate: 1.30, speed: 20, pellets: 1, spread: 0, mag: Infinity, ammo: Infinity, color: 0xff8020, sound: 'shot_rifle', heavy: true, kick: 0.4 },
+  m_mount_lance:  { name: 'Lança',         kind: 'gun',    dmg: 46, range: 7,  rate: 0.65, pellets: 1, spread: 0.08, mag: Infinity, ammo: Infinity, color: 0xffe080, sound: 'shot_rifle', heavy: true },
+  m_mount_plasma: { name: 'Plasma',        kind: 'bolt',   dmg: 24, range: 22, rate: 0.18, speed: 26, pellets: 1, spread: 0, mag: Infinity, ammo: Infinity, color: 0x40ffb0, sound: 'shot_plasma', heavy: false },
+  m_mount_roar:   { name: 'Rugido',        kind: 'flame',  dmg: 10, range: 9,  rate: 0.14, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffb040, sound: 'flame', heavy: false },
+};
+
+// Registra as armas das montarias no objeto WEAPONS global
+for (const [id, w] of Object.entries(MOUNT_WEAPONS)) {
+  if (!WEAPONS[id]) WEAPONS[id] = w;
+}
