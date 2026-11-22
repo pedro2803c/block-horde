@@ -84,7 +84,9 @@ export const ArsenalMixin = {
   // munição mostrada no HUD: "carregador / reserva"
   ammoText(p, id) {
     const w = WEAPONS[id];
-    const res = id === 'pistol' ? '∞' : String(p.ammo[id] || 0);
+    if (!w) return '0';
+    if (w.mag === Infinity || (p.ammo[id] === Infinity && !Number.isFinite(w.mag))) return '∞';
+    const res = id === 'pistol' || p.ammo[id] === Infinity ? '∞' : String(p.ammo[id] || 0);
     return w.mag ? `${p.clip[id] || 0} / ${res}` : res;
   },
 

@@ -45,9 +45,9 @@ const compact = (arr, keep) => {
 };
 
 const CONTROLS = {
-  solo: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], reload: ['KeyG'], mount: ['KeyC'], mouse: true },
-  p1: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], reload: ['KeyG'], mount: ['KeyC'] },
-  p2: { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['Enter', 'NumpadEnter', 'Numpad0', 'KeyL'], next: ['ShiftRight', 'Period'], prev: ['Comma'], melee: ['KeyK', 'Slash', 'NumpadDecimal', 'Numpad1'], reload: ['KeyH', 'Numpad3'], mount: ['KeyC'] },
+  solo: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], reload: ['KeyG'], mount: ['KeyV'], mouse: true },
+  p1: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], next: ['KeyE'], prev: ['KeyQ'], melee: ['KeyF'], reload: ['KeyG'], mount: ['KeyV'] },
+  p2: { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['Enter', 'NumpadEnter', 'Numpad0', 'KeyL'], next: ['ShiftRight', 'Period'], prev: ['Comma'], melee: ['KeyK', 'Slash', 'NumpadDecimal', 'Numpad1'], reload: ['KeyH', 'Numpad3'], mount: ['KeyM', 'Numpad2'] },
 };
 
 // avisos dos eventos climáticos de cada arena

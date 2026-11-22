@@ -1418,7 +1418,7 @@ export class UI {
       // waypoint para localizar a montaria ao entrar na arena
       (this.hMountWaypoint = h('div', { class: 'mount-waypoint hidden' },
         h('span', { class: 'mount-waypoint-icon' }, icon('target')),
-        h('span', { class: 'mount-waypoint-text' }, 'Montaria por perto — aperte C'))),
+        h('span', { class: 'mount-waypoint-text' }, 'Montaria por perto — aperte V'))),
       this.xhs[0].el,
       this.xhs[1].el);
   }
@@ -1517,7 +1517,7 @@ export class UI {
         const dz = wm.z - p.pos.z;
         const dist = Math.hypot(dx, dz);
         if (dist <= MOUNT_USE_DIST) {
-          this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `Aperte C para montar — ${wm.def.name}`;
+          this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `Aperte V para montar — ${wm.def.name}`;
           this.hMountWaypoint.classList.add('near');
         } else {
           const ang = Math.atan2(dz, dx);
@@ -1743,7 +1743,7 @@ export class UI {
     }
     const ammo = g.ammoText(p, p.weapon);
     if (el.ammo.lastChild?.textContent !== ammo) el.ammo.replaceChildren(icon('ammo'), ammo);
-    tog(el.ammo, 'low', !!cw.mag && (p.clip[p.weapon] || 0) <= Math.ceil(cw.mag * 0.25));
+    tog(el.ammo, 'low', Number.isFinite(cw.mag) && cw.mag > 0 && (p.clip[p.weapon] || 0) <= Math.ceil(cw.mag * 0.25));
     const reloading = p.reloadT > 0;
     tog(el.reload, 'hidden', !reloading);
     if (reloading) el.reload.lastChild.firstChild.style.width = `${Math.round((1 - p.reloadT / p.reloadMax) * 100)}%`;
