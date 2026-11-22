@@ -177,7 +177,7 @@ export class Preview {
     cam.position.set(0, 1.5, 3.8);
     cam.lookAt(0, 1.0, 0);
     const z = this._ez || (this._ez = { pos: new THREE.Vector3(), minions: [] });
-    const show = { spider: 0.72, bat: 0.78, dog: 0.95, spore: 0.95, boss: 0.92, pharaoh: 0.92, sobek: 0.88, crocling: 0.9, bastet: 0.95, bastetclone: 1.1, sphinx: 0.62, brute: 1.05, summoner: 0.98, portal: 0.5, chariot: 0.5, horus: 0.62, scorpion: 0.85, construct: 0.75, anubis: 0.9 }[type] || 1.1;
+    const show = { spider: 0.72, bat: 0.78, dog: 0.95, spore: 0.95, boss: 0.92, pharaoh: 0.92, sobek: 0.88, crocling: 0.9, bastet: 0.95, bastetclone: 1.1, sphinx: 0.62, brute: 1.05, summoner: 0.98, portal: 0.5, chariot: 0.5, horus: 0.62, scorpion: 0.85, construct: 0.75, anubis: 0.9, rm_praetor: 1.05, rm_beast: 1.0, rm_spirit: 0.85, rm_standard: 0.55, rm_engineer: 1.05, rm_turret: 0.85, rm_chariot: 0.5, rm_eagle: 0.62, rm_catapult: 0.6, rm_elephant: 0.65 }[type] || 1.1;
     const cycle = t % 1.6;
     Object.assign(z, {
       type, def: ENEMIES[type], look: enemyLook(type), facing: angle, scale: show, alive: true, rise: 0,

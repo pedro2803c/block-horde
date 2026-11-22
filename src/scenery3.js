@@ -97,7 +97,7 @@ for (const [mk, m] of Object.entries(MATS))
     if (vk === 'wall') Object.assign(def, m.glass ? { beh: 'destruct', coll: 'tall', hp: m.hp, glass: true } : m.grate ? { beh: 'cover', coll: 'low', orient: true } : { beh: 'static', coll: 'tall' }, { model: matWall(m) });
     else if (vk === 'dmg') Object.assign(def, { beh: 'destruct', coll: m.grate ? 'low' : 'tall', hp: Math.round(m.hp * (m.glass ? 0.5 : 0.6)), glass: m.glass, model: matDamaged(m) });
     else if (vk === 'ruin') Object.assign(def, { beh: 'cover', coll: 'low', model: matDestroyed(m) });
-    else if (vk === 'col') Object.assign(def, { beh: 'static', coll: 'tall', model: matColumn(m) });
+    else if (vk === 'col') Object.assign(def, { beh: 'static', coll: 'low', model: matColumn(m) });
     else if (vk === 'corner') Object.assign(def, { beh: 'static', coll: m.grate ? 'low' : 'tall', model: matCorner(m) });
     else if (vk === 'floor' || vk === 'ramp') {
       Object.assign(def, { beh: 'static', coll: 'floor', model: () => cube(m.base, m.light, vk === 'ramp' ? [[0, 1.02, 0, 0.7, 0.02, 0.12, 0xe8b020, 0.6], [0, 1.02, 0.25, 0.7, 0.02, 0.12, 0xe8b020, 0.6]] : []) });
@@ -339,19 +339,19 @@ export const SCENERY3 = {
   labpipes: { n: 91, ch: 'Ï', name: 'Tubulação de laboratório', cat: 'structure', beh: 'static', coll: 'tall', orient: true, theme: 'lab', desc: 'Canos com fluidos luminosos.', model: labPipes },
   // coliseu
   mosaic: { n: 92, ch: 'ù', name: 'Mosaico da arena', cat: 'terrain', beh: 'static', coll: 'floor', theme: 'colosseum', desc: 'Piso de areia batida com mosaico.', model: () => cube(0xb89860, 0xc8a874) },
-  stands: { n: 93, ch: 'Ø', name: 'Arquibancada', cat: 'structure', beh: 'static', coll: 'tall', faceOpen: true, theme: 'colosseum', desc: 'Degraus de pedra com a torcida.', model: stands },
-  rcolumn: { n: 94, ch: 'Ñ', name: 'Coluna romana', cat: 'structure', beh: 'static', coll: 'tall', theme: 'colosseum', desc: 'Coluna canelada com capitel.', model: romanColumn },
+  stands: { n: 93, ch: 'Ø', name: 'Arquibancada', cat: 'structure', beh: 'static', coll: 'low', faceOpen: true, theme: 'colosseum', desc: 'Degraus de pedra com a torcida. Bloqueia tiros, mas permite passagem.', model: stands },
+  rcolumn: { n: 94, ch: 'Ñ', name: 'Coluna romana', cat: 'structure', beh: 'static', coll: 'low', theme: 'colosseum', desc: 'Coluna canelada com capitel. Bloqueia tiros, mas permite passagem de mobs.', model: romanColumn },
   portcullis: { n: 95, ch: 'Ÿ', name: 'Portão monumental', cat: 'structure', beh: 'interact', coll: 'none', spawn: true, faceOpen: true, theme: 'colosseum', desc: 'A grade sobe e a horda entra por aqui.', model: portcullis },
   banner: { n: 96, ch: 'ß', name: 'Bandeira', cat: 'urban', beh: 'destruct', coll: 'low', hp: 30, shoot: 0.25, theme: 'colosseum', desc: 'Estandarte de tecido: queima e quebra.', model: banner },
-  gstatue: { n: 97, ch: 'Æ', name: 'Estátua de gladiador', cat: 'structure', beh: 'static', coll: 'tall', theme: 'colosseum', desc: 'Gladiador de pedra com escudo e espada.', model: gladiator },
+  gstatue: { n: 97, ch: 'Æ', name: 'Estátua de gladiador', cat: 'structure', beh: 'static', coll: 'low', theme: 'colosseum', desc: 'Gladiador de pedra com escudo e espada. Bloqueia tiros, mas permite passagem.', model: gladiator },
   spiketrap: { n: 98, ch: 'Œ', name: 'Armadilha de espinhos', cat: 'structure', beh: 'interact', coll: 'none', hazard: true, theme: 'colosseum', desc: 'Avisa com luz vermelha e lança espinhos do chão (fere todos).', model: spikeTrap },
   tunnel: { n: 99, ch: 'Þ', name: 'Túnel subterrâneo', cat: 'structure', beh: 'interact', coll: 'none', spawn: true, theme: 'colosseum', desc: 'Alçapão dos túneis: inimigos sobem por aqui.', model: tunnel },
   // templo
   sandstone: { n: 99.1, ch: 'ð', name: 'Piso de arenito', cat: 'terrain', beh: 'static', coll: 'floor', theme: 'temple', desc: 'Lajes de arenito encaixadas.', model: () => cube(0xbc9c5c, 0xc8a868) },
   sandwall: { n: 99.2, ch: 'Ð', name: 'Muro de arenito', cat: 'structure', beh: 'static', coll: 'tall', theme: 'temple', desc: 'Pedra dourada em fiadas.', model: sandWall },
   glyphwall: { n: 99.3, ch: 'Ê', name: 'Parede de hieróglifos', cat: 'structure', beh: 'interact', coll: 'tall', theme: 'temple', desc: 'Os símbolos acendem durante a maldição.', model: glyphWall },
-  obelisk: { n: 99.4, ch: 'Ò', name: 'Obelisco', cat: 'structure', beh: 'interact', coll: 'tall', theme: 'temple', desc: 'Agulha de pedra com ponta dourada.', model: obelisk },
-  tpillar: { n: 99.5, ch: 'Ó', name: 'Pilar do templo', cat: 'structure', beh: 'static', coll: 'tall', theme: 'temple', desc: 'Pilar de arenito com faixas turquesa.', model: templePillar },
+  obelisk: { n: 99.4, ch: 'Ò', name: 'Obelisco', cat: 'structure', beh: 'interact', coll: 'low', theme: 'temple', desc: 'Agulha de pedra com ponta dourada. Bloqueia tiros, mas permite passagem.', model: obelisk },
+  tpillar: { n: 99.5, ch: 'Ó', name: 'Pilar do templo', cat: 'structure', beh: 'static', coll: 'low', theme: 'temple', desc: 'Pilar de arenito com faixas turquesa. Bloqueia tiros, mas permite passagem de mobs.', model: templePillar },
   sarcophagus: { n: 99.6, ch: 'Õ', name: 'Sarcófago', cat: 'structure', beh: 'destruct', coll: 'low', hp: 80, shoot: 0.45, theme: 'temple', desc: 'Cobertura baixa. Quebrado (ou na maldição), pode soltar uma múmia ou um tesouro.', model: sarcophagus },
   pplate: { n: 99.7, ch: 'Ç', name: 'Placa de pressão', cat: 'structure', beh: 'interact', coll: 'none', theme: 'temple', desc: 'Pisou, disparou: os lançadores de dardos próximos atiram.', model: pressurePlate },
   dartwall: { n: 99.8, ch: 'Å', name: 'Lançador de dardos', cat: 'structure', beh: 'interact', coll: 'tall', faceOpen: true, theme: 'temple', desc: 'Atira dardos quando alguém pisa numa placa de pressão próxima.', model: dartWall },
