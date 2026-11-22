@@ -26,7 +26,7 @@ const MOUNT_WEAPONS = {
   m_mount_lance:  { name: 'Lança',        kind: 'gun',    dmg: 46, range: 7,  rate: 0.65, pellets: 1, spread: 0.08, mag: Infinity, ammo: Infinity, color: 0xffe080, sound: 'shot_rifle', heavy: true },
   m_mount_plasma: { name: 'Plasma',       kind: 'bolt',   dmg: 24, range: 22, rate: 0.18, speed: 26, pellets: 1, spread: 0, mag: Infinity, ammo: Infinity, color: 0x40ffb0, sound: 'shot_plasma', heavy: false },
   m_mount_roar:   { name: 'Rugido',              kind: 'flame',  dmg: 10, range: 9,  rate: 0.14, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffb040, sound: 'flame', heavy: false },
-  m_mount_bite:   { name: 'Mordida Destruidora', kind: 'gun',    dmg: 58, range: 5.5, rate: 0.45, pellets: 1, spread: 0.10, mag: Infinity, ammo: Infinity, color: 0x40e0ff, sound: 'stomp', heavy: true },
+  m_mount_bite:   { name: 'Mandíbulas', kind: 'gun',    dmg: 58, range: 5.5, rate: 0.45, pellets: 1, spread: 0.10, mag: Infinity, ammo: Infinity, color: 0x40e0ff, sound: 'stomp', heavy: true },
 };
 
 for (const m of Object.values(MOUNTS)) {
@@ -36,6 +36,31 @@ for (const m of Object.values(MOUNTS)) {
 for (const [id, w] of Object.entries(MOUNT_WEAPONS)) {
   if (!WEAPONS[id]) WEAPONS[id] = w;
 }
+
+// ---- Catálogo (menu MONTARIAS + HUD contextual) — só informação, não altera gameplay ----
+// skills: ações extras da montaria; "act" liga a habilidade à ação configurável em mountControls.js
+export const MOUNT_INFO = {
+  praca:   { arena: 'Cidade Abandonada', desc: 'Veículo militar blindado com metralhadora pesada no teto. Rápido e resistente nas ruas.', traits: ['Veículo', 'Tiro contínuo', 'Alcance longo'], attack: 'Metralhadora: rajada contínua de alcance longo.' },
+  armazem: { arena: 'Complexo Industrial', desc: 'Empilhadeira reforçada que usa os garfos como arma de impacto em curta distância.', traits: ['Veículo', 'Corpo a corpo', 'Resistente'], attack: 'Garfos: golpe frontal forte a curta distância.' },
+  vale:    { arena: 'Floresta Sombria', desc: 'Javali mutante veloz que ataca com presas afiadas.', traits: ['Criatura', 'Corpo a corpo', 'Ágil'], attack: 'Presas: investida curta com dano alto.' },
+  distrito:{ arena: 'Base Militar', desc: 'Tanque pesado e lento, com canhão explosivo de longo alcance.', traits: ['Veículo pesado', 'Explosivo', 'Muito resistente'], attack: 'Canhão: projétil explosivo de longo alcance.' },
+  coliseu: { arena: 'Coliseu', desc: 'Carro de guerra puxado a cavalos, o mais rápido de todos, armado com lança.', traits: ['Carro de guerra', 'Muito rápido', 'Corpo a corpo'], attack: 'Lança: estocada de médio alcance.' },
+  lab:     { arena: 'Laboratório de Pesquisa', desc: 'Armadura experimental que dispara rajadas rápidas de plasma.', traits: ['Armadura', 'Energia', 'Cadência alta'], attack: 'Plasma: projéteis de energia em sequência.' },
+  templo:  { arena: 'Templo Antigo', desc: 'Leão sagrado de Sekhmet que solta um rugido de fogo à frente.', traits: ['Criatura', 'Fogo', 'Área curta'], attack: 'Rugido: jato de fogo em cone à frente.' },
+  naval:   { arena: 'Cemitério Naval', desc: 'Esqueleto de tubarão com mandíbulas enormes e plataforma para o piloto. Unidade única: destruído, não volta na partida.', traits: ['Criatura', 'Corpo a corpo', '4 habilidades', 'Única por partida'], attack: 'Mandíbulas: mordida frontal de curta distância.',
+    skills: [
+      { act: 'heavy',   name: 'Mordida Destruidora', icon: 'paw',    cd: 4,  desc: 'Mordida frontal de dano muito alto.' },
+      { act: 'dash',    name: 'Investida Abissal',   icon: 'run',    cd: 7,  desc: 'Avanço rápido que atropela quem estiver no caminho.' },
+      { act: 'second',  name: 'Onda Esquelética',    icon: 'burst',  cd: 10, desc: 'Impacto aquático em volta: dano em área e atordoa.' },
+      { act: 'special', name: 'Fúria Predadora',     icon: 'flame',  cd: 18, desc: 'Por 8 s: mais velocidade de ataque e dano.' },
+    ] },
+};
+// ordem do catálogo; entradas "future" ainda não existem no jogo (só aparecem como "Em breve")
+export const MOUNT_CATALOG = [
+  'praca', 'armazem', 'vale', 'distrito',
+  { id: 'cemiterio', future: true, name: 'Golem de Ossos', arena: 'Necrópole', desc: 'Montaria planejada para a Necrópole. Ainda não está disponível no jogo.' },
+  'coliseu', 'lab', 'templo', 'naval',
+];
 
 // helpers
 export function isMountWeapon(id) { return !!MOUNT_WEAPONS[id]; }

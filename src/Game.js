@@ -18,6 +18,7 @@ import { TouchControls } from './touch.js';
 import { ControllerManager } from './gamepad.js';
 import { diffOf } from './difficulty.js';
 import { mountDef, mountForArena, drawMount, MOUNT_USE_DIST } from './mounts.js';
+import { loadMountKeys } from './mountControls.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -69,6 +70,7 @@ const EVENT_INFO = {
 export class Game {
   constructor(canvas, uiRoot) {
     this.canvas = canvas;
+    this.mountKeys = loadMountKeys(); // teclas configuráveis das montarias (menu Controles)
     this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95, touchAuto: true, touchSize: 1, touchHaptic: true, aimMode: 1, notifyDur: 1, difficulty: 'normal' };
     try {
       Object.assign(this.settings, JSON.parse(platform.getItem(SETTINGS_KEY) || '{}'));
@@ -2798,7 +2800,13 @@ export class Game {
     if (p.furyT > 0 && Math.random() < dt * 20) this.parts.spawn(p.pos.x + rand(-0.35, 0.35), rand(0.3, 1.6), p.pos.z + rand(-0.35, 0.35), 0, rand(1, 2), 0, rand(0.08, 0.14), pick([0xff5a1a, 0xffb030, 0xff2a10]), 0.45, -1, 2);
     this.updateNavalSet(p);
     const shark = p.isMounted && this.worldMount && this.worldMount.rider === p && this.worldMount.def.kind === 'shark';
-    for (let i = 0; i < 4; i++) if (this.input.anyHit(p.akeys[i])) (shark ? this.sharkAbility(p, i) : this.useAbility(p, i));
+    if (shark) {
+      // montado: teclas configuráveis (solo/J1) + botões de habilidade (controle, toque e J2)
+      const mk = this.mountKeys;
+      const acts = ['heavy', 'dash', 'second', 'special'];
+      const kb = !(this.players.length > 1 && p.id === 1);
+      for (let i = 0; i < 4; i++) if (this.input.anyHit(kb ? [mk[acts[i]], ...p.akeys[i]] : p.akeys[i])) this.sharkAbility(p, i);
+    } else for (let i = 0; i < 4; i++) if (this.input.anyHit(p.akeys[i])) this.useAbility(p, i);
   }
   // Tubarão Esqueleto: 4 habilidades nas teclas de habilidade enquanto montado
   sharkAbility(p, i) {
@@ -2810,9 +2818,7 @@ export class Game {
       this.ui.toast(p.id, `${NAMES[i]}: ${Math.ceil(p.sharkCd[i] - now)}s`, 'paw', 'bad');
       return;
     }
-    p.sharkCd[i] = now + CD[i];
-    p.cds[i] = CD[i];
-    p.cdMax[i] = CD[i];
+    p.sharkCd[i] = now + CD[i]; // recarga própria: não mexe nas habilidades do personagem
     const fx = Math.sin(p.aim), fz = Math.cos(p.aim);
     const area = (cx, cz, r, dmg, stun) => {
       for (const z of this.zombies) {
@@ -3854,7 +3860,9 @@ export class Game {
     if (wantFire && p.fireCd <= 0 && p.meleeT <= 0) this.fire(p);
 
     // --- montaria: entrar/sair com KeyC (borda de subida para não piscar) ---
-    const pressingMount = inp.anyHit(c.mount);
+    // solo/J1: tecla configurável; J2: teclas fixas; controle e toque: botão virtual
+    const isP2 = this.players.length > 1 && p.id === 1;
+    const pressingMount = inp.anyHit(isP2 ? [...c.mount, 'VMount2'] : [this.mountKeys.toggle, 'VMount']);
     if (pressingMount && !p.isMounted && this.worldMount) {
       this.startMount(p, this.worldMount.id);
     } else if (pressingMount && p.isMounted) {

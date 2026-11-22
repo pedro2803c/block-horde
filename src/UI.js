@@ -1,5 +1,6 @@
 ﻿import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, SLOT_KEYS, UNLOCKS, SURVIVORS, ARENAS, TIPS, ENEMIES, ENEMY_ORDER, profileNeed } from './data.js';
-import { mountDef, mountForArena, MOUNT_USE_DIST } from './mounts.js';
+import { mountDef, mountForArena, MOUNT_USE_DIST, MOUNTS, MOUNT_INFO, MOUNT_CATALOG } from './mounts.js';
+import { MOUNT_ACTIONS, MOUNT_DEFAULTS, actionsOf, mountsUsing, keyLabel, conflictFor, saveMountKeys } from './mountControls.js';
 import { ITEMS, ITEM_ORDER, ITEM_CATS, MELEE } from './items.js';
 import { SCENERY, SCENERY_ORDER, SCENERY_CATS, SCENERY_BEH } from './scenery.js';
 import { CROSSHAIRS, CROSSHAIR_ORDER, WEAPON_CROSSHAIR, CROSS_COLORS, crosshairSvg } from './crosshairs.js';
@@ -304,12 +305,13 @@ export class UI {
           h('div', { class: 'menu-duo' },
             btn('wide', 'bolt', 'Habilidades e builds', () => this.showScreen('skills')),
             btn('', 'skull', 'Inimigos', () => this.showScreen('enemies')),
+            btn('', 'vehicle', 'Montarias', () => this.showScreen('mounts')),
             btn('', 'backpack', 'Itens', () => this.showScreen('items')),
             btn('', 'map', 'Cenário', () => this.showScreen('scenery')),
             btn('', 'trophy', 'Recordes', () => this.showScreen('records')),
             btn('', 'gamepad', 'Controles', () => this.showScreen('controls', { back: 'menu' })),
             btn('', 'gear', 'Configurações', () => this.showScreen('settings', { back: 'menu' })),
-            btn('wide', 'info', 'Créditos', () => this.showScreen('credits')))),
+            btn('', 'info', 'Créditos', () => this.showScreen('credits')))),
         h('p', { class: 'tip' }, h('b', {}, 'Dica: '), tip())),
       skyline(),
       h('div', { class: 'version' }, 'v1.1 · tudo gerado por código'));
@@ -544,17 +546,78 @@ export class UI {
       h('div', { class: 'row' }, del, h('span', { class: 'grow' }), btn('primary back', 'check', 'Ok', () => this.showScreen('menu'))));
   }
 
-  scr_controls({ back, tab = 0 }) {
-    const sets = [
-      { ic: 'user', name: 'Solo', rows: [['W · A · S · D', 'Mover'], ['Mouse', 'Mirar'], ['Clique · Espaço', 'Atirar'], ['F · botão direito', 'Faca / machado'], ['Z · X · C', 'Habilidades ativas'], ['R', 'Ultimate'], ['Tab', 'Árvore de habilidades'], ['G', 'Recarregar'], ['Q · E · roda', 'Trocar arma'], ['1 – 9 · 0 · -', 'Grupo de armas (repita para alternar)'], ['P · ESC', 'Pausar']] },
-      { ic: 'users', name: 'Jogador 1', rows: [['W · A · S · D', 'Mover e mirar'], ['Espaço', 'Atirar'], ['F', 'Faca / machado'], ['Z · X · C', 'Habilidades ativas'], ['R', 'Ultimate'], ['Tab', 'Árvore de habilidades'], ['G', 'Recarregar'], ['Q · E', 'Trocar arma'], ['P · ESC', 'Pausar']] },
-      { ic: 'gamepad', name: 'Controle', rows: this.padRows(this.g.pad?.active) },
-      { ic: 'users', name: 'Jogador 2', rows: [['↑ · ↓ · ← · →', 'Mover e mirar'], ['Enter · Num 0 · L', 'Atirar'], ['K · / · Num 1', 'Faca / machado'], ['U · I · O (Num 4 5 6)', 'Habilidades ativas'], ['J · Num 8', 'Ultimate'], ['H · Num 3', 'Recarregar'], [', · .', 'Trocar arma'], ['Shift direito', 'Próxima arma']] },
+  // aba CONTROLES DE MONTARIAS: teclado remapeável, controle e toque; só ações que alguma montaria tem
+  mountControlsBody(back, msg) {
+    const g = this.g;
+    const re = (m) => this.showScreen('controls', { back, tab: 4, msg: m });
+    const names = (ids) => ids.map((id) => MOUNTS[id].name).join(', ');
+    const P = g.pad;
+    const pad = P?.active || P?.pads?.[0];
+    const touchTxt = { toggle: 'Botão "Montar / Sair"', fire: 'Direcional direito (ou tiro automático)', heavy: 'Botão de habilidade 1', dash: 'Botão de habilidade 2', second: 'Botão de habilidade 3', special: 'Botão de ultimate' };
+    const listen = (act) => {
+      this.mountListen?.();
+      const row = this.screenEl.querySelector(`tr[data-mact="${act}"] .mk`);
+      if (row) row.replaceChildren(h('kbd', { class: 'listening' }, 'Aperte uma tecla…'));
+      const onKey = (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        stop();
+        if (e.code === 'Escape') return re({ t: 'Alteração cancelada.', ok: true });
+        const why = conflictFor(g.mountKeys, act, e.code);
+        const a = MOUNT_ACTIONS.find((x) => x.id === act);
+        if (why) return re({ t: `"${keyLabel(e.code)}" não pode ser usada em ${a.name}: ${why}.`, ok: false });
+        g.mountKeys = { ...g.mountKeys, [act]: e.code };
+        saveMountKeys(g.mountKeys);
+        re({ t: `${a.name}: agora é "${keyLabel(e.code)}". Salvo.`, ok: true });
+      };
+      const stop = () => {
+        window.removeEventListener('keydown', onKey, true);
+        this.mountListen = null;
+      };
+      window.addEventListener('keydown', onKey, true);
+      this.mountListen = stop;
+    };
+    const dev = this.inputDevice();
+    const devName = { kb: 'Teclado e mouse', pad: 'Controle', touch: 'Toque' }[dev];
+    const rows = MOUNT_ACTIONS.filter((a) => mountsUsing(a.id).length).map((a) => {
+      const kb = a.fixed ? h('span', { class: 'mk' }, h('kbd', {}, 'Clique'), h('kbd', {}, 'Espaço')) : h('span', { class: 'mk' }, h('kbd', {}, keyLabel(g.mountKeys[a.id])));
+      return h('tr', { 'data-mact': a.id, class: a.id === 'fire' ? '' : '' },
+        h('td', {}, h('span', { class: 'mc-act' }, icon(a.icon), h('b', {}, a.name)), h('small', { class: 'muted' }, `Montarias: ${mountsUsing(a.id).length === Object.keys(MOUNTS).length ? 'todas' : names(mountsUsing(a.id))}`)),
+        h('td', {}, kb, a.fixed ? h('small', { class: 'muted' }, ' (mesmo comando de Atirar)') : btn('sm', 'gear', 'Alterar', () => listen(a.id))),
+        h('td', {}, h('kbd', {}, P ? P.actionGlyph(a.pad, pad) : '—')),
+        h('td', {}, h('small', {}, touchTxt[a.id])));
+    });
+    return [
+      h('h3', { class: 'section' }, 'Controles de montarias'),
+      h('p', { class: 'muted', style: 'margin:0 0 .6rem' }, `Dispositivo ativo: ${devName}. Só aparecem ações que existem em alguma montaria (Acelerar não existe em nenhuma montaria atual). As habilidades da montaria só funcionam montado, por isso podem usar o mesmo botão da habilidade do personagem.`),
+      msg ? h('p', { class: 'mc-msg ' + (msg.ok ? 'ok' : 'bad'), role: 'status' }, icon(msg.ok ? 'check' : 'warning'), msg.t) : null,
+      h('div', { class: 'table-wrap' }, h('table', { class: 'keys mount-keys' },
+        h('thead', {}, h('tr', {}, h('th', {}, 'Ação'), h('th', {}, 'Teclado'), h('th', {}, 'Controle'), h('th', {}, 'Toque'))),
+        h('tbody', {}, rows))),
+      h('div', { class: 'row' }, btn('', 'reload', 'Restaurar padrões', () => {
+        g.mountKeys = { ...MOUNT_DEFAULTS };
+        saveMountKeys(g.mountKeys);
+        re({ t: 'Teclas das montarias restauradas para o padrão.', ok: true });
+      })),
+      h('p', { class: 'muted' }, 'No co-op, o Jogador 2 usa M ou Num 2 para montar e os botões de habilidade dele para os golpes da montaria. No controle, os golpes da montaria usam os botões de habilidade; remapeie-os na tela do controle.'),
     ];
+  }
+
+  scr_controls({ back, tab = 0, msg = null }) {
+    this.mountListen?.();
+    const sets = [
+      { ic: 'user', name: 'Solo', rows: [['W · A · S · D', 'Mover'], ['Mouse', 'Mirar'], ['Clique · Espaço', 'Atirar'], ['F · botão direito', 'Faca / machado'], ['Z · X · C', 'Habilidades ativas'], ['R', 'Ultimate'], ['Tab', 'Árvore de habilidades'], ['G', 'Recarregar'], ['Q · E · roda', 'Trocar arma'], ['1 – 9 · 0 · -', 'Grupo de armas (repita para alternar)'], [keyLabel(this.g.mountKeys.toggle), 'Montar / desmontar (aba Montarias)'], ['P · ESC', 'Pausar']] },
+      { ic: 'users', name: 'Jogador 1', rows: [['W · A · S · D', 'Mover e mirar'], ['Espaço', 'Atirar'], ['F', 'Faca / machado'], ['Z · X · C', 'Habilidades ativas'], ['R', 'Ultimate'], ['Tab', 'Árvore de habilidades'], ['G', 'Recarregar'], ['Q · E', 'Trocar arma'], [keyLabel(this.g.mountKeys.toggle), 'Montar / desmontar'], ['P · ESC', 'Pausar']] },
+      { ic: 'gamepad', name: 'Controle', rows: this.padRows(this.g.pad?.active) },
+      { ic: 'users', name: 'Jogador 2', rows: [['↑ · ↓ · ← · →', 'Mover e mirar'], ['Enter · Num 0 · L', 'Atirar'], ['K · / · Num 1', 'Faca / machado'], ['U · I · O (Num 4 5 6)', 'Habilidades ativas'], ['J · Num 8', 'Ultimate'], ['H · Num 3', 'Recarregar'], [', · .', 'Trocar arma'], ['Shift direito', 'Próxima arma'], ['M · Num 2', 'Montar / desmontar']] },
+    ];
+    sets.push({ ic: 'vehicle', name: 'Montarias', rows: [] });
     const s = sets[tab];
     const keys = (k) => k.split(' · ').map((x) => h('kbd', {}, x));
     const tabs = h('div', { class: 'tabs', role: 'tablist' },
       sets.map((t, i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': i === tab ? 'true' : 'false', 'data-focus': i === tab ? '' : undefined, onclick: () => this.showScreen('controls', { back, tab: i }) }, icon(t.ic), t.name)));
+    if (tab === 4) return this.win('controls', 'Controles', () => this.showScreen(back), tabs, ...this.mountControlsBody(back, msg),
+      h('div', { class: 'row end' }, btn('', 'gamepad', 'Remapear botões do controle', () => this.showScreen('gamepad', { back: () => this.showScreen('controls', { back, tab: 4 }), tab: 2 })), btn('primary back', 'check', 'Ok', () => this.showScreen(back))));
     return this.win('controls', 'Controles', () => this.showScreen(back),
       tabs,
       h('div', { class: 'table-wrap' }, h('table', { class: 'keys' }, h('tbody', {}, s.rows.map(([k, v]) => h('tr', {}, h('td', {}, keys(k)), h('td', {}, v)))))),
@@ -1187,6 +1250,84 @@ export class UI {
       h('div', { class: 'row end' }, btn('primary back', 'check', 'Ok', () => this.showScreen('menu'))));
   }
 
+  // ------------------------------------------------------------ MONTARIAS: catálogo informativo
+  mountStats(def) {
+    const bar = (label, v, max, txt) => h('div', { class: 'ms-bar' }, h('span', {}, label), h('i', {}, h('b', { style: `width:${Math.round(Math.min(1, v / max) * 100)}%` })), h('small', {}, txt));
+    return h('div', { class: 'ms-stats' },
+      bar('Resistência', def.hp, 420, `${def.hp}`),
+      bar('Mobilidade', def.speed, 10.5, def.speed >= 9 ? 'Alta' : def.speed >= 7 ? 'Média' : 'Baixa'));
+  }
+  scr_mounts() {
+    const items = [];
+    const card = (entry, k) => {
+      const future = typeof entry === 'object';
+      const id = future ? entry.id : entry;
+      const def = future ? null : MOUNTS[id];
+      const info = future ? entry : MOUNT_INFO[id];
+      const canvas = future ? h('div', { class: 'model mount-soon' }, icon('lock'), h('b', {}, 'Em breve')) : h('canvas', { class: 'model', width: 260, height: 190, 'aria-hidden': 'true' });
+      let on;
+      let off;
+      if (!future) {
+        const item = { id, canvas, angle: 0.7 + k * 0.5, active: false };
+        items.push(item);
+        on = () => (item.active = true);
+        off = () => (item.active = false);
+      }
+      const open = () => !future && this.showScreen('mount', { id });
+      return h('li', { class: 'beast mount-card' + (future ? ' locked' : ''), tabindex: '0', role: 'button', 'aria-label': `${future ? info.name : def.name} — ${info.arena}`, onclick: open, onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }, onpointerenter: on, onpointerleave: off, onfocus: on, onblur: off },
+        h('span', { class: 'num' }, String(k + 1).padStart(2, '0')),
+        canvas,
+        h('span', { class: 'beast-name' }, icon('vehicle'), future ? info.name : def.name),
+        h('span', { class: 'item-tags' }, h('b', {}, info.arena), ' · ', future ? 'Planejada' : 'Disponível'),
+        h('small', {}, info.desc),
+        future ? null : this.mountStats(def),
+        future ? null : h('span', { class: 'beast-stats' }, `${(info.skills || []).length ? info.skills.length + ' habilidades' : 'Só ataque principal'} · Ver detalhes ›`));
+    };
+    this.runPreviews(items, 'mounts', (pv, it, t) => pv.mount(it.canvas, it.id, it.angle, t, it.active));
+    return this.win('enemies items mounts', 'Montarias', () => this.showScreen('menu'),
+      h('p', { class: 'muted', style: 'margin:0 0 .8rem' }, 'Cada arena tem uma montaria própria, estacionada no mapa desde o início da partida. Este catálogo é só para consulta: a montaria não pode ser levada para outra arena. Toque ou clique num card para ver os detalhes.'),
+      h('ul', { class: 'beast-grid' }, MOUNT_CATALOG.map(card)),
+      h('div', { class: 'row end' }, btn('', 'gamepad', 'Controles de montarias', () => this.showScreen('controls', { back: 'mounts', tab: 4 })), btn('primary back', 'check', 'Ok', () => this.showScreen('menu'))));
+  }
+  scr_mount({ id }) {
+    const def = MOUNTS[id];
+    const info = MOUNT_INFO[id];
+    const w = WEAPONS[def.weapon];
+    const canvas = h('canvas', { class: 'model big', width: 440, height: 320, 'aria-hidden': 'true' });
+    this.runPreviews([{ id, canvas, angle: 0.8, active: true }], 'mount', (pv, it, t) => { it.angle += 0.006; pv.mount(it.canvas, it.id, it.angle, t, true); });
+    const P = this.g.pad;
+    const padKey = (actId) => (P ? P.actionGlyph(MOUNT_ACTIONS.find((x) => x.id === actId).pad, P.active || P.pads[0]) : '—');
+    const kbOf = (actId) => (actId === 'fire' ? 'Clique · Espaço' : keyLabel(this.g.mountKeys[actId]));
+    const touchOf = { toggle: 'Botão Montar / Sair', fire: 'Direcional direito', heavy: 'Botão de habilidade 1', dash: 'Botão de habilidade 2', second: 'Botão de habilidade 3', special: 'Botão de ultimate' };
+    const acts = actionsOf(id);
+    const skills = info.skills || [];
+    const tk = keyLabel(this.g.mountKeys.toggle);
+    return this.win('mount-detail', def.name, () => this.showScreen('mounts'),
+      h('div', { class: 'md-grid' },
+        h('div', { class: 'md-view' }, canvas,
+          h('div', { class: 'md-tags' }, h('b', {}, info.arena), ...info.traits.map((t) => h('span', {}, t))),
+          this.mountStats(def),
+          def.noRespawn ? h('p', { class: 'md-warn' }, icon('warning'), 'Unidade única: destruída, não volta nesta partida.') : h('p', { class: 'muted' }, 'Se for destruída, uma nova chega em 25 s.')),
+        h('div', { class: 'md-info' },
+          h('p', {}, info.desc),
+          h('h3', { class: 'section' }, 'Ataques e habilidades'),
+          h('ul', { class: 'md-skills' },
+            h('li', {}, icon('target'), h('div', {}, h('b', {}, `Ataque principal — ${w.name}`), h('small', {}, `${info.attack} Munição infinita.`))),
+            ...skills.map((s) => h('li', {}, icon(s.icon), h('div', {}, h('b', {}, `${s.name} · recarga ${s.cd} s`), h('small', {}, s.desc))))),
+          h('h3', { class: 'section' }, 'Controles'),
+          h('div', { class: 'table-wrap' }, h('table', { class: 'keys' },
+            h('thead', {}, h('tr', {}, h('th', {}, 'Ação'), h('th', {}, 'Teclado'), h('th', {}, 'Controle'), h('th', {}, 'Toque'))),
+            h('tbody', {}, acts.map((a) => h('tr', {}, h('td', {}, a.name), h('td', {}, kbOf(a.id).split(' · ').map((x) => h('kbd', {}, x))), h('td', {}, h('kbd', {}, padKey(a.id))), h('td', {}, h('small', {}, touchOf[a.id]))))))),
+          h('h3', { class: 'section' }, 'Como utilizar'),
+          h('ol', { class: 'md-how' },
+            h('li', {}, h('b', {}, 'Entrar: '), `ao começar uma partida em ${info.arena}, siga o aviso com a distância (canto inferior direito) até o anel luminoso no chão e aperte ${tk} (controle: ${padKey('toggle')}; celular: botão Montar).`),
+            h('li', {}, h('b', {}, 'Atacar: '), `atire normalmente; a arma vira ${w.name}, com munição infinita.`),
+            h('li', {}, h('b', {}, 'Habilidades: '), skills.length ? `${skills.map((s) => `${s.name} (${kbOf(s.act)})`).join(', ')}. O HUD mostra a recarga de cada uma.` : 'esta montaria não tem habilidades extras, só o ataque principal.'),
+            h('li', {}, h('b', {}, 'Sair: '), `aperte ${tk} de novo; ela fica estacionada onde você desceu.`),
+            h('li', {}, h('b', {}, 'Integridade: '), 'a barra da montaria recebe o dano no seu lugar. Se zerar, você desce e continua a pé.')))),
+      h('div', { class: 'row end' }, btn('', 'gamepad', 'Configurar controles', () => this.showScreen('controls', { back: 'mounts', tab: 4 })), btn('primary back', 'check', 'Voltar', () => this.showScreen('mounts'))));
+  }
+
   // catálogo: os 18 itens em 3D, com categoria, raridade e como conseguir
   scr_items({ cat = 'all' } = {}) {
     const items = [];
@@ -1415,6 +1556,8 @@ export class UI {
         h('div', { class: 'mount-bar-label' }, 'Montaria'),
         h('div', { class: 'mount-bar-fill' }),
         h('small', { class: 'mount-bar-text' }, '--'))),
+      // comandos da montaria em uso (tecla/botão + ação + recarga), muda conforme a montaria e o dispositivo
+      (this.hMountCmds = h('div', { class: 'mount-cmds hidden', 'aria-live': 'off' })),
       // waypoint para localizar a montaria ao entrar na arena
       (this.hMountWaypoint = h('div', { class: 'mount-waypoint hidden' },
         h('span', { class: 'mount-waypoint-icon' }, icon('target')),
@@ -1476,11 +1619,66 @@ export class UI {
     this.pauseBtn.setAttribute('aria-label', this.pauseBtn.title);
   }
 
+  // dispositivo em uso: 'pad' | 'touch' | 'kb'
+  inputDevice() {
+    if (this.g.pad?.usingPad) return 'pad';
+    if (this.g.input?.touchMode) return 'touch';
+    return 'kb';
+  }
+  // tecla/botão de uma ação de montaria no dispositivo em uso
+  mountGlyph(actId, touchText = '', prefix = '') {
+    const dev = this.inputDevice();
+    const a = MOUNT_ACTIONS.find((x) => x.id === actId);
+    if (dev === 'touch') return touchText || (a ? a.name : '');
+    let g;
+    if (dev === 'pad') g = this.g.pad.actionGlyph(a.pad);
+    else if (actId === 'fire') g = 'Clique · Espaço';
+    else g = keyLabel(this.g.mountKeys[actId]);
+    return prefix ? `${prefix} ${g}` : g;
+  }
+  // painel de comandos da montaria (desktop/controle); no celular os próprios botões explicam
+  updateMountCmds(p, wm) {
+    const dev = this.inputDevice();
+    if (dev === 'touch' || !wm) {
+      this.hMountCmds.classList.add('hidden');
+      return;
+    }
+    const acts = actionsOf(wm.id);
+    const sig = wm.id + dev + JSON.stringify(this.g.mountKeys) + (dev === 'pad' ? JSON.stringify(this.g.pad.active?.map || {}) : '');
+    if (sig !== this.mountCmdKey) {
+      this.mountCmdKey = sig;
+      this.mountCmdRows = acts.map((a) => {
+        const cd = h('i', { class: 'mc-cd' });
+        const row = h('div', { class: 'mc-row', 'data-act': a.id },
+          h('kbd', {}, this.mountGlyph(a.id).split(' · ')[0]),
+          icon(a.icon),
+          h('span', { class: 'mc-name' }, a.id === 'fire' ? 'Ataque principal' : a.name),
+          a.id === 'fire' ? h('b', { class: 'mc-ammo' }, '∞') : cd);
+        return { a, row, cd };
+      });
+      this.hMountCmds.replaceChildren(
+        h('div', { class: 'mc-title' }, h('small', {}, 'Montaria'), h('b', {}, wm.def.name)),
+        ...this.mountCmdRows.map((r) => r.row));
+    }
+    // recargas e indisponibilidade, a cada quadro
+    const now = this.g.time;
+    for (const r of this.mountCmdRows) {
+      if (r.a.slot === undefined) continue;
+      const left = Math.max(0, (p.sharkCd?.[r.a.slot] || 0) - now);
+      const txt = left > 0 ? `${Math.ceil(left)}s` : 'Pronto';
+      if (r.cd.textContent !== txt) r.cd.textContent = txt;
+      r.row.classList.toggle('off', left > 0);
+    }
+    this.hMountCmds.classList.remove('hidden');
+  }
+
   // HUD da montaria: indicador, barra de integridade e waypoint de localização
   updateMountHud() {
     const g = this.g;
     const p = g.players && g.players[0];
     const esconder = () => {
+      this.hMountCmds.classList.add('hidden');
+      this.mountCmdKey = '';
       this.hMountBar.classList.add('hidden');
       this.hMountIndicator.classList.add('hidden');
       this.hMountWaypoint.classList.add('hidden');
@@ -1502,10 +1700,13 @@ export class UI {
       this.hMountIndicator.classList.toggle('critical', pct < 30);
       this.hMountWaypoint.classList.add('hidden');
       this.hMountWaypoint.classList.remove('near');
+      this.updateMountCmds(p, wm);
       return;
     }
     this.hMountBar.classList.add('hidden');
     this.hMountIndicator.classList.add('hidden');
+    this.hMountCmds.classList.add('hidden');
+    this.mountCmdKey = '';
     // waypoint: aponta direção e distância real até a montaria 3D estacionada no mapa
     if (wm && wm.def) {
       if (!wm.alive) {
@@ -1517,7 +1718,7 @@ export class UI {
         const dz = wm.z - p.pos.z;
         const dist = Math.hypot(dx, dz);
         if (dist <= MOUNT_USE_DIST) {
-          this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `Aperte V para montar — ${wm.def.name}`;
+          this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `${this.mountGlyph('toggle', 'Toque em Montar', 'Aperte')} para montar — ${wm.def.name}`;
           this.hMountWaypoint.classList.add('near');
         } else {
           const ang = Math.atan2(dz, dx);

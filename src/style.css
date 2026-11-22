@@ -1345,3 +1345,86 @@ body.touch .diff-card .d-trait { font-size: 0.66rem; gap: 0.3rem; }
 body.touch .diff-card .d-trait .ic { width: 12px; height: 12px; }
 body.touch .diff-card .d-rec { font-size: 0.6rem; margin: 0 0.5rem; }
 .arena-card.diff-card.selected { --b-edge: var(--dc); border-color: var(--dc); box-shadow: 0 0 0 2px var(--dc), 0 0 26px color-mix(in srgb, var(--dc) 55%, transparent), 0 3px 0 rgba(0, 0, 0, 0.55); }
+
+/* ================= MONTARIAS — HUD contextual, controles e catálogo ================= */
+/* painel de comandos: acima do indicador da montaria (canto inferior direito), sem cobrir mira/radar */
+.mount-cmds { position: absolute; right: 1rem; bottom: 7.6rem; width: 262px; display: flex; flex-direction: column; gap: 0.18rem; padding: 0.45rem 0.55rem; background: rgba(27, 31, 40, 0.92); border: 1px solid var(--border); border-left: 3px solid var(--info); border-radius: var(--r); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); z-index: 12; pointer-events: none; }
+.mount-cmds.hidden { display: none !important; }
+.mc-title { display: flex; align-items: baseline; gap: 0.4rem; margin-bottom: 0.15rem; }
+.mc-title small { font: 600 0.62rem/1 var(--body); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.mc-title b { font: 400 1rem/1 var(--display); color: var(--primary); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-row { display: grid; grid-template-columns: 3.1rem 1rem 1fr auto; align-items: center; gap: 0.35rem; font: 600 0.74rem/1.1 var(--body); color: var(--text); }
+.mc-row kbd { justify-self: start; min-width: 1.6rem; padding: 0.12rem 0.3rem; text-align: center; font: 700 0.68rem/1 var(--body); color: var(--primary-ink); background: var(--primary); border-radius: 4px; box-shadow: 0 2px 0 var(--primary-lo); white-space: nowrap; }
+.mc-row .ic { width: 0.95rem; height: 0.95rem; color: var(--info); }
+.mc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-cd, .mc-ammo { font: 700 0.68rem/1 var(--body); color: var(--success); font-style: normal; }
+.mc-ammo { color: var(--primary); }
+.mc-row.off { color: var(--muted); }
+.mc-row.off kbd { background: var(--border-hi); color: var(--muted); box-shadow: none; }
+.mc-row.off .mc-cd { color: var(--action-hi); }
+.mc-row.off .ic { color: var(--muted); }
+@media (max-height: 640px) { .mount-cmds { bottom: 7rem; width: 210px; } .mc-row { font-size: 0.68rem; } }
+
+/* celular: integridade e aviso da montaria sobem para o topo (embaixo ficam os botões de toque) */
+body.touch .mount-bar { top: calc(5.1rem + env(safe-area-inset-top)); bottom: auto; right: auto; left: 50%; transform: translateX(-50%); min-width: 180px; padding: 0.35rem 0.6rem; }
+body.touch .mount-indicator { display: none !important; }
+body.touch .mount-waypoint { top: calc(5.1rem + env(safe-area-inset-top)); bottom: auto; right: auto; left: 50%; transform: translateX(-50%); }
+/* botão de montar (toque) e legendas dos botões */
+.tb.mnt { right: 214px; bottom: 80px; width: 52px; height: 52px; border-color: var(--info); }
+.tb.mnt.near { border-color: var(--primary); box-shadow: 0 0 14px rgba(255, 193, 7, 0.5); }
+.tb.mnt.dim { opacity: 0.55; }
+.tb.mnt.hidden { display: none; }
+body.touch .tb.mnt { right: 222px; bottom: 88px; width: 54px; height: 54px; }
+.tb .tl { position: absolute; left: 0; right: 0; bottom: 5px; text-align: center; font: 700 0.5rem/1 var(--body); color: #fff; text-shadow: 0 1px 0 #000; text-transform: uppercase; pointer-events: none; }
+.tb.mnt .ic, .tb.mnt svg { margin-top: -8px; }
+
+/* menu Controles — aba Montarias */
+.mount-keys td { vertical-align: middle; }
+.mount-keys .mc-act { display: inline-flex; align-items: center; gap: 0.4rem; }
+.mount-keys .mc-act .ic { width: 1.05rem; height: 1.05rem; color: var(--info); }
+.mount-keys td small { display: block; }
+.mount-keys .mk { display: inline-flex; gap: 0.25rem; margin-right: 0.5rem; }
+.mount-keys button.sm { padding: 0.3rem 0.6rem; font-size: 0.78rem; }
+kbd.listening { background: var(--primary); color: var(--primary-ink); animation: mc-blink 0.9s infinite; }
+@keyframes mc-blink { 50% { opacity: 0.55; } }
+.mc-msg { display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.6rem; padding: 0.45rem 0.7rem; border-radius: var(--r); font-weight: 700; }
+.mc-msg .ic { width: 1.1rem; height: 1.1rem; flex: none; }
+.mc-msg.ok { background: rgba(46, 204, 113, 0.12); border: 1px solid var(--success); color: var(--success-hi); }
+.mc-msg.bad { background: rgba(229, 57, 53, 0.12); border: 1px solid var(--action); color: var(--action-hi); }
+
+/* catálogo de montarias */
+.mounts .beast-grid { grid-template-columns: repeat(auto-fill, minmax(min(210px, 44vw), 1fr)); }
+.mount-card { cursor: pointer; }
+.mount-card .model { width: 100%; max-width: 230px; aspect-ratio: 260 / 190; height: auto; }
+.mount-card:hover, .mount-card:focus-visible { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.35), 0 3px 0 rgba(0, 0, 0, 0.5); transform: translateY(-2px); }
+.mount-card.locked { cursor: default; opacity: 0.8; }
+.mount-card.locked:hover { border-color: var(--border-hi); transform: none; box-shadow: none; }
+.mount-soon { display: grid; place-items: center; align-content: center; gap: 0.3rem; background: repeating-linear-gradient(135deg, #1b1f28 0 10px, #171b23 10px 20px); border: 1px dashed var(--border-hi); border-radius: var(--r); color: var(--muted); }
+.mount-soon .ic { width: 2rem; height: 2rem; }
+.mount-soon b { font: 400 1.2rem/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
+.ms-stats { width: 100%; display: flex; flex-direction: column; gap: 0.25rem; }
+.ms-bar { display: grid; grid-template-columns: 5.6rem 1fr 2.8rem; align-items: center; gap: 0.4rem; font: 600 0.72rem/1 var(--body); color: var(--muted); text-align: left; }
+.ms-bar i { height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.ms-bar i b { display: block; height: 100%; background: linear-gradient(90deg, var(--info-lo), var(--info)); }
+.ms-bar small { color: var(--text); text-align: right; font-size: 0.72rem; }
+
+/* detalhes da montaria */
+.mount-detail .panel { max-width: min(1080px, 96vw); }
+.md-grid { display: grid; grid-template-columns: minmax(240px, 400px) 1fr; gap: 1.2rem; align-items: start; }
+.md-view { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.7rem; background: linear-gradient(180deg, #252b37, #171b23); border: 2px solid var(--border-hi); border-radius: var(--r-lg); }
+.md-view .model.big { width: 100%; max-width: none; aspect-ratio: 440 / 320; }
+.md-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.md-tags b, .md-tags span { padding: 0.2rem 0.5rem; border-radius: 999px; font: 700 0.72rem/1.2 var(--body); }
+.md-tags b { background: var(--primary); color: var(--primary-ink); }
+.md-tags span { background: var(--panel-hi); border: 1px solid var(--border-hi); color: var(--text); }
+.md-warn { display: flex; gap: 0.4rem; align-items: center; margin: 0; color: var(--action-hi); font-weight: 700; }
+.md-warn .ic { width: 1.1rem; height: 1.1rem; flex: none; }
+.md-info > p { margin: 0 0 0.6rem; }
+.md-skills { list-style: none; margin: 0 0 0.6rem; padding: 0; display: grid; gap: 0.4rem; }
+.md-skills li { display: grid; grid-template-columns: 1.6rem 1fr; gap: 0.5rem; align-items: start; padding: 0.45rem 0.6rem; background: var(--panel-hi); border: 1px solid var(--border); border-left: 3px solid var(--info); border-radius: var(--r); }
+.md-skills li .ic { width: 1.3rem; height: 1.3rem; color: var(--info); }
+.md-skills b { display: block; color: var(--text); }
+.md-skills small { color: var(--muted); }
+.md-how { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.35rem; color: var(--text); }
+.md-how b { color: var(--primary); }
+@media (max-width: 820px) { .md-grid { grid-template-columns: 1fr; } .md-view .model.big { max-width: 420px; margin: 0 auto; } }

@@ -6,6 +6,7 @@ import { enemyLook, drawEnemy } from './monsters.js';
 import { ITEMS, drawItem, GUN_MODELS } from './items.js';
 import { SCENERY } from './scenery.js';
 import { mulberry32 } from './core/rng.js';
+import { MOUNTS, drawMount } from './mounts.js';
 
 // Renderizador pequeno e separado para mostrar os sobreviventes em 3D nos menus.
 // Desenha um personagem por vez e copia a imagem para o <canvas> 2D de cada cartão.
@@ -194,6 +195,31 @@ export class Preview {
     const ctx = target.getContext('2d');
     ctx.clearRect(0, 0, target.width, target.height);
     ctx.drawImage(this.renderer.domElement, 0, 0, target.width, target.height);
+  }
+
+  // montaria do catálogo: mesmo modelo 3D do jogo (drawMount), girando; a ativa anda (rodas/patas)
+  mount(target, id, angle, t, active) {
+    const { B, G } = this;
+    const def = MOUNTS[id];
+    const s = 1.05 / Math.max(1.2, def.size);
+    const wm = this._wm || (this._wm = {});
+    Object.assign(wm, { id, def, alive: true, x: 0, z: 0, facing: angle, hurtT: 0, wheelT: active ? t * 6 : 0, rider: { preview: true } });
+    B.begin();
+    G.begin();
+    drawMount(B, G, wm, t, false);
+    B.end();
+    G.end();
+    const cam = this.camera;
+    const d = 4.7 / s;
+    cam.position.set(0, d * 0.48, d * 0.88);
+    cam.lookAt(0, 0.65, 0);
+    this.renderer.render(this.scene, cam);
+    cam.position.set(0, 1.5, 3.8);
+    cam.lookAt(0, 1.0, 0);
+    const ctx = target.getContext('2d');
+    ctx.clearRect(0, 0, target.width, target.height);
+    const sh = (this.w * target.height) / target.width;
+    ctx.drawImage(this.renderer.domElement, 0, Math.max(0, (this.h - sh) / 2), this.w, Math.min(this.h, sh), 0, 0, target.width, target.height);
   }
 
   // item do catálogo: flutua e gira; o ativo vira de frente e cresce um pouco

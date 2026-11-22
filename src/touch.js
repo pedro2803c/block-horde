@@ -4,6 +4,7 @@
 // Botões: 3 habilidades, ultimate, arma (toque = próxima; segure = lista), recarga e faca.
 import { ACTIVES, ULTIMATES } from './abilities.js';
 import { WEAPONS, WEAPON_ORDER } from './data.js';
+import { MOUNT_INFO, MOUNT_USE_DIST } from './mounts.js';
 import { icon, weaponIcon } from './icons.js';
 
 const BASE_R = 58; // raio do direcional (px) no tamanho 100%
@@ -40,8 +41,11 @@ export class TouchControls {
     this.hold(this.bReload, () => this.press('KeyG'));
     this.bMelee = el('button', 'tb mel', icon('knife'));
     this.hold(this.bMelee, () => this.inp.down.add('KeyF'), () => this.inp.down.delete('KeyF'));
+    // montaria: entrar/sair (aparece só quando a arena tem montaria disponível)
+    this.bMount = el('button', 'tb mnt hidden', icon('vehicle'), el('small', 'tl', 'Montar'));
+    this.hold(this.bMount, () => this.press('VMount'));
     this.picker = el('div', 'wpicker hidden');
-    this.btns.append(...this.ab, this.bWeapon, this.bReload, this.bMelee, this.picker);
+    this.btns.append(...this.ab, this.bWeapon, this.bReload, this.bMelee, this.bMount, this.picker);
     this.autoTag = el('div', 'auto-tag', icon('target'), el('span', '', 'Tiro automático'));
     this.root.append(this.sMove.base, this.sAim.base, this.btns, this.autoTag);
     root.prepend(this.root); // por baixo do HUD: pausa e árvore continuam tocáveis
@@ -336,19 +340,40 @@ export class TouchControls {
     const p = g.players[0];
     if (!p) return;
     this.autoTag.classList.toggle('hidden', this.s.touchAuto === false);
+    // botão de montar: visível quando há montaria viva na arena (ou o jogador está montado)
+    const wm = g.worldMount;
+    const showMount = !!(wm && (p.isMounted || wm.alive));
+    this.bMount.classList.toggle('hidden', !showMount);
+    if (showMount) {
+      const near = !p.isMounted && Math.hypot(wm.x - p.pos.x, wm.z - p.pos.z) <= MOUNT_USE_DIST;
+      const lbl = p.isMounted ? 'Sair' : 'Montar';
+      const tl = this.bMount.querySelector('.tl');
+      if (tl.textContent !== lbl) tl.textContent = lbl;
+      this.bMount.classList.toggle('dim', !p.isMounted && !near);
+      this.bMount.classList.toggle('near', near);
+    }
+    // montado no Tubarão Esqueleto: os botões de habilidade viram os golpes da montaria
+    const skills = p.isMounted && wm && wm.rider === p ? MOUNT_INFO[wm.id]?.skills : null;
     for (let i = 0; i < 4; i++) {
       const b = this.ab[i];
       const id = p.slots[i];
-      const def = i === 3 ? ULTIMATES[id] : ACTIVES[id];
-      const locked = i === 3 && !p.ultOn;
-      const key = (def ? def.icon : '') + (locked ? 'L' : '');
+      const sk = skills && skills[i];
+      const def = sk ? null : i === 3 ? ULTIMATES[id] : ACTIVES[id];
+      const locked = !sk && i === 3 && !p.ultOn;
+      const key = (sk ? 'M' + sk.icon : def ? def.icon : '') + (locked ? 'L' : '');
       if (b.dataset.k !== key) {
         b.dataset.k = key;
-        b.querySelector('.ico').replaceChildren(locked ? icon('lock') : icon(def ? def.icon : 'bolt'));
-        if (def && def.color) b.style.setProperty('--c', def.color);
+        b.querySelector('.ico').replaceChildren(locked ? icon('lock') : icon(sk ? sk.icon : def ? def.icon : 'bolt'));
+        if (sk) b.style.setProperty('--c', '#29B6F6');
+        else if (def && def.color) b.style.setProperty('--c', def.color);
+        let cap = b.querySelector('.tl');
+        if (sk) {
+          if (!cap) b.append((cap = el('small', 'tl')));
+          cap.textContent = sk.name.split(' ')[0];
+        } else if (cap) cap.remove();
       }
-      const left = p.cds[i];
-      const max = (p.cdMax && p.cdMax[i]) || (def && def.cd) || 1;
+      const left = sk ? Math.max(0, (p.sharkCd?.[i] || 0) - g.time) : p.cds[i];
+      const max = sk ? sk.cd : (p.cdMax && p.cdMax[i]) || (def && def.cd) || 1;
       b.querySelector('.cd').style.setProperty('--f', (left > 0 ? Math.min(1, left / max) : 0).toFixed(3));
       const txt = left > 0 ? String(Math.ceil(left)) : '';
       const n = b.querySelector('.cdn');
@@ -369,7 +394,7 @@ export class TouchControls {
     }
     // munição no botão da arma
     const w = WEAPONS[p.weapon];
-    const ammo = w.mag ? String(p.clip[p.weapon] || 0) : p.ammo[p.weapon] === Infinity ? '∞' : String(p.ammo[p.weapon] || 0);
+    const ammo = w.mag === Infinity || p.ammo[p.weapon] === Infinity ? '∞' : w.mag ? String(p.clip[p.weapon] || 0) : p.ammo[p.weapon] === Infinity ? '∞' : String(p.ammo[p.weapon] || 0);
     const wn = this.bWeapon.querySelector('.wn');
     if (wn.textContent !== ammo) wn.textContent = ammo;
     this.bReload.classList.toggle('dim', !w.mag || p.reloadT > 0);

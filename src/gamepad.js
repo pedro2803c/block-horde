@@ -48,6 +48,7 @@ export const ACTIONS = [
   { id: 'ab2', name: 'Habilidade 3', pad: 0 },
   { id: 'ult', name: 'Ultimate', pad: 3 },
   { id: 'reload', name: 'Recarregar', pad: 2 },
+  { id: 'mount', name: 'Montar / desmontar', pad: 11 },
   { id: 'next', name: 'Próxima arma', pad: 15 },
   { id: 'prev', name: 'Arma anterior', pad: 14 },
   { id: 'tree', name: 'Árvore de habilidades', pad: 8 },
@@ -292,6 +293,7 @@ export class ControllerManager {
         if (!this.lastV?.has(code)) inp.pressed.add(code);
       };
       for (const id of ['fire', 'melee', 'reload', 'next', 'prev']) if (this.held(pad, id)) press(codes[id]);
+      if (this.held(pad, 'mount')) press(who === 'p2' ? 'VMount2' : 'VMount');
       ['ab0', 'ab1', 'ab2', 'ult'].forEach((id, i) => {
         if (this.held(pad, id)) press(akeys[i][0]);
       });
