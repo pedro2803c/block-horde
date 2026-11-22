@@ -160,6 +160,16 @@ button.icon-btn.sm .ic { width: 24px; height: 24px; }
 .menu-buttons button.lg { justify-content: center; }
 .menu-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
 .menu .tip { text-shadow: 0 1px 3px #000; }
+/* telas com pouca altura útil (1366x768+escala do Windows, 125%, 150%):
+   o menu encolhe na medida para os últimos botões não ficarem cortados */
+@media (max-height: 820px) {
+  .menu-box { gap: clamp(0.6rem, 1.3vh, 1.1rem); }
+  .menu-buttons { gap: clamp(0.42rem, 0.95vh, 0.6rem); }
+  .menu-buttons button { min-height: clamp(44px, 6.6vh, 52px); }
+  .menu-buttons button.lg { min-height: clamp(56px, 9.2vh, 72px); }
+  .menu-box .logo { font-size: clamp(2.8rem, 10vh, 6.2rem); }
+  .menu .tip { display: none; }
+}
 .skyline { position: absolute; left: 0; right: 0; bottom: 0; height: 150px; pointer-events: none; }
 .skyline svg { width: 100%; height: 100%; display: block; }
 .version { position: absolute; right: 16px; bottom: 12px; color: var(--muted); font-size: 0.8rem; text-shadow: 0 1px 2px #000; z-index: 1; }
