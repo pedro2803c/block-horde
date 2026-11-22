@@ -1,0 +1,18 @@
+import { chromium } from 'playwright';
+import fs from 'fs';
+const OUT = 'tests/hud-shots/selecao';
+fs.mkdirSync(OUT, { recursive: true });
+const b = await chromium.launch({ channel: 'chrome', headless: true });
+const ctx = await b.newContext({ locale: 'pt-BR', viewport: { width: 1366, height: 768 } });
+await ctx.addInitScript(() => localStorage.setItem('blockhorde_tutorial_v1', '1'));
+const p = await ctx.newPage();
+await p.goto('http://localhost:5199/');
+await p.waitForFunction(() => window.__bh && document.body.innerText.includes('Jogar agora'), null, { timeout: 60000 });
+await p.evaluate(() => __bh.ui.showScreen('enemies', {}));
+await p.waitForTimeout(1200);
+await p.screenshot({ path: `${OUT}/bestiario.png` });
+await p.evaluate(() => __bh.ui.showScreen('items', {}));
+await p.waitForTimeout(1200);
+await p.screenshot({ path: `${OUT}/itens.png` });
+await ctx.close();
+await b.close();

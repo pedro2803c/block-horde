@@ -1,0 +1,1770 @@
+{
+  "data": "2026-11-21T22:43:49.469Z",
+  "total": 139,
+  "falhas": 0,
+  "casos": [
+    {
+      "caso": "Os 14 inimigos de onda aparecem no Coliseu (ondas 1–12)",
+      "status": "passou",
+      "esperado": "14 tipos",
+      "observado": [
+        "rm_legion",
+        "rm_centurion",
+        "rm_archer",
+        "rm_gladiator",
+        "rm_hound",
+        "rm_praetor",
+        "rm_beast",
+        "rm_spirit",
+        "rm_standard",
+        "rm_engineer",
+        "rm_chariot",
+        "rm_eagle",
+        "rm_catapult",
+        "rm_elephant"
+      ]
+    },
+    {
+      "caso": "rm_turret (summonedOnly) não entra no sorteio comum de ondas",
+      "status": "passou",
+      "esperado": "lista vazia",
+      "observado": []
+    },
+    {
+      "caso": "Nenhum romano nas outras 7 arenas",
+      "status": "passou",
+      "esperado": "lista vazia",
+      "observado": []
+    },
+    {
+      "caso": "only = [coliseu] nos 15",
+      "status": "passou",
+      "esperado": "[\"coliseu\"]",
+      "observado": {
+        "rm_legion": [
+          "coliseu"
+        ],
+        "rm_centurion": [
+          "coliseu"
+        ],
+        "rm_archer": [
+          "coliseu"
+        ],
+        "rm_gladiator": [
+          "coliseu"
+        ],
+        "rm_hound": [
+          "coliseu"
+        ],
+        "rm_praetor": [
+          "coliseu"
+        ],
+        "rm_beast": [
+          "coliseu"
+        ],
+        "rm_spirit": [
+          "coliseu"
+        ],
+        "rm_standard": [
+          "coliseu"
+        ],
+        "rm_engineer": [
+          "coliseu"
+        ],
+        "rm_chariot": [
+          "coliseu"
+        ],
+        "rm_eagle": [
+          "coliseu"
+        ],
+        "rm_catapult": [
+          "coliseu"
+        ],
+        "rm_elephant": [
+          "coliseu"
+        ],
+        "rm_turret": [
+          "coliseu"
+        ]
+      }
+    },
+    {
+      "caso": "rm_legion: estreia na onda 1",
+      "status": "passou",
+      "esperado": "onda 1",
+      "observado": 1
+    },
+    {
+      "caso": "rm_legion: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_centurion: estreia na onda 5",
+      "status": "passou",
+      "esperado": "onda 5",
+      "observado": 5
+    },
+    {
+      "caso": "rm_centurion: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_archer: estreia na onda 3",
+      "status": "passou",
+      "esperado": "onda 3",
+      "observado": 3
+    },
+    {
+      "caso": "rm_archer: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_gladiator: estreia na onda 4",
+      "status": "passou",
+      "esperado": "onda 4",
+      "observado": 4
+    },
+    {
+      "caso": "rm_gladiator: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_hound: estreia na onda 2",
+      "status": "passou",
+      "esperado": "onda 2",
+      "observado": 2
+    },
+    {
+      "caso": "rm_hound: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_praetor: estreia na onda 6",
+      "status": "passou",
+      "esperado": "onda 6",
+      "observado": 6
+    },
+    {
+      "caso": "rm_praetor: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_beast: estreia na onda 6",
+      "status": "passou",
+      "esperado": "onda 6",
+      "observado": 6
+    },
+    {
+      "caso": "rm_beast: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_spirit: estreia na onda 7",
+      "status": "passou",
+      "esperado": "onda 7",
+      "observado": 7
+    },
+    {
+      "caso": "rm_spirit: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_standard: estreia na onda 8",
+      "status": "passou",
+      "esperado": "onda 8",
+      "observado": 8
+    },
+    {
+      "caso": "rm_standard: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_engineer: estreia na onda 7",
+      "status": "passou",
+      "esperado": "onda 7",
+      "observado": 7
+    },
+    {
+      "caso": "rm_engineer: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_chariot: estreia na onda 8",
+      "status": "passou",
+      "esperado": "onda 8",
+      "observado": 8
+    },
+    {
+      "caso": "rm_chariot: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_eagle: estreia na onda 8",
+      "status": "passou",
+      "esperado": "onda 8",
+      "observado": 8
+    },
+    {
+      "caso": "rm_eagle: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_catapult: estreia na onda 9",
+      "status": "passou",
+      "esperado": "onda 9",
+      "observado": 9
+    },
+    {
+      "caso": "rm_catapult: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_elephant: estreia na onda 9",
+      "status": "passou",
+      "esperado": "onda 9",
+      "observado": 9
+    },
+    {
+      "caso": "rm_elephant: garantido na onda de estreia",
+      "status": "passou",
+      "esperado": "20/20",
+      "observado": "20/20"
+    },
+    {
+      "caso": "rm_legion: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_legion: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 10.6,
+        "aproximou": 7.68,
+        "distFinal": 1.32
+      }
+    },
+    {
+      "caso": "rm_legion: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_legion: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 27.1
+    },
+    {
+      "caso": "rm_legion: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 12, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 12,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_centurion: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_centurion: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 25,
+        "aproximou": 7.22,
+        "distFinal": 1.78
+      }
+    },
+    {
+      "caso": "rm_centurion: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_centurion: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 130
+    },
+    {
+      "caso": "rm_centurion: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 60, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 60,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_archer: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_archer: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 10,
+        "aproximou": 0.06,
+        "distFinal": 8.94
+      }
+    },
+    {
+      "caso": "rm_archer: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_archer: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 34
+    },
+    {
+      "caso": "rm_archer: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 25, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 25,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_gladiator: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_gladiator: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 19.6,
+        "aproximou": 8.16,
+        "distFinal": 0.84
+      }
+    },
+    {
+      "caso": "rm_gladiator: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_gladiator: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 62.8
+    },
+    {
+      "caso": "rm_gladiator: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 40, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 40,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_hound: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_hound: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 12.6,
+        "aproximou": 8.16,
+        "distFinal": 0.84
+      }
+    },
+    {
+      "caso": "rm_hound: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_hound: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 20.2
+    },
+    {
+      "caso": "rm_hound: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 20, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 20,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_praetor: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_praetor: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 10,
+        "aproximou": 0.06,
+        "distFinal": 8.94
+      }
+    },
+    {
+      "caso": "rm_praetor: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_praetor: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 82.3
+    },
+    {
+      "caso": "rm_praetor: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 70, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 140,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_beast: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_beast: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 11.5,
+        "aproximou": 7.58,
+        "distFinal": 1.42
+      }
+    },
+    {
+      "caso": "rm_beast: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_beast: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 57
+    },
+    {
+      "caso": "rm_beast: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 40, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 80,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_spirit: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_spirit: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 9.6,
+        "aproximou": 7.61,
+        "distFinal": 1.39
+      }
+    },
+    {
+      "caso": "rm_spirit: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_spirit: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 68.5
+    },
+    {
+      "caso": "rm_spirit: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 55, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 120,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_standard: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_standard: fixo (não anda, sem recuo e sem dano direto)",
+      "status": "passou",
+      "esperado": "andou 0, recuo 0, dano 0",
+      "observado": {
+        "andou": 0,
+        "recuo": 0,
+        "causouDano": false
+      }
+    },
+    {
+      "caso": "rm_standard: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_standard: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 130
+    },
+    {
+      "caso": "rm_standard: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 60, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 120,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_engineer: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_engineer: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 7,
+        "aproximou": 3.02,
+        "distFinal": 5.98
+      }
+    },
+    {
+      "caso": "rm_engineer: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_engineer: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 70.8
+    },
+    {
+      "caso": "rm_engineer: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 65, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 130,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_chariot: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_chariot: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 10,
+        "aproximou": 0.94,
+        "distFinal": 8.06
+      }
+    },
+    {
+      "caso": "rm_chariot: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_chariot: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 130
+    },
+    {
+      "caso": "rm_chariot: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 85, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 170,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_eagle: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_eagle: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 10,
+        "aproximou": 1.04,
+        "distFinal": 7.96
+      }
+    },
+    {
+      "caso": "rm_eagle: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_eagle: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 97.2
+    },
+    {
+      "caso": "rm_eagle: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 75, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 225,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_catapult: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_catapult: fixo (não anda/sem recuo) e causa dano à distância",
+      "status": "passou",
+      "esperado": "andou 0, recuo 0, dano > 0",
+      "observado": {
+        "andou": 0,
+        "recuo": 0,
+        "danoSofrido": 24.5
+      }
+    },
+    {
+      "caso": "rm_catapult: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_catapult: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 130
+    },
+    {
+      "caso": "rm_catapult: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 85, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 255,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_elephant: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_elephant: persegue/ataca e causa dano",
+      "status": "passou",
+      "esperado": "jogador perde vida",
+      "observado": {
+        "danoSofrido": 44.8,
+        "aproximou": 7.57,
+        "distFinal": 1.43
+      }
+    },
+    {
+      "caso": "rm_elephant: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_elephant: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 130
+    },
+    {
+      "caso": "rm_elephant: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 110, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 330,
+        "nan": false
+      }
+    },
+    {
+      "caso": "rm_turret: modelo criado sem erro",
+      "status": "passou",
+      "esperado": "objeto 3D criado",
+      "observado": true
+    },
+    {
+      "caso": "rm_turret: fixo (não anda/sem recuo) e causa dano à distância",
+      "status": "passou",
+      "esperado": "andou 0, recuo 0, dano > 0",
+      "observado": {
+        "andou": 0,
+        "recuo": 0,
+        "danoSofrido": 7
+      }
+    },
+    {
+      "caso": "rm_turret: pistola causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 12
+    },
+    {
+      "caso": "rm_turret: explosão causa dano",
+      "status": "passou",
+      "esperado": "> 0",
+      "observado": 51.2
+    },
+    {
+      "caso": "rm_turret: morre, dá score/abate e sem NaN",
+      "status": "passou",
+      "esperado": "kills 1, score ≥ 15, sem NaN",
+      "observado": {
+        "morreu": true,
+        "kills": 1,
+        "score": 45,
+        "nan": false
+      }
+    },
+    {
+      "caso": "Legionários em grupos de 4 na lista da onda",
+      "status": "passou",
+      "esperado": "há sequências de 4",
+      "observado": {
+        "tot": 220,
+        "hit": 89
+      }
+    },
+    {
+      "caso": "Cães em trio na lista da onda",
+      "status": "passou",
+      "esperado": "há sequências de 3",
+      "observado": {
+        "tot": 53,
+        "hit": 26
+      }
+    },
+    {
+      "caso": "Formação: legião não se espalha",
+      "status": "passou",
+      "esperado": "afastamento máx. não cresce",
+      "observado": {
+        "inicio": 2.55,
+        "depois": 2.01,
+        "vivos": 4
+      }
+    },
+    {
+      "caso": "Aura do centurião: reduz dano só dentro do raio",
+      "status": "passou",
+      "esperado": "perto < longe",
+      "observado": {
+        "perto": 6,
+        "longe": 10,
+        "raio": 4.5
+      }
+    },
+    {
+      "caso": "Aura do centurião: acelera só dentro do raio",
+      "status": "passou",
+      "esperado": "dentro 1,15; fora 1",
+      "observado": {
+        "dentro": 1.15,
+        "fora": 1,
+        "raio": 4.5
+      }
+    },
+    {
+      "caso": "Arqueiro recua/mantém distância quando perto",
+      "status": "passou",
+      "esperado": "distância aumenta",
+      "observado": {
+        "inicio": 3,
+        "depois": 5
+      }
+    },
+    {
+      "caso": "Arqueiro prepara antes de atirar, parado, e recupera",
+      "status": "passou",
+      "esperado": "aimT>0 parado → tiro → recoverT>0",
+      "observado": {
+        "mirou": true,
+        "paradoNaMira": true,
+        "recuperou": true,
+        "flechaAntesDaMira": false
+      }
+    },
+    {
+      "caso": "Flecha perfurante atravessa cobertura baixa (comum é barrada)",
+      "status": "passou",
+      "esperado": "perfurante viva, comum morta",
+      "observado": {
+        "celula": [
+          7.5,
+          3.5
+        ],
+        "perfuranteViva": true,
+        "comumMorreu": true
+      }
+    },
+    {
+      "caso": "Gladiador anuncia (wind) antes da investida e fica parado",
+      "status": "passou",
+      "esperado": "'wind' antes de 'lunge'",
+      "observado": {
+        "ordem": [
+          "move",
+          "wind",
+          "lunge"
+        ],
+        "paradoWind": true,
+        "windAntes": true
+      }
+    },
+    {
+      "caso": "Cães abrem para os lados (aproximado)",
+      "status": "passou",
+      "esperado": "abertura angular cresce >10°; lados −1/0/1",
+      "observado": {
+        "aberturaInicio": 2.8,
+        "aberturaDepois": 75.8,
+        "lados": [
+          0,
+          1,
+          -1
+        ]
+      }
+    },
+    {
+      "caso": "Pretor: prepara (cast), invoca reforços romanos e respeita teto max=4",
+      "status": "passou",
+      "esperado": "cast + tipos romanos + teto 4",
+      "observado": {
+        "castVisto": true,
+        "tiposValidos": true,
+        "apos2": 4,
+        "apos3": 4
+      }
+    },
+    {
+      "caso": "Pretor: prepara, dispara raio roxo com slow e recupera",
+      "status": "passou",
+      "esperado": "raio 0xb050ff + slow + dano",
+      "observado": {
+        "mirou": true,
+        "recuperou": true,
+        "projRoxo": {
+          "color": 11555071,
+          "slow": {
+            "t": 1.5,
+            "mul": 0.7
+          }
+        },
+        "aplicouSlow": true,
+        "dano": 10
+      }
+    },
+    {
+      "caso": "Pretor: aura roxa reduz dano recebido e reforça dano dos aliados",
+      "status": "passou",
+      "esperado": "redução < longe, dmg 1.15 dentro / 1 fora",
+      "observado": {
+        "reducaoPerto": 8.5,
+        "reducaoLonge": 10,
+        "dmgPerto": 1.15,
+        "dmgLonge": 1,
+        "ring": 11555071
+      }
+    },
+    {
+      "caso": "Besta: investe (lunge), causa dano e alterna cooldown irregular (jitter)",
+      "status": "passou",
+      "esperado": "lunge + dano > 0 + variação > 0.3s",
+      "observado": {
+        "entrouLunge": true,
+        "danoLunge": 16.8,
+        "variacao": 1.801
+      }
+    },
+    {
+      "caso": "Espírito: flutua acima do chão (flyY > 1)",
+      "status": "passou",
+      "esperado": "fly=true, flyY > 1",
+      "observado": {
+        "fly": true,
+        "flyY": 1.31
+      }
+    },
+    {
+      "caso": "Espírito: fere por contato espectral com recarga própria",
+      "status": "passou",
+      "esperado": "tick1 > 0, respeita cd, tick2 > 0",
+      "observado": {
+        "dano1": 5,
+        "repetiuCedo": false,
+        "segundoTick": 5
+      }
+    },
+    {
+      "caso": "Espírito: reposiciona por blink (salto ≥ 2,5 m) atravessando obstáculos",
+      "status": "passou",
+      "esperado": "salto ≥ 2,5 m e through=true",
+      "observado": {
+        "salto": 4,
+        "through": true
+      }
+    },
+    {
+      "caso": "Estandarte: permanece imóvel e aplica aura dourada só dentro do raio",
+      "status": "passou",
+      "esperado": "andou 0; dentro 1.25/1.2; fora 1/1",
+      "observado": {
+        "pertoDmg": 1.25,
+        "pertoHaste": 1.2,
+        "longeDmg": 1,
+        "longeHaste": 1,
+        "ring": 16760896
+      }
+    },
+    {
+      "caso": "Estandarte + Centurião + Pretor: auras não empilham multiplicativamente e sem NaN",
+      "status": "passou",
+      "esperado": "max dmg 1.25, max haste 1.2, redução ativa, sem NaN",
+      "observado": {
+        "dmg": 1.25,
+        "haste": 1.2,
+        "danoRecebido": 6,
+        "nan": false
+      }
+    },
+    {
+      "caso": "Estandarte: aliado bufado causa mais dano real no jogador",
+      "status": "passou",
+      "esperado": "comAura > semAura",
+      "observado": {
+        "semAura": 10.56,
+        "comAura": 13.2,
+        "auraDmg": 1.25,
+        "stAlive": true
+      }
+    },
+    {
+      "caso": "Catapulta: siegeSpot escolhe posição aberta fora dos portões",
+      "status": "passou",
+      "esperado": "ponto livre fora dos portões",
+      "observado": true
+    },
+    {
+      "caso": "Catapulta: prepara aviso no chão, lança rocha em área e permite esquiva",
+      "status": "passou",
+      "esperado": "aviso + rocha r=2.3 + dano parado > 0 + esquiva 0",
+      "observado": {
+        "avisoVisto": true,
+        "rochaVista": {
+          "r": 2.3,
+          "dmg": 26
+        },
+        "danoParado": 25.1,
+        "danoEsquiva": 0,
+        "alvoNoJogador": true
+      }
+    },
+    {
+      "caso": "Elefante: anuncia (wind) → investe, quebra barricada/prop, fere e atordoa",
+      "status": "passou",
+      "esperado": "wind→lunge + quebra + dano + stun",
+      "observado": {
+        "windAntes": true,
+        "quebrouBarricada": true,
+        "quebrouProp": true,
+        "dano": 44.8,
+        "stunMax": 1.2
+      }
+    },
+    {
+      "caso": "Elefante: onda de choque (quake) fere e atordoa o jogador",
+      "status": "passou",
+      "esperado": "dano > 0 e stunT > 0",
+      "observado": {
+        "dano": 16,
+        "stunT": 0.8
+      }
+    },
+    {
+      "caso": "Engenheiro: prepara (cast), monta Torre de Cerco (teto max=2) e aura protege aliado",
+      "status": "passou",
+      "esperado": "cast + rm_turret fixa + teto 2 + aura",
+      "observado": {
+        "castVisto": true,
+        "tipoTorre": "rm_turret",
+        "torreFixa": true,
+        "apos2": 2,
+        "apos3": 2,
+        "auraPerto": 8.8,
+        "auraLonge": 10
+      }
+    },
+    {
+      "caso": "Carruagem: anuncia parado (wind) → atropela (lunge) e lança lanças",
+      "status": "passou",
+      "esperado": "wind parado→lunge + lança",
+      "observado": {
+        "windAntes": true,
+        "paradoWind": true,
+        "danoAtropelo": 10,
+        "lancaVista": true,
+        "danoLanca": 10
+      }
+    },
+    {
+      "caso": "Águia: voa em círculos, anuncia mergulho e dispara energia roxa",
+      "status": "passou",
+      "esperado": "voa + strafe + wind→lunge + raio roxo",
+      "observado": {
+        "voa": true,
+        "flyY": 1.46,
+        "strafe": true,
+        "windAntes": true,
+        "danoMergulho": 10,
+        "raioRoxo": true,
+        "danoRaio": 10
+      }
+    },
+    {
+      "caso": "Bestiário exibe todos os 15 romanos (14 + Torre de Cerco)",
+      "status": "passou",
+      "esperado": "0 faltando",
+      "observado": {
+        "faltando": [],
+        "total": 15
+      }
+    },
+    {
+      "caso": "Etapa 1: os 5 visíveis no print",
+      "status": "passou",
+      "esperado": "5 tipos vivos",
+      "observado": [
+        "rm_legion",
+        "rm_centurion",
+        "rm_archer",
+        "rm_gladiator",
+        "rm_hound"
+      ]
+    },
+    {
+      "caso": "Etapa 2: os 4 visíveis no print",
+      "status": "passou",
+      "esperado": "4 tipos vivos",
+      "observado": [
+        "rm_praetor",
+        "rm_beast",
+        "rm_spirit",
+        "rm_standard"
+      ]
+    },
+    {
+      "caso": "Etapa 3: os 6 modelos visíveis no print",
+      "status": "passou",
+      "esperado": "6 tipos vivos",
+      "observado": [
+        "rm_catapult",
+        "rm_elephant",
+        "rm_engineer",
+        "rm_turret",
+        "rm_chariot",
+        "rm_eagle"
+      ]
+    },
+    {
+      "caso": "Sem erros de JavaScript",
+      "status": "passou",
+      "esperado": "0 erros",
+      "observado": []
+    }
+  ],
+  "bruto": {
+    "arenas": [
+      "praca",
+      "armazem",
+      "vale",
+      "distrito",
+      "cemiterio",
+      "coliseu",
+      "lab",
+      "templo"
+    ],
+    "noColiseu": [
+      "rm_legion",
+      "rm_centurion",
+      "rm_archer",
+      "rm_gladiator",
+      "rm_hound",
+      "rm_praetor",
+      "rm_beast",
+      "rm_spirit",
+      "rm_standard",
+      "rm_engineer",
+      "rm_chariot",
+      "rm_eagle",
+      "rm_catapult",
+      "rm_elephant"
+    ],
+    "torreEmOndas": [],
+    "foraDoColiseu": [],
+    "only": {
+      "rm_legion": [
+        "coliseu"
+      ],
+      "rm_centurion": [
+        "coliseu"
+      ],
+      "rm_archer": [
+        "coliseu"
+      ],
+      "rm_gladiator": [
+        "coliseu"
+      ],
+      "rm_hound": [
+        "coliseu"
+      ],
+      "rm_praetor": [
+        "coliseu"
+      ],
+      "rm_beast": [
+        "coliseu"
+      ],
+      "rm_spirit": [
+        "coliseu"
+      ],
+      "rm_standard": [
+        "coliseu"
+      ],
+      "rm_engineer": [
+        "coliseu"
+      ],
+      "rm_chariot": [
+        "coliseu"
+      ],
+      "rm_eagle": [
+        "coliseu"
+      ],
+      "rm_catapult": [
+        "coliseu"
+      ],
+      "rm_elephant": [
+        "coliseu"
+      ],
+      "rm_turret": [
+        "coliseu"
+      ]
+    },
+    "estreia": {
+      "rm_legion": 1,
+      "rm_centurion": 5,
+      "rm_archer": 3,
+      "rm_gladiator": 4,
+      "rm_hound": 2,
+      "rm_praetor": 6,
+      "rm_beast": 6,
+      "rm_spirit": 7,
+      "rm_standard": 8,
+      "rm_engineer": 7,
+      "rm_chariot": 8,
+      "rm_eagle": 8,
+      "rm_catapult": 9,
+      "rm_elephant": 9
+    },
+    "garantia": {
+      "rm_legion": "20/20",
+      "rm_centurion": "20/20",
+      "rm_archer": "20/20",
+      "rm_gladiator": "20/20",
+      "rm_hound": "20/20",
+      "rm_praetor": "20/20",
+      "rm_beast": "20/20",
+      "rm_spirit": "20/20",
+      "rm_standard": "20/20",
+      "rm_engineer": "20/20",
+      "rm_chariot": "20/20",
+      "rm_eagle": "20/20",
+      "rm_catapult": "20/20",
+      "rm_elephant": "20/20"
+    },
+    "grupoLegiao": {
+      "tot": 220,
+      "hit": 89
+    },
+    "trioCaes": {
+      "tot": 53,
+      "hit": 26
+    },
+    "por": {
+      "rm_legion": {
+        "modelo": true,
+        "andou": 7.708,
+        "causouDano": true,
+        "danoSofrido": 10.6,
+        "aproximou": 7.68,
+        "distFinal": 1.32,
+        "zVivo": true,
+        "zHp": 39.1,
+        "pistola": 12,
+        "explosao": 27.1,
+        "morreu": true,
+        "score": 12,
+        "kills": 1,
+        "scoreDef": 12,
+        "nan": false
+      },
+      "rm_centurion": {
+        "modelo": true,
+        "andou": 7.328,
+        "causouDano": true,
+        "danoSofrido": 25,
+        "aproximou": 7.22,
+        "distFinal": 1.78,
+        "zVivo": true,
+        "zHp": 172.5,
+        "pistola": 12,
+        "explosao": 130,
+        "morreu": true,
+        "score": 60,
+        "kills": 1,
+        "scoreDef": 60,
+        "nan": false
+      },
+      "rm_archer": {
+        "modelo": true,
+        "andou": 0.14,
+        "causouDano": true,
+        "danoSofrido": 10,
+        "aproximou": 0.06,
+        "distFinal": 8.94,
+        "zVivo": true,
+        "zHp": 46,
+        "pistola": 12,
+        "explosao": 34,
+        "morreu": true,
+        "score": 25,
+        "kills": 1,
+        "scoreDef": 25,
+        "nan": false
+      },
+      "rm_gladiator": {
+        "modelo": true,
+        "andou": 8.225,
+        "causouDano": true,
+        "danoSofrido": 19.6,
+        "aproximou": 8.16,
+        "distFinal": 0.84,
+        "zVivo": true,
+        "zHp": 74.8,
+        "pistola": 12,
+        "explosao": 62.8,
+        "morreu": true,
+        "score": 40,
+        "kills": 1,
+        "scoreDef": 40,
+        "nan": false
+      },
+      "rm_hound": {
+        "modelo": true,
+        "andou": 8.421,
+        "causouDano": true,
+        "danoSofrido": 12.6,
+        "aproximou": 8.16,
+        "distFinal": 0.84,
+        "zVivo": true,
+        "zHp": 32.2,
+        "pistola": 12,
+        "explosao": 20.2,
+        "morreu": true,
+        "score": 20,
+        "kills": 1,
+        "scoreDef": 20,
+        "nan": false
+      },
+      "rm_praetor": {
+        "modelo": true,
+        "andou": 0.258,
+        "causouDano": true,
+        "danoSofrido": 10,
+        "aproximou": 0.06,
+        "distFinal": 8.94,
+        "zVivo": true,
+        "zHp": 94.3,
+        "pistola": 12,
+        "explosao": 82.3,
+        "morreu": true,
+        "score": 140,
+        "kills": 1,
+        "scoreDef": 70,
+        "nan": false
+      },
+      "rm_beast": {
+        "modelo": true,
+        "andou": 7.667,
+        "causouDano": true,
+        "danoSofrido": 11.5,
+        "aproximou": 7.58,
+        "distFinal": 1.42,
+        "zVivo": true,
+        "zHp": 69,
+        "pistola": 12,
+        "explosao": 57,
+        "morreu": true,
+        "score": 80,
+        "kills": 1,
+        "scoreDef": 40,
+        "nan": false
+      },
+      "rm_spirit": {
+        "modelo": true,
+        "andou": 7.703,
+        "causouDano": true,
+        "danoSofrido": 9.6,
+        "aproximou": 7.61,
+        "distFinal": 1.39,
+        "zVivo": true,
+        "zHp": 80.5,
+        "pistola": 12,
+        "explosao": 68.5,
+        "morreu": true,
+        "score": 120,
+        "kills": 1,
+        "scoreDef": 55,
+        "nan": false
+      },
+      "rm_standard": {
+        "modelo": true,
+        "andou": 0,
+        "causouDano": false,
+        "danoSofrido": 0,
+        "pistola": 12,
+        "recuo": 0,
+        "explosao": 130,
+        "morreu": true,
+        "score": 120,
+        "kills": 1,
+        "scoreDef": 60,
+        "nan": false
+      },
+      "rm_engineer": {
+        "modelo": true,
+        "andou": 3.018,
+        "causouDano": true,
+        "danoSofrido": 7,
+        "aproximou": 3.02,
+        "distFinal": 5.98,
+        "zVivo": true,
+        "zHp": 82.8,
+        "pistola": 12,
+        "explosao": 70.8,
+        "morreu": true,
+        "score": 130,
+        "kills": 1,
+        "scoreDef": 65,
+        "nan": false
+      },
+      "rm_chariot": {
+        "modelo": true,
+        "andou": 1,
+        "causouDano": true,
+        "danoSofrido": 10,
+        "aproximou": 0.94,
+        "distFinal": 8.06,
+        "zVivo": true,
+        "zHp": 264.5,
+        "pistola": 12,
+        "explosao": 130,
+        "morreu": true,
+        "score": 170,
+        "kills": 1,
+        "scoreDef": 85,
+        "nan": false
+      },
+      "rm_eagle": {
+        "modelo": true,
+        "andou": 1.175,
+        "causouDano": true,
+        "danoSofrido": 10,
+        "aproximou": 1.04,
+        "distFinal": 7.96,
+        "zVivo": true,
+        "zHp": 109.2,
+        "pistola": 12,
+        "explosao": 97.2,
+        "morreu": true,
+        "score": 225,
+        "kills": 1,
+        "scoreDef": 75,
+        "nan": false
+      },
+      "rm_catapult": {
+        "modelo": true,
+        "andou": 0,
+        "causouDano": true,
+        "danoSofrido": 24.5,
+        "aproximou": -0.06,
+        "distFinal": 9.06,
+        "zVivo": true,
+        "zHp": 276,
+        "pistola": 12,
+        "recuo": 0,
+        "explosao": 130,
+        "morreu": true,
+        "score": 255,
+        "kills": 1,
+        "scoreDef": 85,
+        "nan": false
+      },
+      "rm_elephant": {
+        "modelo": true,
+        "andou": 7.6,
+        "causouDano": true,
+        "danoSofrido": 44.8,
+        "aproximou": 7.57,
+        "distFinal": 1.43,
+        "zVivo": true,
+        "zHp": 414,
+        "pistola": 12,
+        "explosao": 130,
+        "morreu": true,
+        "score": 330,
+        "kills": 1,
+        "scoreDef": 110,
+        "nan": false
+      },
+      "rm_turret": {
+        "modelo": true,
+        "andou": 0,
+        "causouDano": true,
+        "danoSofrido": 7,
+        "aproximou": -0.38,
+        "distFinal": 9.38,
+        "zVivo": true,
+        "zHp": 63.2,
+        "pistola": 12,
+        "recuo": 0,
+        "explosao": 51.2,
+        "morreu": true,
+        "score": 45,
+        "kills": 1,
+        "scoreDef": 15,
+        "nan": false
+      }
+    },
+    "auraDano": {
+      "perto": 6,
+      "longe": 10,
+      "raio": 4.5
+    },
+    "auraHaste": {
+      "dentro": 1.15,
+      "fora": 1,
+      "raio": 4.5
+    },
+    "legiao": {
+      "inicio": 2.55,
+      "depois": 2.01,
+      "vivos": 4
+    },
+    "arqueiroDist": {
+      "inicio": 3,
+      "depois": 5
+    },
+    "arqueiroMira": {
+      "mirou": true,
+      "paradoNaMira": true,
+      "recuperou": true,
+      "flechaAntesDaMira": false
+    },
+    "cobertura": {
+      "celula": [
+        7.5,
+        3.5
+      ],
+      "perfuranteViva": true,
+      "comumMorreu": true
+    },
+    "gladiador": {
+      "ordem": [
+        "move",
+        "wind",
+        "lunge"
+      ],
+      "paradoWind": true,
+      "windAntes": true
+    },
+    "caes": {
+      "aberturaInicio": 2.8,
+      "aberturaDepois": 75.8,
+      "lados": [
+        0,
+        1,
+        -1
+      ]
+    },
+    "pretor": {
+      "invocacao": {
+        "castVisto": true,
+        "tiposValidos": true,
+        "apos2": 4,
+        "apos3": 4
+      },
+      "magia": {
+        "mirou": true,
+        "recuperou": true,
+        "projRoxo": {
+          "color": 11555071,
+          "slow": {
+            "t": 1.5,
+            "mul": 0.7
+          }
+        },
+        "aplicouSlow": true,
+        "dano": 10
+      },
+      "aura": {
+        "reducaoPerto": 8.5,
+        "reducaoLonge": 10,
+        "dmgPerto": 1.15,
+        "dmgLonge": 1,
+        "ring": 11555071
+      }
+    },
+    "besta": {
+      "entrouLunge": true,
+      "danoLunge": 16.8,
+      "variacao": 1.801
+    },
+    "espirito": {
+      "flutua": {
+        "fly": true,
+        "flyY": 1.31
+      },
+      "contato": {
+        "dano1": 5,
+        "repetiuCedo": false,
+        "segundoTick": 5
+      },
+      "blink": {
+        "salto": 4,
+        "through": true
+      }
+    },
+    "estandarte": {
+      "andou": 0,
+      "aura": {
+        "pertoDmg": 1.25,
+        "pertoHaste": 1.2,
+        "longeDmg": 1,
+        "longeHaste": 1,
+        "ring": 16760896
+      },
+      "semEmpilhar": {
+        "dmg": 1.25,
+        "haste": 1.2,
+        "danoRecebido": 6,
+        "nan": false
+      },
+      "danoReal": {
+        "semAura": 10.56,
+        "comAura": 13.2,
+        "auraDmg": 1.25,
+        "stAlive": true
+      }
+    },
+    "catapulta": {
+      "siegeSpotOk": true,
+      "ataque": {
+        "avisoVisto": true,
+        "rochaVista": {
+          "r": 2.3,
+          "dmg": 26
+        },
+        "danoParado": 25.1,
+        "danoEsquiva": 0,
+        "alvoNoJogador": true
+      }
+    },
+    "elefante": {
+      "investida": {
+        "windAntes": true,
+        "quebrouBarricada": true,
+        "quebrouProp": true,
+        "dano": 44.8,
+        "stunMax": 1.2
+      },
+      "quake": {
+        "dano": 16,
+        "stunT": 0.8
+      }
+    },
+    "engenheiro": {
+      "castVisto": true,
+      "tipoTorre": "rm_turret",
+      "torreFixa": true,
+      "apos2": 2,
+      "apos3": 2,
+      "auraPerto": 8.8,
+      "auraLonge": 10
+    },
+    "carruagem": {
+      "windAntes": true,
+      "paradoWind": true,
+      "danoAtropelo": 10,
+      "lancaVista": true,
+      "danoLanca": 10
+    },
+    "aguia": {
+      "voa": true,
+      "flyY": 1.46,
+      "strafe": true,
+      "windAntes": true,
+      "danoMergulho": 10,
+      "raioRoxo": true,
+      "danoRaio": 10
+    },
+    "bestiario": {
+      "faltando": [],
+      "total": 15
+    },
+    "visiveis1": [
+      "rm_legion",
+      "rm_centurion",
+      "rm_archer",
+      "rm_gladiator",
+      "rm_hound"
+    ],
+    "visiveis2": [
+      "rm_praetor",
+      "rm_beast",
+      "rm_spirit",
+      "rm_standard"
+    ],
+    "visiveis3": [
+      "rm_catapult",
+      "rm_elephant",
+      "rm_engineer",
+      "rm_turret",
+      "rm_chariot",
+      "rm_eagle"
+    ]
+  }
+}

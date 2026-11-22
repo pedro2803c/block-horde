@@ -1,0 +1,460 @@
+{
+  "data": "2026-11-19T01:45:08.757Z",
+  "url": "http://localhost:5814/",
+  "total": 38,
+  "falhas": 0,
+  "casos": [
+    {
+      "caso": "Pontos insuficientes: nada muda",
+      "status": "passou",
+      "esperado": "estado 'poor', compra falsa, pts 0, nível 0",
+      "observado": {
+        "st": "poor",
+        "comprou": false,
+        "pts": 0,
+        "nv": 0
+      }
+    },
+    {
+      "caso": "Compra com 1 ponto: Nv.1 e pontos 1→0",
+      "status": "passou",
+      "esperado": "comprou, pts 0, nível 1",
+      "observado": {
+        "comprou": true,
+        "pts": 0,
+        "nv": 1
+      }
+    },
+    {
+      "caso": "Pré-requisito: Crítico bloqueado até Dano Nv.2",
+      "status": "passou",
+      "esperado": "locked, locked(Nv1), ok(Nv2); Multitiro ainda locked",
+      "observado": {
+        "semPontos": {
+          "st": "poor",
+          "comprou": false,
+          "pts": 0,
+          "nv": 0
+        },
+        "compra": {
+          "comprou": true,
+          "pts": 0,
+          "nv": 1
+        },
+        "preReqAntes": "locked",
+        "preReqCompraBloq": false,
+        "preReqNv1": "locked",
+        "preReqNv2": "ok",
+        "terceiroNo": "locked",
+        "custos": [
+          1,
+          1,
+          2,
+          2,
+          3
+        ],
+        "max": {
+          "st": "max",
+          "comprou": false,
+          "nv": 5,
+          "cobrou": 0
+        },
+        "liberadosNv0": {
+          "damage": "ok",
+          "crit": "locked",
+          "multishot": "locked",
+          "vitality": "ok",
+          "armor": "locked",
+          "regen": "ok",
+          "ammo": "locked",
+          "agility": "ok",
+          "precision": "locked",
+          "cooldown": "locked"
+        },
+        "vit": {
+          "maxHp": 115,
+          "hp": 65
+        },
+        "ultNv4": {
+          "st": "locked",
+          "comprou": false,
+          "pts": 5
+        },
+        "ult1pt": {
+          "st": "poor",
+          "comprou": false,
+          "pts": 1
+        },
+        "ultOk": {
+          "comprou": true,
+          "pts": 1,
+          "on": true
+        },
+        "ultDupla": {
+          "st": "on",
+          "comprou": false,
+          "pts": 1
+        },
+        "xp": {
+          "subiu": 1,
+          "ganhou": 1
+        }
+      }
+    },
+    {
+      "caso": "Custos por nível 1,1,2,2,3",
+      "status": "passou",
+      "esperado": "[1,1,2,2,3]",
+      "observado": [
+        1,
+        1,
+        2,
+        2,
+        3
+      ]
+    },
+    {
+      "caso": "Nível máximo: não passa de 5 e não cobra",
+      "status": "passou",
+      "esperado": "estado 'max', nível 5, cobrou 0",
+      "observado": {
+        "st": "max",
+        "comprou": false,
+        "nv": 5,
+        "cobrou": 0
+      }
+    },
+    {
+      "caso": "Nenhuma habilidade liberada indevidamente",
+      "status": "passou",
+      "esperado": "só o 1º nó de cada ramo ok; demais locked",
+      "observado": {
+        "damage": "ok",
+        "crit": "locked",
+        "multishot": "locked",
+        "vitality": "ok",
+        "armor": "locked",
+        "regen": "ok",
+        "ammo": "locked",
+        "agility": "ok",
+        "precision": "locked",
+        "cooldown": "locked"
+      }
+    },
+    {
+      "caso": "Vitalidade +15 vida máx. e +15 vida (uma vez)",
+      "status": "passou",
+      "esperado": "maxHp 115, hp 65",
+      "observado": {
+        "maxHp": 115,
+        "hp": 65
+      }
+    },
+    {
+      "caso": "Ultimate bloqueada antes do nível 5",
+      "status": "passou",
+      "esperado": "locked, sem cobrar",
+      "observado": {
+        "st": "locked",
+        "comprou": false,
+        "pts": 5
+      }
+    },
+    {
+      "caso": "Ultimate com 1 ponto: sem pontos",
+      "status": "passou",
+      "esperado": "poor, sem cobrar",
+      "observado": {
+        "st": "poor",
+        "comprou": false,
+        "pts": 1
+      }
+    },
+    {
+      "caso": "Ultimate: libera e cobra 2",
+      "status": "passou",
+      "esperado": "cobra 2, ultOn",
+      "observado": {
+        "comprou": true,
+        "pts": 1,
+        "on": true
+      }
+    },
+    {
+      "caso": "Ultimate: não compra duas vezes",
+      "status": "passou",
+      "esperado": "'on', não cobra",
+      "observado": {
+        "st": "on",
+        "comprou": false,
+        "pts": 1
+      }
+    },
+    {
+      "caso": "XP sobe 1 nível = +1 ponto",
+      "status": "passou",
+      "esperado": "+1 nível, +1 ponto",
+      "observado": {
+        "subiu": 1,
+        "ganhou": 1
+      }
+    },
+    {
+      "caso": "Tab abre a árvore e pausa",
+      "status": "passou",
+      "esperado": "state 'paused', tela 'tree'",
+      "observado": {
+        "state": "paused",
+        "tela": "tree",
+        "overlay": true
+      }
+    },
+    {
+      "caso": "Jogo parado com a árvore aberta",
+      "status": "passou",
+      "esperado": "g.time não avança",
+      "observado": {
+        "t0": 0.35,
+        "t1": 0.35
+      }
+    },
+    {
+      "caso": "Contador na tela atualiza logo após comprar",
+      "status": "passou",
+      "esperado": "'3 pontos' → '2 pontos', Nv.1",
+      "observado": {
+        "ptsAntes": "3 pontos",
+        "ptsDepois": "2 pontos",
+        "nvTela": 1
+      }
+    },
+    {
+      "caso": "Nó mostra nível 1/5 depois da compra",
+      "status": "passou",
+      "esperado": "texto do nó com '1/5'",
+      "observado": "Dano aumentado Evoluível 1/5 +8% de dano 1 pt"
+    },
+    {
+      "caso": "Clique duplo rápido compra só 1 nível",
+      "status": "passou",
+      "esperado": "Nv.1, pts 9",
+      "observado": {
+        "pts": 9,
+        "nv": 1
+      }
+    },
+    {
+      "caso": "Enter repetido rápido: nenhuma compra a menos de 350 ms da anterior e cobrança exata",
+      "status": "passou",
+      "esperado": "pontos gastos = soma dos custos; intervalo entre compras ≥ 350 ms",
+      "observado": {
+        "pts": 1,
+        "nv": 5,
+        "menorIntervaloMs": 1080,
+        "focoNaArvore": true,
+        "foco": "regen"
+      }
+    },
+    {
+      "caso": "Foco continua na árvore depois de comprar (inclusive no nível máximo)",
+      "status": "passou",
+      "esperado": "document.activeElement dentro de .overlay.tree",
+      "observado": {
+        "pts": 1,
+        "nv": 5,
+        "menorIntervaloMs": 1080,
+        "focoNaArvore": true,
+        "foco": "regen"
+      }
+    },
+    {
+      "caso": "Gasto de pontos sempre igual ao custo dos níveis (Enter segurado)",
+      "status": "passou",
+      "esperado": "pontos gastos = soma dos custos",
+      "observado": {
+        "antesHold": {
+          "pts": 1,
+          "nv": 5
+        },
+        "hold": {
+          "pts": 1,
+          "nv": 5
+        }
+      }
+    },
+    {
+      "caso": "Sem pontos: botão desabilitado e aviso visível",
+      "status": "passou",
+      "esperado": "disabled + \"Pontos insuficientes\"",
+      "observado": {
+        "desabilitado": true,
+        "aviso": true
+      }
+    },
+    {
+      "caso": "Nó bloqueado: mostra requisito e não oferece compra",
+      "status": "passou",
+      "esperado": "\"Requer Agilidade no nível 2\", sem botão",
+      "observado": {
+        "txt": true,
+        "botao": false
+      }
+    },
+    {
+      "caso": "Rodapé mostra equipadas e Ult separadas das passivas",
+      "status": "passou",
+      "esperado": "texto \"Equipadas: …\" e \"Ult (R)\"",
+      "observado": "Equipadas: Z: Investida · X: Escudo tático · C: Granada especial · Ult (R): Bombardeio"
+    },
+    {
+      "caso": "Equipadas não aparecem como nós da árvore",
+      "status": "passou",
+      "esperado": "slots ≠ passivas",
+      "observado": [
+        "dash",
+        "shield",
+        "sgrenade"
+      ]
+    },
+    {
+      "caso": "Tab fecha e o combate volta a rodar",
+      "status": "passou",
+      "esperado": "state 'playing', g.time avança",
+      "observado": {
+        "state": "playing",
+        "overlay": false,
+        "t2": 0.8000000000000002,
+        "t3": 0.8500000000000002
+      }
+    },
+    {
+      "caso": "Botão \"Voltar ao jogo\" fecha e retoma",
+      "status": "passou",
+      "esperado": "'playing'",
+      "observado": "playing"
+    },
+    {
+      "caso": "Controle (botão 8 simulado) abre e fecha a árvore",
+      "status": "passou",
+      "esperado": "abre (paused/tree) e fecha (playing)",
+      "observado": {
+        "padAb": {
+          "state": "paused",
+          "tela": "tree"
+        },
+        "padFe": {
+          "state": "playing",
+          "tela": null
+        }
+      }
+    },
+    {
+      "caso": "Persistência (comportamento real): passivas zeram em nova partida",
+      "status": "passou",
+      "esperado": "pas vazio após restart (passivas por partida)",
+      "observado": {
+        "depoisRestart": {
+          "pas": {},
+          "pts": 0,
+          "lv": 1,
+          "ultOn": false
+        },
+        "localStorageChaves": [
+          "blockhorde_tutorial_v1"
+        ],
+        "loadout": null
+      }
+    },
+    {
+      "caso": "Sem erros de JavaScript (desktop)",
+      "status": "passou",
+      "esperado": "0 erros",
+      "observado": []
+    },
+    {
+      "caso": "Co-op: abas J1 e J2",
+      "status": "passou",
+      "esperado": "2 abas",
+      "observado": [
+        "J1 · Gatito",
+        "J2 · Gatito"
+      ]
+    },
+    {
+      "caso": "Co-op: compra do J1 não gasta pontos do J2",
+      "status": "passou",
+      "esperado": "J1 pts 2 Nv1; J2 pts 1 Nv0",
+      "observado": [
+        {
+          "pts": 2,
+          "dano": 1
+        },
+        {
+          "pts": 1,
+          "dano": 0
+        }
+      ]
+    },
+    {
+      "caso": "Co-op: aba J2 mostra os pontos e níveis do J2",
+      "status": "passou",
+      "esperado": "'1 ponto' e Dano '0/5'",
+      "observado": {
+        "ptsJ2": "1 ponto",
+        "nodeJ2": "Dano aumentado Disponível 0/5 Nível 0 1 pt"
+      }
+    },
+    {
+      "caso": "Celular retrato-390x844: painel rola e \"Voltar\" alcançável",
+      "status": "passou",
+      "esperado": "overflow rolável, Voltar visível ao fim, sem rolagem horizontal",
+      "observado": {
+        "rolavel": true,
+        "voltarVisivel": true,
+        "semRolagemHorizontal": true,
+        "cortados": [],
+        "menorNo": 88,
+        "scrollH": 1873,
+        "clientH": 620
+      }
+    },
+    {
+      "caso": "Celular retrato-390x844: textos dos nós sem corte",
+      "status": "passou",
+      "esperado": "nenhum texto cortado",
+      "observado": []
+    },
+    {
+      "caso": "Celular retrato-390x844: nós com ≥44 px de toque",
+      "status": "passou",
+      "esperado": "≥44 px",
+      "observado": 88
+    },
+    {
+      "caso": "Celular paisagem-844x390: painel rola e \"Voltar\" alcançável",
+      "status": "passou",
+      "esperado": "overflow rolável, Voltar visível ao fim, sem rolagem horizontal",
+      "observado": {
+        "rolavel": true,
+        "voltarVisivel": true,
+        "semRolagemHorizontal": true,
+        "cortados": [],
+        "menorNo": 82,
+        "scrollH": 1566,
+        "clientH": 326
+      }
+    },
+    {
+      "caso": "Celular paisagem-844x390: textos dos nós sem corte",
+      "status": "passou",
+      "esperado": "nenhum texto cortado",
+      "observado": []
+    },
+    {
+      "caso": "Celular paisagem-844x390: nós com ≥44 px de toque",
+      "status": "passou",
+      "esperado": "≥44 px",
+      "observado": 82
+    }
+  ]
+}

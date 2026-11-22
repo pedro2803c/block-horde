@@ -6,3 +6,10 @@ publish/
 src_backup*/
 .DS_Store
 crazygames/build/
+
+.vercel
+
+tests/resultado-controles.json
+tests/hud-shots/
+tests/resultado-desempenho.json
+tests/resultado-fumaca.json

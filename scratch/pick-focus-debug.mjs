@@ -1,0 +1,16 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ channel: 'chrome', headless: true });
+const ctx = await b.newContext({ locale: 'pt-BR', viewport: { width: 1366, height: 768 } });
+await ctx.addInitScript(() => localStorage.setItem('blockhorde_tutorial_v1', '1'));
+const p = await ctx.newPage();
+await p.goto('http://localhost:5199/');
+await p.waitForFunction(() => window.__bh && document.body.innerText.includes('Jogar agora'), null, { timeout: 60000 });
+await p.evaluate(() => __bh.ui.showScreen('pick', { mode: 'coop' }));
+await p.waitForTimeout(800);
+console.log('antes:', await p.evaluate(() => ({ tag: document.activeElement?.tagName, cls: document.activeElement?.className, txt: document.activeElement?.textContent?.slice(0, 40), foco: document.querySelector('[data-focus]')?.textContent?.slice(0, 30) })));
+await p.locator('.pick-card').first().click();
+await p.waitForTimeout(100);
+console.log('100ms:', await p.evaluate(() => ({ tag: document.activeElement?.tagName, cls: document.activeElement?.className, txt: document.activeElement?.textContent?.slice(0, 40), foco: document.querySelector('[data-focus]')?.textContent?.slice(0, 30), screen: __bh.ui.screen })));
+await p.waitForTimeout(700);
+console.log('800ms:', await p.evaluate(() => ({ tag: document.activeElement?.tagName, cls: document.activeElement?.className, txt: document.activeElement?.textContent?.slice(0, 40), foco: document.querySelector('[data-focus]')?.textContent?.slice(0, 30), screen: __bh.ui.screen })));
+await b.close();

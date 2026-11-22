@@ -1,0 +1,1804 @@
+{
+  "data": "2026-11-21T16:34:00.682Z",
+  "url": "http://localhost:5199/",
+  "total": 82,
+  "falhas": 0,
+  "casos": [
+    {
+      "caso": "desktop-1366: 5 sobreviventes",
+      "status": "passou",
+      "esperado": "5 cartões",
+      "observado": 5
+    },
+    {
+      "caso": "desktop-1366: linhas sem cartão isolado no canto",
+      "status": "passou",
+      "esperado": "nenhuma linha incompleta antes da última",
+      "observado": [
+        5
+      ]
+    },
+    {
+      "caso": "desktop-1366: linha incompleta centralizada",
+      "status": "passou",
+      "esperado": "centro da grade",
+      "observado": [
+        null
+      ]
+    },
+    {
+      "caso": "desktop-1366: larguras iguais",
+      "status": "passou",
+      "esperado": "≤ 1,1 px de diferença",
+      "observado": [
+        0
+      ]
+    },
+    {
+      "caso": "desktop-1366: espaçamentos uniformes",
+      "status": "passou",
+      "esperado": "um único vão ≥ 7 px",
+      "observado": [
+        14
+      ]
+    },
+    {
+      "caso": "desktop-1366: cartões dentro da grade",
+      "status": "passou",
+      "esperado": "sem estouro horizontal",
+      "observado": {
+        "dentro": true,
+        "overflowX": 0
+      }
+    },
+    {
+      "caso": "desktop-1366: modelos grandes o bastante",
+      "status": "passou",
+      "esperado": "≥ 75% da largura do cartão",
+      "observado": [
+        "191.2/212.8",
+        "191.2/212.8",
+        "191.2/212.8",
+        "191.2/212.8",
+        "191.2/212.8"
+      ]
+    },
+    {
+      "caso": "desktop-1366: modelos desenhados",
+      "status": "passou",
+      "esperado": "pixels visíveis em todos",
+      "observado": [
+        28578,
+        32979,
+        32266,
+        29947,
+        30705
+      ]
+    },
+    {
+      "caso": "desktop-1366: modelos de frente (sem giro parado)",
+      "status": "passou",
+      "esperado": "|ângulo| ≤ 0,21 rad",
+      "observado": [
+        0,
+        0.163,
+        0.097,
+        -0.034,
+        -0.142
+      ]
+    },
+    {
+      "caso": "desktop-1366: altura sem rolagem",
+      "status": "passou",
+      "esperado": "painel cabe na tela",
+      "observado": {
+        "sh": 531,
+        "ch": 531
+      }
+    },
+    {
+      "caso": "desktop-1366: hover destaca e vira de frente",
+      "status": "passou",
+      "esperado": "ativo, ângulo ~0 e borda amarela",
+      "observado": {
+        "ativo": true,
+        "angulo": 0.014,
+        "borda": "rgb(255, 193, 7)"
+      }
+    },
+    {
+      "caso": "desktop-1920: 5 sobreviventes",
+      "status": "passou",
+      "esperado": "5 cartões",
+      "observado": 5
+    },
+    {
+      "caso": "desktop-1920: linhas sem cartão isolado no canto",
+      "status": "passou",
+      "esperado": "nenhuma linha incompleta antes da última",
+      "observado": [
+        5
+      ]
+    },
+    {
+      "caso": "desktop-1920: linha incompleta centralizada",
+      "status": "passou",
+      "esperado": "centro da grade",
+      "observado": [
+        null
+      ]
+    },
+    {
+      "caso": "desktop-1920: larguras iguais",
+      "status": "passou",
+      "esperado": "≤ 1,1 px de diferença",
+      "observado": [
+        0
+      ]
+    },
+    {
+      "caso": "desktop-1920: espaçamentos uniformes",
+      "status": "passou",
+      "esperado": "um único vão ≥ 7 px",
+      "observado": [
+        14
+      ]
+    },
+    {
+      "caso": "desktop-1920: cartões dentro da grade",
+      "status": "passou",
+      "esperado": "sem estouro horizontal",
+      "observado": {
+        "dentro": true,
+        "overflowX": 0
+      }
+    },
+    {
+      "caso": "desktop-1920: modelos grandes o bastante",
+      "status": "passou",
+      "esperado": "≥ 75% da largura do cartão",
+      "observado": [
+        "219.2/240.8",
+        "219.2/240.8",
+        "219.2/240.8",
+        "219.2/240.8",
+        "219.2/240.8"
+      ]
+    },
+    {
+      "caso": "desktop-1920: modelos desenhados",
+      "status": "passou",
+      "esperado": "pixels visíveis em todos",
+      "observado": [
+        28712,
+        33003,
+        32473,
+        29948,
+        30534
+      ]
+    },
+    {
+      "caso": "desktop-1920: modelos de frente (sem giro parado)",
+      "status": "passou",
+      "esperado": "|ângulo| ≤ 0,21 rad",
+      "observado": [
+        0,
+        0.166,
+        0.124,
+        -0.001,
+        -0.126
+      ]
+    },
+    {
+      "caso": "desktop-1920: altura sem rolagem",
+      "status": "passou",
+      "esperado": "painel cabe na tela",
+      "observado": {
+        "sh": 566,
+        "ch": 566
+      }
+    },
+    {
+      "caso": "desktop-1920: hover destaca e vira de frente",
+      "status": "passou",
+      "esperado": "ativo, ângulo ~0 e borda amarela",
+      "observado": {
+        "ativo": true,
+        "angulo": 0.001,
+        "borda": "rgb(255, 193, 7)"
+      }
+    },
+    {
+      "caso": "tablet-1024: 5 sobreviventes",
+      "status": "passou",
+      "esperado": "5 cartões",
+      "observado": 5
+    },
+    {
+      "caso": "tablet-1024: linhas sem cartão isolado no canto",
+      "status": "passou",
+      "esperado": "nenhuma linha incompleta antes da última",
+      "observado": [
+        5
+      ]
+    },
+    {
+      "caso": "tablet-1024: linha incompleta centralizada",
+      "status": "passou",
+      "esperado": "centro da grade",
+      "observado": [
+        null
+      ]
+    },
+    {
+      "caso": "tablet-1024: larguras iguais",
+      "status": "passou",
+      "esperado": "≤ 1,1 px de diferença",
+      "observado": [
+        0
+      ]
+    },
+    {
+      "caso": "tablet-1024: espaçamentos uniformes",
+      "status": "passou",
+      "esperado": "um único vão ≥ 7 px",
+      "observado": [
+        14
+      ]
+    },
+    {
+      "caso": "tablet-1024: cartões dentro da grade",
+      "status": "passou",
+      "esperado": "sem estouro horizontal",
+      "observado": {
+        "dentro": true,
+        "overflowX": 0
+      }
+    },
+    {
+      "caso": "tablet-1024: modelos grandes o bastante",
+      "status": "passou",
+      "esperado": "≥ 75% da largura do cartão",
+      "observado": [
+        "153.6/175.2",
+        "153.6/175.2",
+        "153.6/175.2",
+        "153.6/175.2",
+        "153.6/175.2"
+      ]
+    },
+    {
+      "caso": "tablet-1024: modelos desenhados",
+      "status": "passou",
+      "esperado": "pixels visíveis em todos",
+      "observado": [
+        28580,
+        33020,
+        32442,
+        29949,
+        30588
+      ]
+    },
+    {
+      "caso": "tablet-1024: modelos de frente (sem giro parado)",
+      "status": "passou",
+      "esperado": "|ângulo| ≤ 0,21 rad",
+      "observado": [
+        0,
+        0.167,
+        0.12,
+        -0.009,
+        -0.132
+      ]
+    },
+    {
+      "caso": "tablet-1024: altura sem rolagem",
+      "status": "passou",
+      "esperado": "painel cabe na tela",
+      "observado": {
+        "sh": 473,
+        "ch": 473
+      }
+    },
+    {
+      "caso": "tablet-1024: hover destaca e vira de frente",
+      "status": "passou",
+      "esperado": "ativo, ângulo ~0 e borda amarela",
+      "observado": {
+        "ativo": true,
+        "angulo": 0.001,
+        "borda": "rgb(255, 193, 7)"
+      }
+    },
+    {
+      "caso": "celular-deitado: 5 sobreviventes",
+      "status": "passou",
+      "esperado": "5 cartões",
+      "observado": 5
+    },
+    {
+      "caso": "celular-deitado: linhas sem cartão isolado no canto",
+      "status": "passou",
+      "esperado": "nenhuma linha incompleta antes da última",
+      "observado": [
+        5
+      ]
+    },
+    {
+      "caso": "celular-deitado: linha incompleta centralizada",
+      "status": "passou",
+      "esperado": "centro da grade",
+      "observado": [
+        null
+      ]
+    },
+    {
+      "caso": "celular-deitado: larguras iguais",
+      "status": "passou",
+      "esperado": "≤ 1,1 px de diferença",
+      "observado": [
+        0
+      ]
+    },
+    {
+      "caso": "celular-deitado: espaçamentos uniformes",
+      "status": "passou",
+      "esperado": "um único vão ≥ 7 px",
+      "observado": [
+        8
+      ]
+    },
+    {
+      "caso": "celular-deitado: cartões dentro da grade",
+      "status": "passou",
+      "esperado": "sem estouro horizontal",
+      "observado": {
+        "dentro": true,
+        "overflowX": 0
+      }
+    },
+    {
+      "caso": "celular-deitado: modelos grandes o bastante",
+      "status": "passou",
+      "esperado": "≥ 75% da largura do cartão",
+      "observado": [
+        "137.6/152.8",
+        "137.6/152.8",
+        "137.6/152.8",
+        "137.6/152.8",
+        "137.6/152.8"
+      ]
+    },
+    {
+      "caso": "celular-deitado: modelos desenhados",
+      "status": "passou",
+      "esperado": "pixels visíveis em todos",
+      "observado": [
+        28583,
+        33013,
+        32447,
+        29943,
+        30572
+      ]
+    },
+    {
+      "caso": "celular-deitado: modelos de frente (sem giro parado)",
+      "status": "passou",
+      "esperado": "|ângulo| ≤ 0,21 rad",
+      "observado": [
+        0,
+        0.167,
+        0.12,
+        -0.008,
+        -0.131
+      ]
+    },
+    {
+      "caso": "celular-deitado: altura sem rolagem",
+      "status": "passou",
+      "esperado": "painel cabe na tela",
+      "observado": {
+        "sh": 367,
+        "ch": 367
+      }
+    },
+    {
+      "caso": "celular-deitado: hover destaca e vira de frente",
+      "status": "passou",
+      "esperado": "ativo, ângulo ~0 e borda amarela",
+      "observado": {
+        "ativo": true,
+        "angulo": 0.001,
+        "borda": "rgb(255, 193, 7)"
+      }
+    },
+    {
+      "caso": "janela-estreita-390: 5 sobreviventes",
+      "status": "passou",
+      "esperado": "5 cartões",
+      "observado": 5
+    },
+    {
+      "caso": "janela-estreita-390: linhas sem cartão isolado no canto",
+      "status": "passou",
+      "esperado": "nenhuma linha incompleta antes da última",
+      "observado": [
+        2,
+        2,
+        1
+      ]
+    },
+    {
+      "caso": "janela-estreita-390: linha incompleta centralizada",
+      "status": "passou",
+      "esperado": "centro da grade",
+      "observado": [
+        null,
+        null,
+        195
+      ]
+    },
+    {
+      "caso": "janela-estreita-390: larguras iguais",
+      "status": "passou",
+      "esperado": "≤ 1,1 px de diferença",
+      "observado": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "caso": "janela-estreita-390: espaçamentos uniformes",
+      "status": "passou",
+      "esperado": "um único vão ≥ 7 px",
+      "observado": [
+        10
+      ]
+    },
+    {
+      "caso": "janela-estreita-390: cartões dentro da grade",
+      "status": "passou",
+      "esperado": "sem estouro horizontal",
+      "observado": {
+        "dentro": true,
+        "overflowX": 0
+      }
+    },
+    {
+      "caso": "janela-estreita-390: modelos grandes o bastante",
+      "status": "passou",
+      "esperado": "≥ 75% da largura do cartão",
+      "observado": [
+        "137.6/156",
+        "137.6/156",
+        "137.6/156",
+        "137.6/156",
+        "137.6/156"
+      ]
+    },
+    {
+      "caso": "janela-estreita-390: modelos desenhados",
+      "status": "passou",
+      "esperado": "pixels visíveis em todos",
+      "observado": [
+        28569,
+        33015,
+        32456,
+        29934,
+        30564
+      ]
+    },
+    {
+      "caso": "janela-estreita-390: modelos de frente (sem giro parado)",
+      "status": "passou",
+      "esperado": "|ângulo| ≤ 0,21 rad",
+      "observado": [
+        0,
+        0.166,
+        0.124,
+        -0.003,
+        -0.128
+      ]
+    },
+    {
+      "caso": "janela-estreita-390: altura sem rolagem",
+      "status": "passou",
+      "esperado": "rolagem permitida no celular em pé",
+      "observado": {
+        "sh": 963,
+        "ch": 800
+      }
+    },
+    {
+      "caso": "janela-estreita-390: rolagem curta",
+      "status": "passou",
+      "esperado": "≤ 260 px",
+      "observado": 163
+    },
+    {
+      "caso": "janela-estreita-390: último cartão visível acima do rodapé",
+      "status": "passou",
+      "esperado": "fim do cartão ≤ topo do rodapé",
+      "observado": {
+        "ultimoFim": 744.1,
+        "rodapeTopo": 766
+      }
+    },
+    {
+      "caso": "janela-estreita-390: hover destaca e vira de frente",
+      "status": "passou",
+      "esperado": "ativo, ângulo ~0 e borda amarela",
+      "observado": {
+        "ativo": true,
+        "angulo": 0.001,
+        "borda": "rgb(255, 193, 7)"
+      }
+    },
+    {
+      "caso": "janela-estreita-320: 5 sobreviventes",
+      "status": "passou",
+      "esperado": "5 cartões",
+      "observado": 5
+    },
+    {
+      "caso": "janela-estreita-320: linhas sem cartão isolado no canto",
+      "status": "passou",
+      "esperado": "nenhuma linha incompleta antes da última",
+      "observado": [
+        2,
+        2,
+        1
+      ]
+    },
+    {
+      "caso": "janela-estreita-320: linha incompleta centralizada",
+      "status": "passou",
+      "esperado": "centro da grade",
+      "observado": [
+        null,
+        null,
+        160
+      ]
+    },
+    {
+      "caso": "janela-estreita-320: larguras iguais",
+      "status": "passou",
+      "esperado": "≤ 1,1 px de diferença",
+      "observado": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "caso": "janela-estreita-320: espaçamentos uniformes",
+      "status": "passou",
+      "esperado": "um único vão ≥ 7 px",
+      "observado": [
+        8
+      ]
+    },
+    {
+      "caso": "janela-estreita-320: cartões dentro da grade",
+      "status": "passou",
+      "esperado": "sem estouro horizontal",
+      "observado": {
+        "dentro": true,
+        "overflowX": 0
+      }
+    },
+    {
+      "caso": "janela-estreita-320: modelos grandes o bastante",
+      "status": "passou",
+      "esperado": "≥ 75% da largura do cartão",
+      "observado": [
+        "106.8/122",
+        "106.8/122",
+        "106.8/122",
+        "106.8/122",
+        "106.8/122"
+      ]
+    },
+    {
+      "caso": "janela-estreita-320: modelos desenhados",
+      "status": "passou",
+      "esperado": "pixels visíveis em todos",
+      "observado": [
+        28533,
+        33014,
+        32477,
+        29948,
+        30549
+      ]
+    },
+    {
+      "caso": "janela-estreita-320: modelos de frente (sem giro parado)",
+      "status": "passou",
+      "esperado": "|ângulo| ≤ 0,21 rad",
+      "observado": [
+        0,
+        0.167,
+        0.124,
+        -0.003,
+        -0.128
+      ]
+    },
+    {
+      "caso": "janela-estreita-320: altura sem rolagem",
+      "status": "passou",
+      "esperado": "rolagem permitida no celular em pé",
+      "observado": {
+        "sh": 771,
+        "ch": 524
+      }
+    },
+    {
+      "caso": "janela-estreita-320: rolagem curta",
+      "status": "passou",
+      "esperado": "≤ 260 px",
+      "observado": 247
+    },
+    {
+      "caso": "janela-estreita-320: último cartão visível acima do rodapé",
+      "status": "passou",
+      "esperado": "fim do cartão ≤ topo do rodapé",
+      "observado": {
+        "ultimoFim": 467.2,
+        "rodapeTopo": 489.6
+      }
+    },
+    {
+      "caso": "janela-estreita-320: hover destaca e vira de frente",
+      "status": "passou",
+      "esperado": "ativo, ângulo ~0 e borda amarela",
+      "observado": {
+        "ativo": true,
+        "angulo": 0.001,
+        "borda": "rgb(255, 193, 7)"
+      }
+    },
+    {
+      "caso": "menu abre a escolha de sobrevivente",
+      "status": "passou",
+      "esperado": "pick",
+      "observado": "pick"
+    },
+    {
+      "caso": "solo: clicar no primeiro sobrevivente vai para a arena",
+      "status": "passou",
+      "esperado": "arena com ['soldado']",
+      "observado": {
+        "screen": "arena",
+        "picks": [
+          "soldado"
+        ]
+      }
+    },
+    {
+      "caso": "co-op: J1 escolhe e a tela continua para J2",
+      "status": "passou",
+      "esperado": "pick, 1 escolhido, selo J1, 4 livres",
+      "observado": {
+        "screen": "pick",
+        "picks": [
+          "soldado"
+        ],
+        "taken": 1,
+        "badge": "J1",
+        "livres": 4,
+        "foco": "Vetor"
+      }
+    },
+    {
+      "caso": "co-op: foco vai para o primeiro livre",
+      "status": "passou",
+      "esperado": "Vetor",
+      "observado": "Vetor"
+    },
+    {
+      "caso": "co-op: J2 escolhe e vai para a arena com os dois",
+      "status": "passou",
+      "esperado": "arena com ['soldado','vetor']",
+      "observado": {
+        "screen": "arena",
+        "picks": [
+          "soldado",
+          "vetor"
+        ]
+      }
+    },
+    {
+      "caso": "voltar desfaz a escolha do jogador",
+      "status": "passou",
+      "esperado": "pick com 0 escolhas",
+      "observado": {
+        "screen": "pick",
+        "picks": 0
+      }
+    },
+    {
+      "caso": "voltar de novo retorna ao menu",
+      "status": "passou",
+      "esperado": "menu",
+      "observado": "menu"
+    },
+    {
+      "caso": "teclado: Enter escolhe o sobrevivente focado",
+      "status": "passou",
+      "esperado": "arena com 'soldado'",
+      "observado": {
+        "screen": "arena",
+        "pick": "soldado"
+      }
+    },
+    {
+      "caso": "celular em pé: aviso para girar",
+      "status": "passou",
+      "esperado": "aviso visível",
+      "observado": {
+        "bloqueio": true,
+        "visivel": true
+      }
+    },
+    {
+      "caso": "celular deitado: interface liberada",
+      "status": "passou",
+      "esperado": "sem aviso",
+      "observado": {
+        "bloqueio": false,
+        "visivel": false
+      }
+    },
+    {
+      "caso": "celular deitado: 5 cartões em uma linha",
+      "status": "passou",
+      "esperado": "5 cartões, 1 linha, sem estouro",
+      "observado": {
+        "n": 5,
+        "linhas": 1,
+        "cols": 5,
+        "overflowX": 0
+      }
+    },
+    {
+      "caso": "sem erros de JavaScript",
+      "status": "passou",
+      "esperado": "nenhum erro",
+      "observado": []
+    }
+  ],
+  "bruto": {
+    "desktop-1366": {
+      "screen": "pick",
+      "cols": 5,
+      "panel": {
+        "x": 93,
+        "y": 116.7,
+        "w": 1180,
+        "h": 534.5,
+        "right": 1273,
+        "bottom": 651.3
+      },
+      "grid": {
+        "x": 123,
+        "y": 250.3,
+        "w": 1120,
+        "h": 320.6,
+        "right": 1243,
+        "bottom": 570.9
+      },
+      "cards": [
+        {
+          "x": 123,
+          "y": 246.3,
+          "w": 212.8,
+          "h": 320.6,
+          "right": 335.8,
+          "bottom": 566.9,
+          "name": "Sgt. Barros",
+          "modelo": {
+            "x": 133.8,
+            "y": 257.1,
+            "w": 191.2,
+            "h": 243.3,
+            "right": 325,
+            "bottom": 500.5
+          },
+          "vazio": 28578
+        },
+        {
+          "x": 349.8,
+          "y": 250.3,
+          "w": 212.8,
+          "h": 320.6,
+          "right": 562.6,
+          "bottom": 570.9,
+          "name": "Vetor",
+          "modelo": {
+            "x": 360.6,
+            "y": 261.1,
+            "w": 191.2,
+            "h": 243.3,
+            "right": 551.8,
+            "bottom": 504.5
+          },
+          "vazio": 32979
+        },
+        {
+          "x": 576.6,
+          "y": 250.3,
+          "w": 212.8,
+          "h": 320.6,
+          "right": 789.4,
+          "bottom": 570.9,
+          "name": "Lia",
+          "modelo": {
+            "x": 587.4,
+            "y": 261.1,
+            "w": 191.2,
+            "h": 243.3,
+            "right": 778.6,
+            "bottom": 504.5
+          },
+          "vazio": 32266
+        },
+        {
+          "x": 803.4,
+          "y": 250.3,
+          "w": 212.8,
+          "h": 320.6,
+          "right": 1016.2,
+          "bottom": 570.9,
+          "name": "Gatito",
+          "modelo": {
+            "x": 814.2,
+            "y": 261.1,
+            "w": 191.2,
+            "h": 243.3,
+            "right": 1005.4,
+            "bottom": 504.5
+          },
+          "vazio": 29947
+        },
+        {
+          "x": 1030.2,
+          "y": 250.3,
+          "w": 212.8,
+          "h": 320.6,
+          "right": 1243,
+          "bottom": 570.9,
+          "name": "Patito",
+          "modelo": {
+            "x": 1041,
+            "y": 261.1,
+            "w": 191.2,
+            "h": 243.3,
+            "right": 1232.2,
+            "bottom": 504.5
+          },
+          "vazio": 30705
+        }
+      ],
+      "rows": [
+        [
+          "Sgt. Barros",
+          "Vetor",
+          "Lia",
+          "Gatito",
+          "Patito"
+        ]
+      ],
+      "rowRects": [
+        [
+          {
+            "x": 123,
+            "w": 212.8,
+            "y": 246.3
+          },
+          {
+            "x": 349.8,
+            "w": 212.8,
+            "y": 250.3
+          },
+          {
+            "x": 576.6,
+            "w": 212.8,
+            "y": 250.3
+          },
+          {
+            "x": 803.4,
+            "w": 212.8,
+            "y": 250.3
+          },
+          {
+            "x": 1030.2,
+            "w": 212.8,
+            "y": 250.3
+          }
+        ]
+      ],
+      "rolagem": {
+        "sh": 531,
+        "ch": 531
+      },
+      "angulos": [
+        0,
+        0.163,
+        0.097,
+        -0.034,
+        -0.142
+      ],
+      "ativos": [
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "overflowX": 0
+    },
+    "desktop-1920": {
+      "screen": "pick",
+      "cols": 5,
+      "panel": {
+        "x": 300,
+        "y": 254.8,
+        "w": 1320,
+        "h": 570.4,
+        "right": 1620,
+        "bottom": 825.2
+      },
+      "grid": {
+        "x": 330,
+        "y": 388.4,
+        "w": 1260,
+        "h": 356.4,
+        "right": 1590,
+        "bottom": 744.8
+      },
+      "cards": [
+        {
+          "x": 330,
+          "y": 384.4,
+          "w": 240.8,
+          "h": 356.4,
+          "right": 570.8,
+          "bottom": 740.8,
+          "name": "Sgt. Barros",
+          "modelo": {
+            "x": 340.8,
+            "y": 395.2,
+            "w": 219.2,
+            "h": 279,
+            "right": 560,
+            "bottom": 674.2
+          },
+          "vazio": 28712
+        },
+        {
+          "x": 584.8,
+          "y": 388.4,
+          "w": 240.8,
+          "h": 356.4,
+          "right": 825.6,
+          "bottom": 744.8,
+          "name": "Vetor",
+          "modelo": {
+            "x": 595.6,
+            "y": 399.2,
+            "w": 219.2,
+            "h": 279,
+            "right": 814.8,
+            "bottom": 678.2
+          },
+          "vazio": 33003
+        },
+        {
+          "x": 839.6,
+          "y": 388.4,
+          "w": 240.8,
+          "h": 356.4,
+          "right": 1080.4,
+          "bottom": 744.8,
+          "name": "Lia",
+          "modelo": {
+            "x": 850.4,
+            "y": 399.2,
+            "w": 219.2,
+            "h": 279,
+            "right": 1069.6,
+            "bottom": 678.2
+          },
+          "vazio": 32473
+        },
+        {
+          "x": 1094.4,
+          "y": 388.4,
+          "w": 240.8,
+          "h": 356.4,
+          "right": 1335.2,
+          "bottom": 744.8,
+          "name": "Gatito",
+          "modelo": {
+            "x": 1105.2,
+            "y": 399.2,
+            "w": 219.2,
+            "h": 279,
+            "right": 1324.4,
+            "bottom": 678.2
+          },
+          "vazio": 29948
+        },
+        {
+          "x": 1349.2,
+          "y": 388.4,
+          "w": 240.8,
+          "h": 356.4,
+          "right": 1590,
+          "bottom": 744.8,
+          "name": "Patito",
+          "modelo": {
+            "x": 1360,
+            "y": 399.2,
+            "w": 219.2,
+            "h": 279,
+            "right": 1579.2,
+            "bottom": 678.2
+          },
+          "vazio": 30534
+        }
+      ],
+      "rows": [
+        [
+          "Sgt. Barros",
+          "Vetor",
+          "Lia",
+          "Gatito",
+          "Patito"
+        ]
+      ],
+      "rowRects": [
+        [
+          {
+            "x": 330,
+            "w": 240.8,
+            "y": 384.4
+          },
+          {
+            "x": 584.8,
+            "w": 240.8,
+            "y": 388.4
+          },
+          {
+            "x": 839.6,
+            "w": 240.8,
+            "y": 388.4
+          },
+          {
+            "x": 1094.4,
+            "w": 240.8,
+            "y": 388.4
+          },
+          {
+            "x": 1349.2,
+            "w": 240.8,
+            "y": 388.4
+          }
+        ]
+      ],
+      "rolagem": {
+        "sh": 566,
+        "ch": 566
+      },
+      "angulos": [
+        0,
+        0.166,
+        0.124,
+        -0.001,
+        -0.126
+      ],
+      "ativos": [
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "overflowX": 0
+    },
+    "tablet-1024": {
+      "screen": "pick",
+      "cols": 5,
+      "panel": {
+        "x": 16,
+        "y": 145.4,
+        "w": 992,
+        "h": 477.1,
+        "right": 1008,
+        "bottom": 622.5
+      },
+      "grid": {
+        "x": 46,
+        "y": 279,
+        "w": 932,
+        "h": 263.1,
+        "right": 978,
+        "bottom": 542.2
+      },
+      "cards": [
+        {
+          "x": 46,
+          "y": 275,
+          "w": 175.2,
+          "h": 263.1,
+          "right": 221.2,
+          "bottom": 538.2,
+          "name": "Sgt. Barros",
+          "modelo": {
+            "x": 56.8,
+            "y": 285.8,
+            "w": 153.6,
+            "h": 195.5,
+            "right": 210.4,
+            "bottom": 481.3
+          },
+          "vazio": 28580
+        },
+        {
+          "x": 235.2,
+          "y": 279,
+          "w": 175.2,
+          "h": 263.1,
+          "right": 410.4,
+          "bottom": 542.2,
+          "name": "Vetor",
+          "modelo": {
+            "x": 246,
+            "y": 289.8,
+            "w": 153.6,
+            "h": 195.5,
+            "right": 399.6,
+            "bottom": 485.3
+          },
+          "vazio": 33020
+        },
+        {
+          "x": 424.4,
+          "y": 279,
+          "w": 175.2,
+          "h": 263.1,
+          "right": 599.6,
+          "bottom": 542.2,
+          "name": "Lia",
+          "modelo": {
+            "x": 435.2,
+            "y": 289.8,
+            "w": 153.6,
+            "h": 195.5,
+            "right": 588.8,
+            "bottom": 485.3
+          },
+          "vazio": 32442
+        },
+        {
+          "x": 613.6,
+          "y": 279,
+          "w": 175.2,
+          "h": 263.1,
+          "right": 788.8,
+          "bottom": 542.2,
+          "name": "Gatito",
+          "modelo": {
+            "x": 624.4,
+            "y": 289.8,
+            "w": 153.6,
+            "h": 195.5,
+            "right": 778,
+            "bottom": 485.3
+          },
+          "vazio": 29949
+        },
+        {
+          "x": 802.8,
+          "y": 279,
+          "w": 175.2,
+          "h": 263.1,
+          "right": 978,
+          "bottom": 542.2,
+          "name": "Patito",
+          "modelo": {
+            "x": 813.6,
+            "y": 289.8,
+            "w": 153.6,
+            "h": 195.5,
+            "right": 967.2,
+            "bottom": 485.3
+          },
+          "vazio": 30588
+        }
+      ],
+      "rows": [
+        [
+          "Sgt. Barros",
+          "Vetor",
+          "Lia",
+          "Gatito",
+          "Patito"
+        ]
+      ],
+      "rowRects": [
+        [
+          {
+            "x": 46,
+            "w": 175.2,
+            "y": 275
+          },
+          {
+            "x": 235.2,
+            "w": 175.2,
+            "y": 279
+          },
+          {
+            "x": 424.4,
+            "w": 175.2,
+            "y": 279
+          },
+          {
+            "x": 613.6,
+            "w": 175.2,
+            "y": 279
+          },
+          {
+            "x": 802.8,
+            "w": 175.2,
+            "y": 279
+          }
+        ]
+      ],
+      "rolagem": {
+        "sh": 473,
+        "ch": 473
+      },
+      "angulos": [
+        0,
+        0.167,
+        0.12,
+        -0.009,
+        -0.132
+      ],
+      "ativos": [
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "overflowX": 0
+    },
+    "celular-deitado": {
+      "screen": "pick",
+      "cols": 5,
+      "panel": {
+        "x": 8,
+        "y": 9.5,
+        "w": 828,
+        "h": 371.1,
+        "right": 836,
+        "bottom": 380.5
+      },
+      "grid": {
+        "x": 24,
+        "y": 75.5,
+        "w": 796,
+        "h": 229.5,
+        "right": 820,
+        "bottom": 304.9
+      },
+      "cards": [
+        {
+          "x": 24,
+          "y": 71.5,
+          "w": 152.8,
+          "h": 229.5,
+          "right": 176.8,
+          "bottom": 300.9,
+          "name": "Sgt. Barros",
+          "modelo": {
+            "x": 31.6,
+            "y": 79,
+            "w": 137.6,
+            "h": 175.1,
+            "right": 169.2,
+            "bottom": 254.2
+          },
+          "vazio": 28583
+        },
+        {
+          "x": 184.8,
+          "y": 75.5,
+          "w": 152.8,
+          "h": 229.5,
+          "right": 337.6,
+          "bottom": 304.9,
+          "name": "Vetor",
+          "modelo": {
+            "x": 192.4,
+            "y": 83,
+            "w": 137.6,
+            "h": 175.1,
+            "right": 330,
+            "bottom": 258.2
+          },
+          "vazio": 33013
+        },
+        {
+          "x": 345.6,
+          "y": 75.5,
+          "w": 152.8,
+          "h": 229.5,
+          "right": 498.4,
+          "bottom": 304.9,
+          "name": "Lia",
+          "modelo": {
+            "x": 353.2,
+            "y": 83,
+            "w": 137.6,
+            "h": 175.1,
+            "right": 490.8,
+            "bottom": 258.2
+          },
+          "vazio": 32447
+        },
+        {
+          "x": 506.4,
+          "y": 75.5,
+          "w": 152.8,
+          "h": 229.5,
+          "right": 659.2,
+          "bottom": 304.9,
+          "name": "Gatito",
+          "modelo": {
+            "x": 514,
+            "y": 83,
+            "w": 137.6,
+            "h": 175.1,
+            "right": 651.6,
+            "bottom": 258.2
+          },
+          "vazio": 29943
+        },
+        {
+          "x": 667.2,
+          "y": 75.5,
+          "w": 152.8,
+          "h": 229.5,
+          "right": 820,
+          "bottom": 304.9,
+          "name": "Patito",
+          "modelo": {
+            "x": 674.8,
+            "y": 83,
+            "w": 137.6,
+            "h": 175.1,
+            "right": 812.4,
+            "bottom": 258.2
+          },
+          "vazio": 30572
+        }
+      ],
+      "rows": [
+        [
+          "Sgt. Barros",
+          "Vetor",
+          "Lia",
+          "Gatito",
+          "Patito"
+        ]
+      ],
+      "rowRects": [
+        [
+          {
+            "x": 24,
+            "w": 152.8,
+            "y": 71.5
+          },
+          {
+            "x": 184.8,
+            "w": 152.8,
+            "y": 75.5
+          },
+          {
+            "x": 345.6,
+            "w": 152.8,
+            "y": 75.5
+          },
+          {
+            "x": 506.4,
+            "w": 152.8,
+            "y": 75.5
+          },
+          {
+            "x": 667.2,
+            "w": 152.8,
+            "y": 75.5
+          }
+        ]
+      ],
+      "rolagem": {
+        "sh": 367,
+        "ch": 367
+      },
+      "angulos": [
+        0,
+        0.167,
+        0.12,
+        -0.008,
+        -0.131
+      ],
+      "ativos": [
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "overflowX": 0
+    },
+    "janela-estreita-390": {
+      "screen": "pick",
+      "cols": 2,
+      "panel": {
+        "x": 16,
+        "y": 20,
+        "w": 358,
+        "h": 804,
+        "right": 374,
+        "bottom": 824
+      },
+      "grid": {
+        "x": 34,
+        "y": 175.2,
+        "w": 322,
+        "h": 731.9,
+        "right": 356,
+        "bottom": 907.1
+      },
+      "cards": [
+        {
+          "x": 34,
+          "y": 171.2,
+          "w": 156,
+          "h": 237.3,
+          "right": 190,
+          "bottom": 408.5,
+          "name": "Sgt. Barros",
+          "modelo": {
+            "x": 43.2,
+            "y": 180.4,
+            "w": 137.6,
+            "h": 175.2,
+            "right": 180.8,
+            "bottom": 355.5
+          },
+          "vazio": 28569
+        },
+        {
+          "x": 200,
+          "y": 175.2,
+          "w": 156,
+          "h": 237.3,
+          "right": 356,
+          "bottom": 412.5,
+          "name": "Vetor",
+          "modelo": {
+            "x": 209.2,
+            "y": 184.4,
+            "w": 137.6,
+            "h": 175.2,
+            "right": 346.8,
+            "bottom": 359.5
+          },
+          "vazio": 33015
+        },
+        {
+          "x": 34,
+          "y": 422.5,
+          "w": 156,
+          "h": 237.3,
+          "right": 190,
+          "bottom": 659.8,
+          "name": "Lia",
+          "modelo": {
+            "x": 43.2,
+            "y": 431.7,
+            "w": 137.6,
+            "h": 175.2,
+            "right": 180.8,
+            "bottom": 606.8
+          },
+          "vazio": 32456
+        },
+        {
+          "x": 200,
+          "y": 422.5,
+          "w": 156,
+          "h": 237.3,
+          "right": 356,
+          "bottom": 659.8,
+          "name": "Gatito",
+          "modelo": {
+            "x": 209.2,
+            "y": 431.7,
+            "w": 137.6,
+            "h": 175.2,
+            "right": 346.8,
+            "bottom": 606.8
+          },
+          "vazio": 29934
+        },
+        {
+          "x": 117,
+          "y": 669.8,
+          "w": 156,
+          "h": 237.3,
+          "right": 273,
+          "bottom": 907.1,
+          "name": "Patito",
+          "modelo": {
+            "x": 126.2,
+            "y": 679,
+            "w": 137.6,
+            "h": 175.2,
+            "right": 263.8,
+            "bottom": 854.1
+          },
+          "vazio": 30564
+        }
+      ],
+      "rows": [
+        [
+          "Sgt. Barros",
+          "Vetor"
+        ],
+        [
+          "Lia",
+          "Gatito"
+        ],
+        [
+          "Patito"
+        ]
+      ],
+      "rowRects": [
+        [
+          {
+            "x": 34,
+            "w": 156,
+            "y": 171.2
+          },
+          {
+            "x": 200,
+            "w": 156,
+            "y": 175.2
+          }
+        ],
+        [
+          {
+            "x": 34,
+            "w": 156,
+            "y": 422.5
+          },
+          {
+            "x": 200,
+            "w": 156,
+            "y": 422.5
+          }
+        ],
+        [
+          {
+            "x": 117,
+            "w": 156,
+            "y": 669.8
+          }
+        ]
+      ],
+      "rolagem": {
+        "sh": 963,
+        "ch": 800
+      },
+      "angulos": [
+        0,
+        0.166,
+        0.124,
+        -0.003,
+        -0.128
+      ],
+      "ativos": [
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "overflowX": 0
+    },
+    "janela-estreita-320": {
+      "screen": "pick",
+      "cols": 2,
+      "panel": {
+        "x": 16,
+        "y": 20,
+        "w": 288,
+        "h": 528,
+        "right": 304,
+        "bottom": 548
+      },
+      "grid": {
+        "x": 34,
+        "y": 116,
+        "w": 252,
+        "h": 598.2,
+        "right": 286,
+        "bottom": 714.2
+      },
+      "cards": [
+        {
+          "x": 34,
+          "y": 112,
+          "w": 122,
+          "h": 194.1,
+          "right": 156,
+          "bottom": 306.1,
+          "name": "Sgt. Barros",
+          "modelo": {
+            "x": 41.6,
+            "y": 119.6,
+            "w": 106.8,
+            "h": 135.9,
+            "right": 148.4,
+            "bottom": 255.5
+          },
+          "vazio": 28533
+        },
+        {
+          "x": 164,
+          "y": 116,
+          "w": 122,
+          "h": 194.1,
+          "right": 286,
+          "bottom": 310.1,
+          "name": "Vetor",
+          "modelo": {
+            "x": 171.6,
+            "y": 123.6,
+            "w": 106.8,
+            "h": 135.9,
+            "right": 278.4,
+            "bottom": 259.5
+          },
+          "vazio": 33014
+        },
+        {
+          "x": 34,
+          "y": 318.1,
+          "w": 122,
+          "h": 194.1,
+          "right": 156,
+          "bottom": 512.2,
+          "name": "Lia",
+          "modelo": {
+            "x": 41.6,
+            "y": 325.7,
+            "w": 106.8,
+            "h": 135.9,
+            "right": 148.4,
+            "bottom": 461.6
+          },
+          "vazio": 32477
+        },
+        {
+          "x": 164,
+          "y": 318.1,
+          "w": 122,
+          "h": 194.1,
+          "right": 286,
+          "bottom": 512.2,
+          "name": "Gatito",
+          "modelo": {
+            "x": 171.6,
+            "y": 325.7,
+            "w": 106.8,
+            "h": 135.9,
+            "right": 278.4,
+            "bottom": 461.6
+          },
+          "vazio": 29948
+        },
+        {
+          "x": 99,
+          "y": 520.2,
+          "w": 122,
+          "h": 194.1,
+          "right": 221,
+          "bottom": 714.2,
+          "name": "Patito",
+          "modelo": {
+            "x": 106.6,
+            "y": 527.8,
+            "w": 106.8,
+            "h": 135.9,
+            "right": 213.4,
+            "bottom": 663.7
+          },
+          "vazio": 30549
+        }
+      ],
+      "rows": [
+        [
+          "Sgt. Barros",
+          "Vetor"
+        ],
+        [
+          "Lia",
+          "Gatito"
+        ],
+        [
+          "Patito"
+        ]
+      ],
+      "rowRects": [
+        [
+          {
+            "x": 34,
+            "w": 122,
+            "y": 112
+          },
+          {
+            "x": 164,
+            "w": 122,
+            "y": 116
+          }
+        ],
+        [
+          {
+            "x": 34,
+            "w": 122,
+            "y": 318.1
+          },
+          {
+            "x": 164,
+            "w": 122,
+            "y": 318.1
+          }
+        ],
+        [
+          {
+            "x": 99,
+            "w": 122,
+            "y": 520.2
+          }
+        ]
+      ],
+      "rolagem": {
+        "sh": 771,
+        "ch": 524
+      },
+      "angulos": [
+        0,
+        0.167,
+        0.124,
+        -0.003,
+        -0.128
+      ],
+      "ativos": [
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "overflowX": 0
+    }
+  },
+  "erros": []
+}
