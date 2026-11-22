@@ -57,10 +57,18 @@ export const WEAPONS = {
   roman_siege_glauncher: { name: 'Lança-granadas de Cerco', cat: 'Explosiva', kind: 'lob', dmg: 105, rate: 0.75, radius: 3.6, speed: 14, bounces: 1, mag: 6, reload: 2.8, start: 12, pack: 8, sound: 'shot_gl', color: 0x4a5236, special: { id: 'siege_bombardment', name: 'Bombardeio de Cerco', cooldown: 12, stun: 1.0, radius: 4.2 } },
   roman_ballista: { name: 'Besta Romana', cat: 'Precisão', kind: 'bolt', dmg: 82, rate: 0.68, speed: 40, pierce: 4, glow: 0xb08040, mag: 6, reload: 1.9, start: 24, pack: 16, sound: 'eg_bow', color: 0x6a4a2a, special: { id: 'piercing_bolt', name: 'Virote Perfurante', cooldown: 9, pierce: 6, bonus: 1.5 } },
   roman_colossus_hammer: { name: 'Martelo do Colosso', cat: 'Corpo a corpo', kind: 'gun', dmg: 70, rate: 0.6, spread: 0, range: 2.2, pellets: 1, pierce: 1, knock: 3.5, start: Infinity, pack: 0, sound: 'melee_hit', color: 0x6a6a70, melee: true, special: { id: 'colossus_impact', name: 'Impacto do Colosso', every: 5, cooldown: 12, stun: 1.4, slow: { t: 2.5, mul: 0.5 } } },
+  // ---- Arsenal do Naufrágio (Arena 09 — Cemitério Naval) ----
+  nv_harpoon:        { name: 'Arpão Abissal',             cat: 'Precisão',        kind: 'bolt', dmg: 72, rate: 0.62, speed: 38, pierce: 3, pull: true, glow: 0x29b6f6, mag: 8,  reload: 1.7,  start: 32, pack: 20, sound: 'eg_bow',       color: 0x3b6c82, special: { id: 'abyss_pull',    name: 'Fisgada Abissal',     cooldown: 7, bonus: 1.4 } },
+  nv_pirate_shotgun: { name: 'Escopeta Pirata',           cat: 'Curta distância', kind: 'gun',  dmg: 14, rate: 0.74, spread: 0.34, range: 11, pellets: 9, pierce: 1, shell: true, mag: 6, reload: 0.45, start: 36, pack: 24, sound: 'shot_shotgun', color: 0x6a4326, special: { id: 'broadside',     name: 'Rajada de Convés',    every: 4, cooldown: 8, radius: 3.0, dmg: 65 } },
+  nv_trident:        { name: 'Tridente das Profundezas',  cat: 'Especial',        kind: 'bolt', dmg: 56, rate: 0.28, speed: 36, pierce: 5, blast: 0.9, el: 'energy', glow: 0x29b6f6, mag: 16, reload: 1.85, start: 48, pack: 32, sound: 'eg_divine',    color: 0x29b6f6, special: { id: 'tidal_lance',   name: 'Correnteza Abissal',  every: 8, cooldown: 9, bonus: 1.7 } },
+  nv_ghost_saber:    { name: 'Sabre Fantasmagórico',      cat: 'Corpo a corpo',   kind: 'gun',  dmg: 52, rate: 0.34, spread: 0, range: 2.0, pellets: 1, pierce: 2, knock: 1.8, undeadMul: 1.45, start: Infinity, pack: 0, sound: 'eg_sand_blade', color: 0x70e8ff, melee: true, special: { id: 'spectral_cut', name: 'Corte Espectral', every: 5, cooldown: 8, bonus: 1.6 } },
+  nv_anchor:         { name: 'Âncora Esmagadora',         cat: 'Corpo a corpo',   kind: 'gun',  dmg: 88, rate: 0.72, spread: 0, range: 2.4, pellets: 1, pierce: 2, knock: 4.5, slamRadius: 3.4, start: Infinity, pack: 0, sound: 'stomp', color: 0x4c5864, melee: true, special: { id: 'abyss_slam', name: 'Impacto da Âncora', every: 4, cooldown: 10, stun: 1.2 } },
 };
 export const TEMPLE_WEAPONS = ['pharaoh', 'anubis_shotgun', 'scarab_smg', 'sobek_launcher', 'sphinx_drill', 'desert_bow', 'bastet_staff', 'priest_staff', 'horus_spear', 'mummy_blade'];
 // Arsenal exclusivo do Coliseu da Arena. Mesmo padrão do Templo: kind/special consumidos pelo combate compartilhado.
 export const COLISEUM_WEAPONS = ['roman_gladius', 'roman_pilum', 'roman_centurion_bow', 'roman_colosseum_shotgun', 'roman_legion_smg', 'roman_emperor_rifle', 'roman_vestal_flamer', 'roman_siege_glauncher', 'roman_ballista', 'roman_colossus_hammer'];
+// Arsenal do Naufrágio (Arena 09 — Cemitério Naval): 3+ armas ativam o bônus TEMPESTADE ABISSAL
+export const NAVAL_WEAPONS = ['nv_harpoon', 'nv_pirate_shotgun', 'nv_trident', 'nv_ghost_saber', 'nv_anchor'];
 // Estruturas posicionáveis: hp = durabilidade · block: ocupa a célula (a horda ataca) · life: bateria (s) · range: detecção
 export const TRAPS = {
   barricade: { hp: 260, block: true },
@@ -75,8 +83,8 @@ export const TRAPS = {
 };
 // grupos das teclas 1–9, 0 e -: apertar de novo a mesma tecla alterna entre as armas do grupo
 export const WEAPON_GROUPS = [
-  ['pistol'], ['uzi', 'scarab_smg', 'roman_legion_smg'], ['shotgun', 'anubis_shotgun', 'roman_colosseum_shotgun'], ['rifle', 'lmg', 'pharaoh', 'sphinx_drill', 'roman_emperor_rifle'], ['sniper', 'plasma', 'desert_bow', 'roman_centurion_bow', 'roman_ballista'], ['rocket', 'glauncher', 'sobek_launcher', 'roman_siege_glauncher'], ['flamer', 'cryo', 'acidgun', 'bastet_staff', 'priest_staff', 'horus_spear', 'roman_vestal_flamer'],
-  ['grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'dynamite', 'roman_pilum'], ['barrel', 'barricade', 'spikes', 'efence'], ['mine', 'proxmine', 'mummy_blade', 'roman_gladius', 'roman_colossus_hammer'], ['ltower', 'ftower', 'itower'],
+  ['pistol'], ['uzi', 'scarab_smg', 'roman_legion_smg'], ['shotgun', 'anubis_shotgun', 'roman_colosseum_shotgun', 'nv_pirate_shotgun'], ['rifle', 'lmg', 'pharaoh', 'sphinx_drill', 'roman_emperor_rifle'], ['sniper', 'plasma', 'desert_bow', 'roman_centurion_bow', 'roman_ballista', 'nv_harpoon'], ['rocket', 'glauncher', 'sobek_launcher', 'roman_siege_glauncher'], ['flamer', 'cryo', 'acidgun', 'bastet_staff', 'priest_staff', 'horus_spear', 'roman_vestal_flamer', 'nv_trident'],
+  ['grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'dynamite', 'roman_pilum'], ['barrel', 'barricade', 'spikes', 'efence'], ['mine', 'proxmine', 'mummy_blade', 'roman_gladius', 'roman_colossus_hammer', 'nv_ghost_saber', 'nv_anchor'], ['ltower', 'ftower', 'itower'],
 ];
 export const WEAPON_ORDER = WEAPON_GROUPS.flat();
 // teclas de atalho (solo): 1–9, 0 e -
@@ -153,6 +161,11 @@ export const UNLOCKS = [
   { level: 9, weapon: 'roman_siege_glauncher', text: 'Lança-granadas de Cerco', only: ['coliseu'] },
   { level: 10, weapon: 'roman_ballista', text: 'Besta Romana', only: ['coliseu'] },
   { level: 11, weapon: 'roman_colossus_hammer', text: 'Martelo do Colosso', only: ['coliseu'] },
+  { level: 2, weapon: 'nv_harpoon', text: 'Arpão Abissal', only: ['naval'] },
+  { level: 3, weapon: 'nv_pirate_shotgun', text: 'Escopeta Pirata', only: ['naval'] },
+  { level: 4, weapon: 'nv_ghost_saber', text: 'Sabre Fantasmagórico', only: ['naval'] },
+  { level: 6, weapon: 'nv_trident', text: 'Tridente das Profundezas', only: ['naval'] },
+  { level: 8, weapon: 'nv_anchor', text: 'Âncora Esmagadora', only: ['naval'] },
 ];
 
 // Inimigos. body: forma do modelo (monsters.js). from: onda em que começa a aparecer; weight: frequência.
@@ -233,6 +246,17 @@ export const ENEMIES = {
    lb_core: { name: 'O Nucleo Infectado', desc: 'Chefao: nucleo estacionario que dispara projeteis, invoca inimigos e gera campos de forca', icon: 'crown', hp: 2200, speed: 0, dmg: 0, rate: 1, reach: 1, scale: 2.2, radius: 1.2, score: 750, boss: true, bossKind: 'core', static: true, only: ['lab'], summon: { cd: 7, n: 2, max: 5, windup: 0.9, color: 0x4aff4a, types: ['lb_corrosive', 'lb_pack', 'lb_hunter'] }, intro: 'O NUCLEO INFECTADO ATIVOU!', riseIntro: 1.8, blood: [0x4aff4a, 0x2a6a2a], introSfx: 'eg_horn', treasure: 480 },
    lb_abominable: { name: 'O Abominavel', desc: 'Chefao: bruto de forca, investidas devastadoras, ondas de choque e regeneracao', icon: 'crown', hp: 2800, speed: 1.3, dmg: 50, rate: 1.6, reach: 2.8, scale: 3.0, score: 900, boss: true, bossKind: 'abominable', only: ['lab'], intro: 'O ABOMINAVEL SURGIU DAS SOMBRAS!', riseIntro: 1.5, blood: [0x6a4a2a, 0x4a2a1a], introSfx: 'eg_horn', treasure: 550 },
    lb_exogeneral: { name: 'O Exo General', desc: 'Chefao: comandante blindado, invoca reforcos, enfurece a horda e dispara rajadas de energia', icon: 'crown', hp: 2400, speed: 1.35, dmg: 44, rate: 1.2, reach: 2.4, scale: 2.6, score: 850, boss: true, bossKind: 'exogeneral', plating: 0.5, only: ['lab'], intro: 'O EXO GENERAL TOMOU O COMANDO!', riseIntro: 1.4, blood: [0x8a8a90, 0x4aff4a], introSfx: 'eg_horn', treasure: 520 },
+   // ---- Cemitério Naval: 10 mobs exclusivos (only: ['naval']) ----
+   nv_pirate:    { name: 'Pirata Afogado',            desc: 'Sabre enferrujado, mordida e investida rápida',                       icon: 'skull',  hp: 52,  speed: 2.25, dmg: 12, rate: 0.85, reach: 1.15, scale: 1.0,  radius: 0.36, score: 28, from: 1, weight: 2.2, lunge: { range: 4.5, speed: 9.5, cd: 3.2 }, only: ['naval'], blood: [0x2a6a6a, 0x1a3a4a], sfx: { attack: 'melee_hit', die: 'zombie_die' } },
+   nv_harpooner: { name: 'Arpoador Amaldiçoado',      desc: 'Dispara arpões perfurantes com corrente à distância',                icon: 'target', hp: 58,  speed: 1.85, dmg: 10, rate: 1.0,  reach: 1.0,  scale: 1.02, radius: 0.38, score: 34, from: 1, weight: 1.6, kite: 5.5, spit: { range: 12, dmg: 11, cd: 2.4, color: 0x58d8ff, splat: '#1c4c5c', sfx: 'throw' }, only: ['naval'], blood: [0x2a6a7a, 0x1a3a4a], sfx: { die: 'zombie_die' } },
+   nv_mimic:     { name: 'Baú Devorador',             desc: 'Disfarce de baú, mordida feroz, agarrão e salto emboscado',          icon: 'crate',  hp: 85,  speed: 2.1,  dmg: 16, rate: 0.9,  reach: 1.15, scale: 1.05, radius: 0.44, score: 42, from: 1, weight: 1.1, lunge: { range: 5.0, speed: 11, cd: 3.0, windup: 0.25 }, only: ['naval'], blood: [0x7a4a24, 0xd4a040], sfx: { attack: 'zombie_die', die: 'zombie_die' } },
+   nv_crab:      { name: 'Caranguejo Colossal',       desc: 'Pinças blindadas, investida lateral e arremesso de destroços',       icon: 'shield', hp: 165, speed: 1.45, dmg: 20, rate: 1.3,  reach: 1.4,  scale: 1.35, radius: 0.62, score: 54, from: 3, weight: 1.0, plating: 0.35, lob: { range: 12, minRange: 3.5, dmg: 15, radius: 1.8, cd: 3.8, windup: 0.85, color: 0x9a6a4a }, only: ['naval'], blood: [0xc84830, 0x6a281a], sfx: { attack: 'stomp', die: 'eg_rumble' } },
+   nv_ghost:     { name: 'Marinheiro Fantasma',       desc: 'Projéteis espectrais, desaparecimento e explosão sobrenatural',      icon: 'ghost',  hp: 64,  speed: 2.5,  dmg: 13, rate: 0.95, reach: 1.1,  scale: 1.05, radius: 0.38, score: 48, from: 3, weight: 1.1, fly: true, hover: 1.1, blink: { range: 11, cd: 4.8, dist: 3.5, through: true, color: 0x70e8ff }, spit: { range: 10, dmg: 9, cd: 2.3, color: 0x70e8ff, splat: '#2a7a9a', sfx: 'eg_magic' }, explode: { radius: 2.8, dmg: 22 }, only: ['naval'], blood: [0x70e8ff, 0x2a7a9a], sfx: { attack: 'eg_magic', die: 'eg_magic' } },
+   nv_octopus:   { name: 'Polvo Abissal',             desc: 'Tentáculos constritores e nuvem de tinta escura que desacelera',     icon: 'spore',  hp: 110, speed: 1.75, dmg: 15, rate: 1.0,  reach: 1.35, scale: 1.2,  radius: 0.52, score: 48, from: 4, weight: 1.0, aura: { radius: 4.2, mul: 0.72, slow: { t: 2.2, mul: 0.5 }, ring: 0x2a3a5a }, spit: { range: 9, dmg: 8, cd: 2.5, color: 0x1e2638, splat: '#141a24', sfx: 'throw' }, only: ['naval'], blood: [0x2c3450, 0x141828], sfx: { die: 'zombie_die' } },
+   nv_angler:    { name: 'Peixe-Lanterna Abissal',    desc: 'Mordida luminosa, salto predador e jato de água pressurizado',       icon: 'bolt',   hp: 82,  speed: 2.35, dmg: 14, rate: 0.85, reach: 1.15, scale: 1.08, radius: 0.42, score: 46, from: 4, weight: 1.1, lunge: { range: 5.5, speed: 10.5, cd: 3.0 }, spit: { range: 10, dmg: 10, cd: 2.2, color: 0x40e8ff, splat: '#1c5a7a', sfx: 'throw' }, only: ['naval'], blood: [0x2a5a6a, 0x40e8ff], sfx: { die: 'zombie_die' } },
+   nv_brute:     { name: 'Brutamontes do Naufrágio',  desc: 'Âncora gigante, esmagamento pesado e onda de choque atordoante',     icon: 'fist',   hp: 290, speed: 1.15, dmg: 30, rate: 1.6,  reach: 1.65, scale: 1.55, radius: 0.72, score: 78, from: 6, weight: 0.7, quake: { radius: 3.6, dmg: 18, stun: 0.9 }, only: ['naval'], blood: [0x3a5a52, 0x1e2e30], sfx: { attack: 'stomp', die: 'eg_rumble' } },
+   nv_shark:     { name: 'Tubarão Abissal',           desc: 'Mordida brutal, investida submersa, abalo das águas e frenesi',      icon: 'paw',    hp: 220, speed: 2.9,  dmg: 24, rate: 0.85, reach: 1.4,  scale: 1.4,  radius: 0.60, score: 74, from: 7, weight: 0.75, lunge: { range: 6.5, speed: 12.5, cd: 2.8, smash: true }, quake: { radius: 2.8, dmg: 14 }, only: ['naval'], blood: [0x2a5a7a, 0x8a1610], sfx: { attack: 'zombie_die', die: 'eg_rumble' } },
+   nv_serpent:   { name: 'Serpente das Profundezas',  desc: 'Mordida venenosa, chicote de cauda e investida marinha veloz',       icon: 'burst',  hp: 240, speed: 2.7,  dmg: 22, rate: 0.9,  reach: 1.5,  scale: 1.45, radius: 0.56, score: 80, from: 8, weight: 0.7, lunge: { range: 6.0, speed: 12, cd: 2.7 }, spit: { range: 11, dmg: 12, cd: 2.5, color: 0x30d890, splat: '#1c5a44', sfx: 'throw' }, only: ['naval'], blood: [0x1c6a5a, 0x30d890], sfx: { attack: 'zombie_die', die: 'eg_rumble' } },
 };
 
 // Categorias oficiais de exclusividade do Laboratório de Pesquisa (14 inimigos + 4 chefões)
@@ -244,13 +268,19 @@ export const RESEARCH_LAB_EXCLUSIVE_ENEMIES = Object.freeze([
 export const RESEARCH_LAB_EXCLUSIVE_BOSSES = Object.freeze([
   'lb_colossa', 'lb_core', 'lb_abominable', 'lb_exogeneral',
 ]);
+export const NAVAL_EXCLUSIVE_ENEMIES = Object.freeze([
+  'nv_pirate', 'nv_harpooner', 'nv_mimic', 'nv_crab', 'nv_ghost',
+  'nv_octopus', 'nv_angler', 'nv_brute', 'nv_shark', 'nv_serpent',
+]);
 const _LAB_EXCLUSIVE_SET = new Set([...RESEARCH_LAB_EXCLUSIVE_ENEMIES, ...RESEARCH_LAB_EXCLUSIVE_BOSSES]);
+const _NAVAL_EXCLUSIVE_SET = new Set(NAVAL_EXCLUSIVE_ENEMIES);
 
 // Validação central: verifica se um inimigo/chefão está autorizado na arena informada
 export function isEnemyAllowedInArena(type, arenaId) {
   const def = ENEMIES[type];
   if (!def) return false;
   if (_LAB_EXCLUSIVE_SET.has(type)) return arenaId === 'lab';
+  if (_NAVAL_EXCLUSIVE_SET.has(type)) return arenaId === 'naval';
   if (def.only && arenaId && !def.only.includes(arenaId)) return false;
   return true;
 }
@@ -263,7 +293,7 @@ export function allowedEnemiesForArena(arenaId, { includeBosses = false } = {}) 
     return isEnemyAllowedInArena(t, arenaId);
   });
 }
-export const ENEMY_ORDER = ['walker', 'brute', 'spider', 'bat', 'runner', 'spitter', 'bloater', 'armored', 'dog', 'summoner', 'spore', 'reaper', 'wasp', 'specter', 'boss', 'devourer', 'mechworker', 'guardian', 'general', 'mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'crocling', 'bastetclone', 'rm_legion', 'rm_centurion', 'rm_archer', 'rm_gladiator', 'rm_hound', 'rm_praetor', 'rm_beast', 'rm_spirit', 'rm_standard', 'rm_engineer', 'rm_turret', 'rm_chariot', 'rm_eagle', 'rm_catapult', 'rm_elephant', 'pharaoh', 'sobek', 'bastet', 'sphinx', 'lb_specter', 'lb_tremor', 'lb_launcher', 'lb_suppressor', 'lb_corrosive', 'lb_incendiary', 'lb_freezer', 'lb_hunter', 'lb_pack', 'lb_signaler', 'lb_puppeteer', 'lb_camouflaged', 'lb_demolisher', 'lb_aerial', 'lb_colossa', 'lb_core', 'lb_abominable', 'lb_exogeneral'];
+export const ENEMY_ORDER = ['walker', 'brute', 'spider', 'bat', 'runner', 'spitter', 'bloater', 'armored', 'dog', 'summoner', 'spore', 'reaper', 'wasp', 'specter', 'boss', 'devourer', 'mechworker', 'guardian', 'general', 'mummy', 'anubis', 'archer', 'scarab', 'serpent', 'priest', 'phantom', 'construct', 'scorpion', 'jackal', 'portal', 'skeleton', 'chariot', 'horus', 'crocling', 'bastetclone', 'rm_legion', 'rm_centurion', 'rm_archer', 'rm_gladiator', 'rm_hound', 'rm_praetor', 'rm_beast', 'rm_spirit', 'rm_standard', 'rm_engineer', 'rm_turret', 'rm_chariot', 'rm_eagle', 'rm_catapult', 'rm_elephant', 'pharaoh', 'sobek', 'bastet', 'sphinx', 'lb_specter', 'lb_tremor', 'lb_launcher', 'lb_suppressor', 'lb_corrosive', 'lb_incendiary', 'lb_freezer', 'lb_hunter', 'lb_pack', 'lb_signaler', 'lb_puppeteer', 'lb_camouflaged', 'lb_demolisher', 'lb_aerial', 'lb_colossa', 'lb_core', 'lb_abominable', 'lb_exogeneral', 'nv_pirate', 'nv_harpooner', 'nv_mimic', 'nv_crab', 'nv_ghost', 'nv_octopus', 'nv_angler', 'nv_brute', 'nv_shark', 'nv_serpent'];
 
 
 // Sobreviventes (apenas aparência; todos têm os mesmos atributos).
@@ -803,6 +833,35 @@ export const ARENAS = [
       // tochas nos corredores
       for (const [x, y] of [[20, 9], [25, 9], [11, 13], [34, 13], [11, 18], [34, 18], [20, 23], [25, 23]]) m.put(x, y, 'ê');
       for (const [x, y] of [[6, 12], [39, 19]]) m.put(x, y, 'X');
+    }),
+  },
+  {
+    id: 'naval', name: 'Cemitério Naval', desc: 'O Porto dos Amaldiçoados: navios naufragados, docas deterioradas, água escura, canhões antigos e tempestade marítima.', floor: 'graveyard',
+    theme: 'naval', ambient: 'city', weather: 'rain', boss: 'boss', unlock: 1, spawnShare: 0.35, maxLights: 8, lightMul: 1,
+    diff: { label: 'Muito alta', tier: 3, hp: 1.22, speed: 1.06, count: 1.15 }, eventName: 'Tempestade Abissal',
+    particles: ['rain', 'ash'],
+    tip: 'Monte no Tubarão Esqueleto (V) — unidade única por partida! Colete 3+ armas do Arsenal do Naufrágio para ativar Tempestade Abissal.', lampI: 11,
+    light: { sky: 0x0d1822, fog: 0x162632, sun: 0x9ec4dc, sunI: 1.35, hemi: 0.95 },
+    map: makeMap(46, 32, '#', [[21, 0, 4, 'h'], [21, 31, 4, 'h'], [0, 14, 4, 'v'], [45, 14, 4, 'v']], (m) => {
+      m.rect(1, 1, 44, 30, 'w');
+      m.rect(12, 8, 33, 23, 'h');
+      m.rect(20, 1, 25, 30, 'h');
+      m.rect(1, 13, 44, 18, 'h');
+      m.rect(3, 3, 11, 10, 'h');
+      m.rect(34, 3, 42, 10, 'h');
+      m.rect(3, 21, 11, 28, 'h');
+      m.rect(34, 21, 42, 28, 'h');
+      for (const [x, y] of [[4, 4], [5, 4], [6, 4], [39, 4], [40, 4], [41, 4], [4, 27], [5, 27], [6, 27], [39, 27], [40, 27], [41, 27]]) m.put(x, y, 'C');
+      for (const [x, y] of [[7, 11], [38, 11], [7, 20], [38, 20]]) m.put(x, y, '¤');
+      m.put(14, 9, '§');
+      m.put(31, 9, '§');
+      for (const [x, y] of [[15, 12], [30, 12], [15, 19], [30, 19]]) m.put(x, y, 'µ');
+      for (const [x, y] of [[18, 9], [27, 9], [18, 22], [27, 22]]) m.put(x, y, '¶');
+      for (const [x, y] of [[16, 15], [29, 16], [22, 10], [23, 21], [9, 15], [36, 16]]) m.put(x, y, 'x');
+      for (const [x, y] of [[13, 14], [32, 17], [13, 21], [32, 10]]) m.put(x, y, 'X');
+      for (const [x, y] of [[19, 13], [26, 18]]) m.put(x, y, 'W');
+      for (const [x, y] of [[10, 7], [35, 24]]) m.put(x, y, 'U');
+      for (const [x, y] of [[17, 13], [28, 13], [17, 18], [28, 18]]) m.put(x, y, 'Œ');
     }),
   },
 ];

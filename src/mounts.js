@@ -14,6 +14,7 @@ export const MOUNTS = {
   coliseu: { name: 'Quadriga de Guerra',        hp: 220, speed: 10.5, weapon: 'm_mount_lance',  color: 0xd4af37, size: 1.8, kind: 'chariot',  seatY: 0.64, seatZ: -0.58 },
   lab:     { name: 'Exoesqueleto Experimental', hp: 200, speed: 7.0,  weapon: 'm_mount_plasma', color: 0x40ffb0, size: 1.2, kind: 'exo',      seatY: 0.46, seatZ:  0.00 },
   templo:  { name: 'Leão de Sekhmet',           hp: 260, speed: 9.0,  weapon: 'm_mount_roar',   color: 0xd4a040, size: 1.6, kind: 'lion',     seatY: 0.78, seatZ: -0.05 },
+  naval:   { name: 'Tubarão Esqueleto',         hp: 360, speed: 9.2,  weapon: 'm_mount_bite',   color: 0x40e0ff, size: 2.0, kind: 'shark',    seatY: 0.94, seatZ: -0.12, noRespawn: true },
 };
 
 // Armas das montarias (registradas em WEAPONS)
@@ -24,7 +25,8 @@ const MOUNT_WEAPONS = {
   m_mount_cannon: { name: 'Canhão',       kind: 'rocket', dmg: 95, range: 32, rate: 1.30, speed: 20, pellets: 1, spread: 0, mag: Infinity, ammo: Infinity, color: 0xff8020, sound: 'shot_rifle', heavy: true, kick: 0.4 },
   m_mount_lance:  { name: 'Lança',        kind: 'gun',    dmg: 46, range: 7,  rate: 0.65, pellets: 1, spread: 0.08, mag: Infinity, ammo: Infinity, color: 0xffe080, sound: 'shot_rifle', heavy: true },
   m_mount_plasma: { name: 'Plasma',       kind: 'bolt',   dmg: 24, range: 22, rate: 0.18, speed: 26, pellets: 1, spread: 0, mag: Infinity, ammo: Infinity, color: 0x40ffb0, sound: 'shot_plasma', heavy: false },
-  m_mount_roar:   { name: 'Rugido',       kind: 'flame',  dmg: 10, range: 9,  rate: 0.14, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffb040, sound: 'flame', heavy: false },
+  m_mount_roar:   { name: 'Rugido',              kind: 'flame',  dmg: 10, range: 9,  rate: 0.14, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffb040, sound: 'flame', heavy: false },
+  m_mount_bite:   { name: 'Mordida Destruidora', kind: 'gun',    dmg: 58, range: 5.5, rate: 0.45, pellets: 1, spread: 0.10, mag: Infinity, ammo: Infinity, color: 0x40e0ff, sound: 'stomp', heavy: true },
 };
 
 for (const m of Object.values(MOUNTS)) {
@@ -249,6 +251,36 @@ export function drawMount(B, G, wm, time, near = false) {
       // Barra protetora frontal
       box(0, 1.82, 0.02, 1.06, 0.10, 0.52, 0x263238);
       glow(0, 1.82, 0.29, 0.62, 0.06, 0.06, 0x40ffb0);
+      break;
+    }
+
+    case 'shark': {
+      // TUBARÃO ESQUELETO (Arena 09 — Cemitério Naval)
+      const sway = Math.sin(time * 4 + w) * 0.25;
+      box(0, 0.72, -0.08, 0.42, 0.40, 2.05, 0xd8d2c4);
+      for (const sz of [-0.62, -0.26, 0.10, 0.46]) {
+        box(-0.56, 0.70, sz, 0.16, 0.62, 0.14, 0xeae4d6);
+        box( 0.56, 0.70, sz, 0.16, 0.62, 0.14, 0xeae4d6);
+        box(0, 0.40, sz, 1.18, 0.14, 0.14, 0xcac2b2);
+      }
+      box(0, 0.98, -0.14, 0.96, 0.12, 0.92, 0x523b2c);
+      box(-0.52, 0.96, -0.14, 0.10, 0.24, 0.88, 0x3b3f46);
+      box( 0.52, 0.96, -0.14, 0.10, 0.24, 0.88, 0x3b3f46);
+      box(0, 0.72,  0.64, 1.24, 0.12, 0.12, 0x48382c);
+      box(0, 1.38, -0.44, 0.12, 0.66, 0.46, 0xd8d2c4);
+      p(-0.84, 0.52, 0.24, 0,  0.35, 0, 0, 0, 0.68, 0.12, 0.42, 0xcac2b2);
+      p( 0.84, 0.52, 0.24, 0, -0.35, 0, 0, 0, 0.68, 0.12, 0.42, 0xcac2b2);
+      box(0, 0.92, 1.18, 1.06, 0.42, 0.88, 0xeae4d6);
+      box(0, 0.46, 1.14, 0.94, 0.22, 0.78, 0xd4cebe);
+      for (const tx of [-0.36, -0.12, 0.12, 0.36]) {
+        box(tx, 0.68, 1.54, 0.10, 0.22, 0.08, 0xffffff);
+        box(tx, 0.58, 1.48, 0.09, 0.16, 0.08, 0xffffff);
+      }
+      glow(-0.42, 1.02, 1.34, 0.16, 0.12, 0.12, 0x40f0ff);
+      glow( 0.42, 1.02, 1.34, 0.16, 0.12, 0.12, 0x40f0ff);
+      glow(0, 0.72, 0.10, 0.34, 0.30, 0.95, 0x29b6f6);
+      p(0, 0.72, -1.24, 0, sway, 0, 0, 0, -0.35, 0.26, 0.26, 0.65, 0xd8d2c4);
+      p(0, 0.84, -1.78, 0, sway * 1.4, 0, 0, 0, 0, 0.12, 0.92, 0.46, 0xeae4d6);
       break;
     }
 

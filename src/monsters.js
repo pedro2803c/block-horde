@@ -324,7 +324,19 @@ const LOOKS = {};
 export function enemyLook(type) {
   if (LOOKS[type]) return LOOKS[type];
   const h = HUMANS[type];
-  const oc = OTHER_COLORS[type] || [0x6a7a72, 0x2e3a44]; // tipos sem aparência própria (ex.: laboratório)
+  const NAVAL_PALETTE = {
+    nv_pirate:    [0x4a7a74, 0x2c3c4c],
+    nv_harpooner: [0x3c6c7c, 0x1e3848],
+    nv_mimic:     [0x8a5828, 0xd4a040],
+    nv_crab:      [0xc84830, 0x7a2c1e],
+    nv_ghost:     [0x70e8ff, 0x286a84],
+    nv_octopus:   [0x3c4468, 0x1e2438],
+    nv_angler:    [0x286274, 0x40e8ff],
+    nv_brute:     [0x3a5a52, 0x222c34],
+    nv_shark:     [0x3a6a84, 0x1e3a4c],
+    nv_serpent:   [0x1e7a64, 0x30d890],
+  };
+  const oc = OTHER_COLORS[type] || NAVAL_PALETTE[type] || [0x6a7a72, 0x2e3a44]; // tipos sem aparência própria (ex.: laboratório)
   const look = h ? { zombie: true, ...h } : { zombie: true, skin: oc[0], shirt: oc[1] };
   LOOKS[type] = look;
   return look;

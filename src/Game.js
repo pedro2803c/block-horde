@@ -6,10 +6,12 @@ import { BARREL_MODEL } from './scenery.js';
 import { ACTIVES, ULTIMATES, PASSIVES, BRANCHES, MAX_LEVEL, NODE_REQ, ULT_REQ, levelCost, xpNeed, loadLoadouts, ABILITY_KEYS } from './abilities.js';
 import { Input } from './Input.js';
 import { UI } from './UI.js';
-import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, TRAPS, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS, profileNeed, matchXp, isEnemyAllowedInArena } from './data.js';
+import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, TRAPS, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS, NAVAL_WEAPONS, profileNeed, matchXp, isEnemyAllowedInArena } from './data.js';
 import { enemyLook, drawEnemy } from './monsters.js';
 import { ITEMS, GUN_MODELS, GUN_LEN, MELEE, GEAR, drawItem, rollTable } from './items.js';
 import { ArsenalMixin, WALK_TRAPS } from './arsenal.js';
+// mortos-vivos: Sabre Fantasmagórico causa dano extra
+const UNDEAD_TYPES = new Set(['walker', 'runner', 'brute', 'bloater', 'specter', 'reaper', 'mummy', 'skeleton', 'phantom', 'rm_spirit', 'lb_specter', 'nv_pirate', 'nv_ghost', 'nv_harpooner', 'nv_brute']);
 import { WorldMixin } from './world.js';
 import { platform } from './platform.js';
 import { TouchControls } from './touch.js';
@@ -313,7 +315,7 @@ export class Game {
     this.elecOn = false;
     this.elecForceT = 0;
     this.rain = Array.from({ length: 170 }, () => ({ x: rand(0, arena.W), y: rand(0, 16), z: rand(0, arena.D), vx: 1.4, vy: 13, vz: 0.6 }));
-    this.rainOn = arenaDef.theme === 'city';
+    this.rainOn = arenaDef.theme === 'city' || arenaDef.theme === 'naval';
     this.eventLight = new THREE.PointLight(0xff3020, 0, 30, 1.4);
     this.eventLight.position.set(arena.W / 2, 8, arena.D / 2);
     scene.add(this.eventLight);
@@ -1369,10 +1371,13 @@ export class Game {
     // passivas de quem causou o dano: Dano aumentado, Fúria total e Crítico
     if (src && src.ctl) {
       dmg *= this.dmgMul(src);
-      if (Math.random() < this.pv(src, 'crit') / 100) {
+      if (Math.random() < this.pv(src, 'crit') / 100 + (src.navalTempest ? 0.08 : 0)) {
         dmg *= 2;
         for (let k = 0; k < 5; k++) this.parts.spawn(z.pos.x, 1.4 * z.scale, z.pos.z, rand(-2, 2), rand(2, 4), rand(-2, 2), 0.08, pick([0xffe040, 0xffffff]), 0.4, 6, 2);
       }
+      if (!quiet) this.navalHit(z, src, dx, dz, dmg);
+      if (src.navalTempest) dmg *= 1.15;
+      if (WEAPONS[src.weapon]?.undeadMul && UNDEAD_TYPES.has(z.type)) dmg *= WEAPONS[src.weapon].undeadMul;
     }
     const hy = z.def.fly ? (z.flyY || 1.4) + 0.2 : 0.9 * z.scale;
     // Guardião Anúbis protege aliados próximos (não a si mesmo)
@@ -1702,6 +1707,46 @@ export class Game {
       done(p);
     }
   }
+  // --- Arsenal do Naufrágio (Arena 09): efeitos das armas e bônus Tempestade Abissal ---
+  navalHit(z, src, dx, dz, dmg) {
+    const id = src.weapon;
+    if (id === 'nv_harpoon') {
+      // fisga: puxa o alvo em direção ao atirador
+      const d = Math.hypot(src.pos.x - z.pos.x, src.pos.z - z.pos.z) || 1;
+      if (!z.def.boss && d > 1.6) this.arena.move(z.pos, ((src.pos.x - z.pos.x) / d) * 1.4, ((src.pos.z - z.pos.z) / d) * 1.4, z.radius);
+    } else if (id === 'nv_anchor') {
+      // impacto no solo: dano em área e derrubada
+      const r = WEAPONS.nv_anchor.slamRadius;
+      for (const q of this.zombies) {
+        if (!q.alive || q === z) continue;
+        const qd = Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z);
+        if (qd < r) {
+          this.damageZombie(q, dmg * 0.55 * (1 - qd / r), q.pos.x - z.pos.x, q.pos.z - z.pos.z, src, 2.2, true);
+          if (!q.def.boss) q.stunT = Math.max(q.stunT || 0, 0.6);
+        }
+      }
+      if (!z.def.boss) z.stunT = Math.max(z.stunT || 0, 0.8);
+      for (let k = 0; k < 12; k++) this.parts.spawn(z.pos.x, 0.15, z.pos.z, rand(-6, 6), rand(0.5, 2), rand(-6, 6), 0.1, pick([0x4c5864, 0x9aa4a0]), 0.5, 10, 0);
+    }
+    // Tempestade Abissal: ondas aquáticas nos ataques
+    if (src.navalTempest && Math.random() < 0.3) {
+      for (const q of this.zombies) {
+        if (!q.alive || q === z) continue;
+        if (Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z) < 2.2) this.damageZombie(q, dmg * 0.25, q.pos.x - z.pos.x, q.pos.z - z.pos.z, src, 1.2, true);
+      }
+      for (let k = 0; k < 10; k++) { const a = (k / 10) * Math.PI * 2; this.parts.spawn(z.pos.x, 0.3, z.pos.z, Math.sin(a) * 5, 1.2, Math.cos(a) * 5, 0.09, pick([0x29b6f6, 0x9adcff]), 0.45, 4, 2); }
+    }
+  }
+
+  updateNavalSet(p) {
+    const n = NAVAL_WEAPONS.filter((id) => this.usable(p, id)).length;
+    const on = n >= 3;
+    if (on !== !!p.navalTempest) {
+      p.navalTempest = on;
+      this.ui.toast(p.id, on ? 'TEMPESTADE ABISSAL ATIVA: +15% dano, +8% crítico' : 'Tempestade Abissal desativada', 'bolt', on ? undefined : 'bad');
+    }
+  }
+
   // --- montaria 3D ---
   startMount(p, arenaId, force = false) {
     const wm = this.worldMount;
@@ -1712,7 +1757,7 @@ export class Game {
       return;
     }
     if (!wm.alive) {
-      this.ui.toast(p.id, `${m.name} em reforço (${Math.ceil(wm.respawnT)}s)`, 'gear', 'bad');
+      this.ui.toast(p.id, m.noRespawn ? `${m.name} foi destruído nesta partida` : `${m.name} em reforço (${Math.ceil(wm.respawnT)}s)`, 'gear', 'bad');
       return;
     }
     if (wm.rider && wm.rider !== p) {
@@ -1763,7 +1808,8 @@ export class Game {
     const back = p.prevWeapon && WEAPONS[p.prevWeapon] ? p.prevWeapon : 'pistol';
     p.weapon = back;
     p.prevWeapon = null;
-    this.ui.toast(p.id, destroyed ? 'Montaria destruída! Nova em 25s' : 'Desmontado', 'gear', destroyed ? 'bad' : undefined);
+    const noRe = wm && wm.def && wm.def.noRespawn;
+    this.ui.toast(p.id, destroyed ? (noRe ? 'Montaria destruída! Siga a pé' : 'Montaria destruída! Nova em 25s') : 'Desmontado', 'gear', destroyed ? 'bad' : undefined);
   }
 
   updateWorldMount(dt) {
@@ -1771,6 +1817,7 @@ export class Game {
     if (!wm) return;
     wm.hurtT = Math.max(0, wm.hurtT - dt);
     if (!wm.alive) {
+      if (wm.def.noRespawn) return; // Tubarão Esqueleto: unidade única por partida
       wm.respawnT -= dt;
       if (wm.respawnT <= 0) {
         const s = this.freeSpot(wm.spawnX, wm.spawnZ, 1.35);
@@ -2749,7 +2796,52 @@ export class Game {
     if (this.inHaven(p)) regen += 6;
     if (regen) p.hp = Math.min(p.maxHp, p.hp + regen * dt);
     if (p.furyT > 0 && Math.random() < dt * 20) this.parts.spawn(p.pos.x + rand(-0.35, 0.35), rand(0.3, 1.6), p.pos.z + rand(-0.35, 0.35), 0, rand(1, 2), 0, rand(0.08, 0.14), pick([0xff5a1a, 0xffb030, 0xff2a10]), 0.45, -1, 2);
-    for (let i = 0; i < 4; i++) if (this.input.anyHit(p.akeys[i])) this.useAbility(p, i);
+    this.updateNavalSet(p);
+    const shark = p.isMounted && this.worldMount && this.worldMount.rider === p && this.worldMount.def.kind === 'shark';
+    for (let i = 0; i < 4; i++) if (this.input.anyHit(p.akeys[i])) (shark ? this.sharkAbility(p, i) : this.useAbility(p, i));
+  }
+  // Tubarão Esqueleto: 4 habilidades nas teclas de habilidade enquanto montado
+  sharkAbility(p, i) {
+    p.sharkCd = p.sharkCd || [0, 0, 0, 0];
+    const now = this.time;
+    const CD = [4, 7, 10, 18];
+    const NAMES = ['Mordida Destruidora', 'Investida Abissal', 'Onda Esquelética', 'Fúria Predadora'];
+    if (now < p.sharkCd[i]) {
+      this.ui.toast(p.id, `${NAMES[i]}: ${Math.ceil(p.sharkCd[i] - now)}s`, 'paw', 'bad');
+      return;
+    }
+    p.sharkCd[i] = now + CD[i];
+    p.cds[i] = CD[i];
+    p.cdMax[i] = CD[i];
+    const fx = Math.sin(p.aim), fz = Math.cos(p.aim);
+    const area = (cx, cz, r, dmg, stun) => {
+      for (const z of this.zombies) {
+        if (!z.alive) continue;
+        const d = Math.hypot(z.pos.x - cx, z.pos.z - cz);
+        if (d < r + z.radius) {
+          this.damageZombie(z, dmg, z.pos.x - p.pos.x, z.pos.z - p.pos.z, p, 4);
+          if (stun && !z.def.boss) z.stunT = Math.max(z.stunT || 0, stun);
+        }
+      }
+    };
+    if (i === 0) {
+      area(p.pos.x + fx * 1.8, p.pos.z + fz * 1.8, 1.6, 160);
+      this.audio.play('stomp', { pos: p.pos, volume: 0.9 });
+      for (let k = 0; k < 14; k++) this.parts.spawn(p.pos.x + fx * 1.8, 0.8, p.pos.z + fz * 1.8, rand(-3, 3), rand(1, 4), rand(-3, 3), 0.1, pick([0xffffff, 0x40e0ff]), 0.4, 8, 2);
+    } else if (i === 1) {
+      p.dashT = 0.45; p.dashDir = p.aim; p.dashHit = new Set(); p.dashRam = true;
+      this.audio.play('roar', { pos: p.pos, volume: 0.8, rate: 0.8 });
+    } else if (i === 2) {
+      area(p.pos.x, p.pos.z, 4.5, 90, 1.0);
+      this.noiseShake(0.45);
+      this.audio.play('stomp', { pos: p.pos, volume: 1, rate: 0.7 });
+      for (let k = 0; k < 28; k++) { const a = (k / 28) * Math.PI * 2; this.parts.spawn(p.pos.x, 0.3, p.pos.z, Math.sin(a) * 9, rand(1, 2.5), Math.cos(a) * 9, 0.12, pick([0x29b6f6, 0xeae4d6, 0x9adcff]), 0.6, 6, 2); }
+    } else {
+      p.furyT = 8;
+      this.audio.play('roar', { volume: 0.9, pos: p.pos, rate: 1.1, priority: true });
+      this.noiseShake(0.4);
+    }
+    this.ui.toast(p.id, NAMES[i], 'paw');
   }
   // investida: movimento forçado, atropela quem estiver no caminho
   updateDash(p, dt) {

@@ -137,6 +137,11 @@ export const GUN_MODELS = {
   roman_siege_glauncher: [[0.12, 0.02, 0, 0.32, 0.13, 0.13, 0x4a5236], [0.4, 0.03, 0, 0.32, 0.1, 0.1, 0x6a6a70], [0.52, 0.03, 0, 0.08, 0.14, 0.14, 0x2a4a2a], [0.13, -0.1, 0, 0.15, 0.15, 0.13, 0x9a7040]],
   roman_ballista: [[0.14, 0, 0, 0.07, 0.55, 0.07, 0x6a4a2a], [0.15, 0, 0, 0.035, 0.42, 0.035, 0xe8e0c8], [0.18, 0.02, 0, 0.32, 0.035, 0.04, 0xb08040, true]],
   roman_colossus_hammer: [[0.2, 0, 0, 0.12, 0.08, 0.08, 0x6a6a70], [0.32, 0, 0, 0.28, 0.12, 0.12, 0x8a8a90], [0.32, 0.18, 0, 0.22, 0.06, 0.2, 0xd4a020, true]],
+  nv_harpoon: [[0.14, 0, 0, 0.46, 0.08, 0.08, 0x3b6c82], [0.42, 0, 0, 0.22, 0.14, 0.05, 0x29b6f6, true]],
+  nv_pirate_shotgun: [[0.08, -0.02, 0, 0.24, 0.10, 0.09, 0x6a4326], [0.30, 0.02, 0, 0.34, 0.10, 0.10, 0x363c44], [0.48, 0.02, 0, 0.08, 0.13, 0.13, 0xd4a040]],
+  nv_trident: [[0.20, 0, 0, 0.62, 0.06, 0.06, 0x2c6884], [0.54, 0, 0, 0.18, 0.24, 0.06, 0x29b6f6, true]],
+  nv_ghost_saber: [[0.06, 0, 0, 0.12, 0.08, 0.08, 0xd4a040], [0.28, 0, 0, 0.42, 0.07, 0.03, 0x70e8ff, true]],
+  nv_anchor: [[0.18, 0, 0, 0.44, 0.08, 0.08, 0x4c5864], [0.42, 0, 0, 0.18, 0.36, 0.12, 0x343c44]],
   knife: [
     [0, 0, 0, 0.13, 0.05, 0.05, 0x1a1a1a],
     [-0.02, 0, 0, 0.02, 0.055, 0.055, 0x2e2e32],
@@ -363,7 +368,8 @@ for (const [id, m] of Object.entries(TRAP_MODELS)) {
 // armas exclusivas do Templo Antigo (catálogo, modelo no chão e ordem do arsenal)
 const TEMPLE_WEAPONS = ['pharaoh', 'anubis_shotgun', 'scarab_smg', 'sobek_launcher', 'sphinx_drill', 'desert_bow', 'bastet_staff', 'priest_staff', 'horus_spear', 'mummy_blade'];
 const COLISEUM_WEAPONS = ['roman_gladius', 'roman_pilum', 'roman_centurion_bow', 'roman_colosseum_shotgun', 'roman_legion_smg', 'roman_emperor_rifle', 'roman_vestal_flamer', 'roman_siege_glauncher', 'roman_ballista', 'roman_colossus_hammer'];
-for (const id of ['pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'uzi', 'rocket', 'lmg', 'flamer', 'glauncher', 'plasma', 'cryo', 'acidgun', ...TEMPLE_WEAPONS, ...COLISEUM_WEAPONS]) {
+const NAVAL_WEAPONS = ['nv_harpoon', 'nv_pirate_shotgun', 'nv_trident', 'nv_ghost_saber', 'nv_anchor'];
+for (const id of ['pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'uzi', 'rocket', 'lmg', 'flamer', 'glauncher', 'plasma', 'cryo', 'acidgun', ...TEMPLE_WEAPONS, ...COLISEUM_WEAPONS, ...NAVAL_WEAPONS]) {
   const m = GUN_MODELS[id];
   const lo = Math.min(...m.map((p) => p[0] - p[3] / 2));
   const c = lo + gunLen(m) / 2;
@@ -426,6 +432,11 @@ export const ITEMS = {
   roman_siege_glauncher: { name: 'Lança-granadas de Cerco', cat: 'weapon', icon: 'burst', ring: 0xc8b060, rarity: 'Épica', weapon: 'roman_siege_glauncher', desc: 'Granadas em arco. Bombardeio de Cerco atordoa e danifica área.', get: 'Coliseu · multiplicador x9' },
   roman_ballista: { name: 'Besta Romana', cat: 'weapon', icon: 'target', ring: 0xb08040, rarity: 'Lendária', weapon: 'roman_ballista', desc: 'Virote perfurante que atravessa vários inimigos.', get: 'Coliseu · multiplicador x10' },
   roman_colossus_hammer: { name: 'Martelo do Colosso', cat: 'weapon', icon: 'fist', ring: 0x6a6a70, rarity: 'Lendária', weapon: 'roman_colossus_hammer', desc: 'Martelo pesado. Impacto do Colosso atordoa e imobiliza.', get: 'Coliseu · multiplicador x11' },
+  nv_harpoon:        { name: 'Arpão Abissal',            cat: 'weapon', icon: 'target', ring: 0x29b6f6, rarity: 'Épica',    weapon: 'nv_harpoon',        desc: 'Dispara arpões que atravessam inimigos e puxam o alvo atingido.', get: 'Cemitério Naval · Arsenal do Naufrágio' },
+  nv_pirate_shotgun: { name: 'Escopeta Pirata',          cat: 'weapon', icon: 'burst',  ring: 0xd4a040, rarity: 'Épica',    weapon: 'nv_pirate_shotgun', desc: 'Curto alcance, espalhamento amplo, alto dano e recarga cartucho a cartucho.', get: 'Cemitério Naval · Arsenal do Naufrágio' },
+  nv_trident:        { name: 'Tridente das Profundezas', cat: 'weapon', icon: 'bolt',   ring: 0x29b6f6, rarity: 'Lendária', weapon: 'nv_trident',        desc: 'Energia aquática em linha que atravessa múltiplos inimigos.', get: 'Cemitério Naval · Arsenal do Naufrágio' },
+  nv_ghost_saber:    { name: 'Sabre Fantasmagórico',     cat: 'weapon', icon: 'burst',  ring: 0x70e8ff, rarity: 'Épica',    weapon: 'nv_ghost_saber',    desc: 'Combos espectrais rápidos com dano extra contra mortos-vivos.', get: 'Cemitério Naval · Arsenal do Naufrágio' },
+  nv_anchor:         { name: 'Âncora Esmagadora',        cat: 'weapon', icon: 'fist',   ring: 0xffc107, rarity: 'Lendária', weapon: 'nv_anchor',         desc: 'Arma pesada que esmaga o solo em área e derruba inimigos.', get: 'Cemitério Naval · Arsenal do Naufrágio' },
   boots: { name: 'Botas de velocidade', cat: 'gear', icon: 'run', ring: 0x40c8ff, rarity: 'Rara', desc: '+15% de velocidade permanente (até cair).', get: 'Mapa e caixas de madeira' },
   exo: { name: 'Exoesqueleto temporário', cat: 'gear', icon: 'fist', ring: 0xffc107, rarity: 'Épica', desc: 'Por 20 s: -45% de dano recebido, golpes 60% mais fortes e imune a lentidão.', get: 'Caixas de madeira a partir da onda 4' },
   proxmine: { name: 'Mina de proximidade', cat: 'trap', icon: 'target', ring: 0xff3020, rarity: 'Rara', weapon: 'proxmine', desc: 'Detecta a 2,4 m, apita e explode em área grande (4 m).', get: 'Multiplicador x10 · cargas nas caixas' },
@@ -435,7 +446,7 @@ export const ITEMS = {
   ftower: { name: 'Torre de fogo', cat: 'trap', icon: 'flame', ring: 0xff7a30, rarity: 'Épica', weapon: 'ftower', desc: 'Lança chamas em quem chega a 4,5 m e incendeia. Bateria de 90 s.', get: 'Multiplicador x18' },
   itower: { name: 'Torre de gelo', cat: 'trap', icon: 'snow', ring: 0x5ac8ff, rarity: 'Épica', weapon: 'itower', desc: 'Dispara projéteis congelantes a até 8 m. Bateria de 90 s.', get: 'Multiplicador x16' },
 };
-export const ITEM_ORDER = ['medkit', 'ammo', 'drink', 'grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'supply', 'dynamite', 'pistol', 'uzi', 'rifle', 'lmg', 'shotgun', 'sniper', 'rocket', 'glauncher', 'flamer', 'plasma', 'cryo', 'acidgun', 'axe', 'knife', ...TEMPLE_WEAPONS, ...COLISEUM_WEAPONS, 'vest', 'helmet', 'boots', 'exo', 'backpack', 'binoculars', 'flashlight', 'radio', 'proxmine', 'spikes', 'efence', 'ltower', 'ftower', 'itower'];
+export const ITEM_ORDER = ['medkit', 'ammo', 'drink', 'grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'supply', 'dynamite', 'pistol', 'uzi', 'rifle', 'lmg', 'shotgun', 'sniper', 'rocket', 'glauncher', 'flamer', 'plasma', 'cryo', 'acidgun', 'axe', 'knife', ...TEMPLE_WEAPONS, ...COLISEUM_WEAPONS, ...NAVAL_WEAPONS, 'vest', 'helmet', 'boots', 'exo', 'backpack', 'binoculars', 'flashlight', 'radio', 'proxmine', 'spikes', 'efence', 'ltower', 'ftower', 'itower'];
 export const ITEM_CATS = { supply: 'Suprimento', weapon: 'Arma', gear: 'Proteção', util: 'Utilitário', trap: 'Armadilha' };
 for (const id of ITEM_ORDER) {
   const it = ITEMS[id];

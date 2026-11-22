@@ -124,6 +124,38 @@ export class Arena {
           case 'G':
             this.gates.push({ x, z, i, j });
             break;
+          case '¤': {
+            mark(i, j);
+            this.statics.push([x, 0.55, z, 2.2, 0.9, 1.15, 0x3b2a1e, 0.25]);
+            this.statics.push([x + 0.1, 1.05, z, 1.8, 0.24, 0.95, 0x4c3626, 0.25]);
+            this.statics.push([x, 1.9, z, 0.18, 2.2, 0.18, 0x563d28, 0.15]);
+            this.statics.push([x + 0.12, 2.2, z, 1.1, 0.7, 0.08, 0x9aa4a0, 0.15]);
+            break;
+          }
+          case '§': {
+            mark(i, j);
+            this.statics.push([x, 0.9, z, 1.15, 1.8, 1.15, 0x9aa0a6]);
+            this.statics.push([x, 2.1, z, 1.0, 0.7, 1.0, 0x8a2c28]);
+            this.statics.push([x, 2.8, z, 0.9, 0.7, 0.9, 0x9aa0a6]);
+            this.statics.push([x, 3.65, z, 0.96, 0.18, 0.96, 0x262c34]);
+            this.glows.push([x, 3.35, z, 0.56, 0.45, 0.56, 0x40e8ff, 0]);
+            break;
+          }
+          case 'µ': {
+            mark(i, j, false);
+            this.statics.push([x, 0.3, z, 0.75, 0.42, 0.9, 0x5a3a22]);
+            this.statics.push([x, 0.62, z + 0.1, 0.28, 0.28, 1.15, 0x262b32]);
+            this.statics.push([x + 0.42, 0.16, z - 0.2, 0.22, 0.22, 0.22, 0x1b1f26]);
+            break;
+          }
+          case '¶': {
+            mark(i, j, false);
+            this.statics.push([x, 0.5, z, 0.22, 1.0, 0.22, 0x4a382c, 0.35]);
+            this.statics.push([x, 0.2, z, 0.95, 0.2, 0.22, 0x3b2d24, 0.35]);
+            this.statics.push([x, 0.85, z, 0.55, 0.14, 0.14, 0x5c4434, 0.35]);
+            this.statics.push([x + 0.45, 0.08, z + 0.35, 0.42, 0.12, 0.16, 0x383e46, -0.4]);
+            break;
+          }
           default: {
             const sd = SCENERY_BY_CHAR[ch];
             if (sd) this.addScenery(sd, i, j, rng);
