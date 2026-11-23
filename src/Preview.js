@@ -172,19 +172,70 @@ export class Preview {
   }
 
   // inimigo do bestiário: escala de vitrine para caber no cartão; o ativo anda e ataca
+  // Enquadramento automático: mede os limites reais do modelo (girando e animando, em escala 1)
+  // e guarda por tipo. Vale para todos os inimigos e chefes, sem tabela de escalas à mão.
+  fitEnemy(type) {
+    this._fit = this._fit || {};
+    if (this._fit[type]) return this._fit[type];
+    const { B, G } = this;
+    const z = { pos: new THREE.Vector3(), minions: [] };
+    let minY = Infinity, maxY = -Infinity, R = 0;
+    for (let k = 0; k < 16; k++) {
+      const t = k * 0.11;
+      const cycle = t % 1.6;
+      Object.assign(z, {
+        type, def: ENEMIES[type], look: enemyLook(type), facing: (k / 16) * Math.PI * 2, scale: 1, alive: true, rise: 0,
+        walk: t * 5, hurtT: 0, attackT: cycle < 0.35 ? 0.35 - cycle : 0, state: 'move', stateT: 0,
+        flyY: 0.95 + Math.sin(t * 3) * 0.06, strafe: 0,
+      });
+      B.begin();
+      G.begin();
+      drawEnemy(B, G, z, t);
+      for (const bb of [B, G]) {
+        const a = bb.ma;
+        for (let i = 0; i < bb.n; i++) {
+          const o = i * 16;
+          // meia-extensão da caixa unitária transformada em cada eixo
+          const ex = (Math.abs(a[o]) + Math.abs(a[o + 4]) + Math.abs(a[o + 8])) / 2;
+          const ey = (Math.abs(a[o + 1]) + Math.abs(a[o + 5]) + Math.abs(a[o + 9])) / 2;
+          const ez = (Math.abs(a[o + 2]) + Math.abs(a[o + 6]) + Math.abs(a[o + 10])) / 2;
+          const x = a[o + 12], y = a[o + 13], zz = a[o + 14];
+          minY = Math.min(minY, y - ey);
+          maxY = Math.max(maxY, y + ey);
+          // a câmera olha pelo eixo Z: o que ocupa largura é X (as 10 rotações amostradas cobrem o giro);
+          // a profundidade só pesa pela perspectiva, então entra com fator pequeno
+          R = Math.max(R, Math.abs(x) + ex + Math.max(0, zz + ez) * 0.12);
+        }
+      }
+    }
+    B.begin();
+    G.begin();
+    if (!Number.isFinite(minY)) minY = 0, maxY = 1.8, R = 0.5;
+    minY = Math.min(minY, 0); // o chão (sombra) sempre entra no quadro
+    // área visível a 3.8 m com FOV 30°: altura 2.04; largura = altura × aspecto. Margem de 12% por lado.
+    const visH = 2 * 3.8 * Math.tan((15 * Math.PI) / 180);
+    const visW = visH * (this.w / this.h);
+    const s = Math.min(1.1, (visH * 0.78) / (maxY - minY), (visW * 0.74) / (2 * R));
+    const f = { s, cy: ((minY + maxY) / 2) * s };
+    this._fit[type] = f;
+    return f;
+  }
+
   enemy(target, type, angle, t, active) {
     const { B, G } = this;
     const cam = this.camera;
-    cam.position.set(0, 1.5, 3.8);
-    cam.lookAt(0, 1.0, 0);
+    const fit = this.fitEnemy(type);
+    // câmera centrada no meio real do modelo (cabeça, armas e pés com folga)
+    cam.position.set(0, fit.cy + 0.5, 3.8);
+    cam.lookAt(0, fit.cy, 0);
     const z = this._ez || (this._ez = { pos: new THREE.Vector3(), minions: [] });
-    const show = { spider: 0.72, bat: 0.78, dog: 0.95, spore: 0.95, boss: 0.92, pharaoh: 0.92, sobek: 0.88, crocling: 0.9, bastet: 0.95, bastetclone: 1.1, sphinx: 0.62, brute: 1.05, summoner: 0.98, portal: 0.5, chariot: 0.5, horus: 0.62, scorpion: 0.85, construct: 0.75, anubis: 0.9, rm_praetor: 1.05, rm_beast: 1.0, rm_spirit: 0.85, rm_standard: 0.55, rm_engineer: 1.05, rm_turret: 0.85, rm_chariot: 0.5, rm_eagle: 0.62, rm_catapult: 0.6, rm_elephant: 0.65, lb_colossa: 0.4, lb_core: 0.42, lb_abominable: 0.4, lb_exogeneral: 0.42, lb_specter: 0.62, lb_aerial: 0.8, ff_mula: 0.85, ff_boitata: 0.85 }[type] || 1.1;
+    const show = fit.s;
     const cycle = t % 1.6;
     Object.assign(z, {
       type, def: ENEMIES[type], look: enemyLook(type), facing: angle, scale: show, alive: true, rise: 0,
       walk: active ? t * 5 : t * 0.4, hurtT: 0, attackT: active && cycle < 0.35 ? 0.35 - cycle : 0,
       state: active && type === 'summoner' && cycle > 0.8 ? 'cast' : active && type === 'dog' && cycle > 1.2 ? 'lunge' : 'move', stateT: 0,
-      flyY: 0.95 + Math.sin(t * 3) * 0.06, strafe: 0,
+      flyY: (0.95 + Math.sin(t * 3) * 0.06) * show, strafe: 0, // altura de voo acompanha a escala do cartão
     });
     B.begin();
     G.begin();
@@ -192,6 +243,8 @@ export class Preview {
     B.end();
     G.end();
     this.renderer.render(this.scene, this.camera);
+    cam.position.set(0, 1.5, 3.8); // devolve a câmera padrão para os outros cartões
+    cam.lookAt(0, 1.0, 0);
     const ctx = target.getContext('2d');
     ctx.clearRect(0, 0, target.width, target.height);
     ctx.drawImage(this.renderer.domElement, 0, 0, target.width, target.height);

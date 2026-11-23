@@ -74,6 +74,10 @@ export class TouchControls {
     document.addEventListener('gesturestart', (e) => e.preventDefault());
     document.addEventListener('dblclick', (e) => this.on && e.preventDefault());
     this.applySettings();
+    let rt = 0;
+    const relayout = () => { clearTimeout(rt); rt = setTimeout(() => this.layout(), 120); };
+    window.addEventListener('resize', relayout);
+    window.addEventListener('orientationchange', relayout);
   }
 
   // Android (tela cheia) aceita travar a orientação; nos outros, o aviso de girar resolve
@@ -103,6 +107,24 @@ export class TouchControls {
     this.R = BASE_R * this.scale;
     this.root.style.setProperty('--ts', this.scale.toFixed(3));
     document.body.classList.toggle('lefty', !!this.s.touchLefty); // canhoto: lados trocados
+    this.layout();
+  }
+
+  // Gerenciador central do layout da HUD no modo toque: uma escala (--hs) derivada da tela
+  // alimenta todas as regiões no CSS; depois confere sobreposições e compacta se faltar espaço.
+  layout() {
+    const b = document.body;
+    const W = window.innerWidth, H = window.innerHeight;
+    const hs = Math.max(0.8, Math.min(1.3, Math.min(H / 420, W / 860)));
+    b.style.setProperty('--hs', hs.toFixed(3));
+    b.classList.remove('hud-narrow');
+    if (!this.on) return;
+    requestAnimationFrame(() => {
+      const r = (s) => document.querySelector(s)?.getBoundingClientRect();
+      const top = r('.hud .top'), pp = r('.players .pp'), radar = r('.hud .radar'), pause = r('.hud .pause-btn');
+      const hit = (a, c) => a && c && a.width && c.width && a.left < c.right && c.left < a.right && a.top < c.bottom && c.top < a.bottom;
+      if (hit(top, pp) || hit(top, radar) || hit(top, pause)) b.classList.add('hud-narrow');
+    });
   }
 
   setMode(on) {
@@ -336,6 +358,14 @@ export class TouchControls {
       if (!show) this.reset();
       else this.applySettings();
     }
+    // munição baixa/zerada também no botão da arma (não depende só da cor: pisca e mostra o número)
+    if (show && g.players[0]) {
+      const p0 = g.players[0], w0 = WEAPONS[p0.weapon];
+      const clip = w0 && w0.mag && w0.mag !== Infinity ? p0.clip[p0.weapon] || 0 : null;
+      this.bWeapon.classList.toggle('empty', clip === 0);
+      this.bWeapon.classList.toggle('low', clip !== null && clip > 0 && clip <= Math.max(1, Math.ceil(w0.mag * 0.25)));
+      this.bReload.classList.toggle('urgent', clip !== null && clip <= Math.max(1, Math.ceil(w0.mag * 0.25)) && !(p0.reloadT > 0));
+    }
     if (!show) return;
     const p = g.players[0];
     if (!p) return;
@@ -387,6 +417,8 @@ export class TouchControls {
         n.textContent = txt;
       }
       b.classList.toggle('dim', locked || left > 0);
+      b.classList.toggle('locked', locked); // bloqueado: menor e claramente secundário
+      if (b.ariaLabel !== (locked ? 'Ultimate bloqueado' : null) && locked) b.setAttribute('aria-label', 'Ultimate bloqueado');
     }
     if (this.bWeapon.dataset.w !== p.weapon) {
       this.bWeapon.dataset.w = p.weapon;

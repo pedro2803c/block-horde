@@ -1784,7 +1784,9 @@ export class Game {
     this.audio.play('pickup', { volume: 0.9, priority: true });
     const msgs = { 1: 'Uma montaria está disponível!', 2: 'Nova montaria liberada!', 3: 'Última montaria disponível! Prepare-se para o confronto final!' };
     const msg = msgs[Math.min(releaseN, 3)] || msgs[3];
-    for (const q of this.players) this.ui.toast(q.id, msg, 'vehicle');
+    // celular: aviso compacto no topo (sistema de notificações); computador: mantém o toast no painel
+    if (this.input.touchMode) this.ui.notify(`${msg} ${pend.name}`, 'gold', 'vehicle', { pri: 2, dur: 3 });
+    else for (const q of this.players) this.ui.toast(q.id, msg, 'vehicle');
   }
 
   // --- montaria 3D ---

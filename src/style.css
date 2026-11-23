@@ -1164,7 +1164,7 @@ body.touch .notices * { pointer-events: none !important; }
 /* telas estreitas: a faixa usa a largura entre o painel do jogador e o radar */
 /* posição calculada pelo jogo (UI.placeNotice): a caixa só acompanha o aviso */
 body.touch .notices { right: auto; display: block; width: max-content; }
-body.touch .notice { max-width: min(340px, 42vw); font-size: clamp(0.66rem, 1.9vmin, 0.86rem); background: rgba(14, 17, 23, 0.9); }
+body.touch .notice { max-width: min(300px, 28vw); font-size: clamp(0.66rem, 1.9vmin, 0.86rem); background: rgba(14, 17, 23, 0.9); }
 /* tablets: um pouco maior, ainda compacto */
 @media (min-width: 1000px) and (min-height: 700px) { body.touch .notice { font-size: 0.86rem; min-height: 30px; } body.touch .notice > .ic { width: 18px; height: 18px; } }
 @media (prefers-reduced-motion: reduce) { .notice, .notice.out { animation: none; } }
@@ -1209,16 +1209,17 @@ body.touch .diff-card .d-rows { font-size: 0.72rem; }
    ====================================================================== */
 body.touch {
   /* design system mobile: escala única de espaço, tipo, raio e superfície */
-  --m-1: 4px; --m-2: 8px; --m-3: 12px; --m-4: 16px;
-  --m-fs-xs: 10.5px; --m-fs-s: 12px; --m-fs-m: 14px; --m-fs-l: 18px;
-  --m-ic-s: 14px; --m-ic-m: 18px;
+  /* --hs vem do gerenciador de layout (touch.js → layout()): escala única pela altura/largura da tela */
+  --m-1: calc(4px * var(--hs, 1)); --m-2: calc(8px * var(--hs, 1)); --m-3: calc(12px * var(--hs, 1)); --m-4: calc(16px * var(--hs, 1));
+  --m-fs-xs: calc(10.5px * var(--hs, 1)); --m-fs-s: calc(12px * var(--hs, 1)); --m-fs-m: calc(14px * var(--hs, 1)); --m-fs-l: calc(18px * var(--hs, 1));
+  --m-ic-s: calc(14px * var(--hs, 1)); --m-ic-m: calc(18px * var(--hs, 1));
   --m-r: 10px; --m-r-s: 6px;
   --m-surface: rgba(14, 17, 23, 0.82); --m-line: rgba(68, 76, 92, 0.9);
   --m-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
   --m-st: env(safe-area-inset-top, 0px);
   --m-top: calc(var(--m-2) + var(--m-st));
-  --m-card-w: clamp(168px, 27vw, 240px);
-  --m-right-w: clamp(72px, 11vw, 96px);
+  --m-card-w: clamp(168px, calc(200px * var(--hs, 1)), 27vw);
+  --m-right-w: clamp(64px, calc(78px * var(--hs, 1)), 11vw);
 }
 
 /* ---------- topo esquerdo: cartão do jogador (sem encolher por transform) ---------- */
@@ -1247,18 +1248,25 @@ body.touch .pp .buffs { position: absolute; left: 6px; top: 52px; width: 44px; f
 body.touch .pp .reload-line { font-size: var(--m-fs-xs); }
 
 /* ---------- topo central: indicadores da partida numa linha + multiplicador fino ---------- */
+/* um único painel conectado: linha de contadores separados por divisórias + multiplicador embaixo */
 body.touch .top {
   top: var(--m-top);
   left: calc(var(--m-card-w) + var(--m-4) + var(--sl));
   right: calc(var(--m-right-w) + var(--m-3) + var(--sr));
-  padding: 0; gap: var(--m-1); flex-wrap: wrap; justify-content: center; align-content: flex-start;
+  width: max-content; max-width: calc(100vw - var(--m-card-w) - var(--m-right-w) - 3 * var(--m-4) - var(--sl) - var(--sr)); margin: 0 auto;
+  padding: var(--m-1); gap: 0; flex-wrap: wrap; justify-content: center; align-content: flex-start;
+  background: var(--m-surface); border: 1px solid var(--m-line); border-radius: var(--m-r); box-shadow: var(--m-shadow);
 }
-body.touch .top .chip { height: 30px; padding: 0 var(--m-2); gap: var(--m-1); border-width: 1px; border-radius: var(--m-r-s); background: var(--m-surface); box-shadow: none; }
+body.touch .top .chip { height: calc(28px * var(--hs, 1)); padding: 0 var(--m-2); gap: var(--m-1); border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+body.touch .top .chip + .chip:not(.hidden) { border-left: 1px solid var(--m-line); }
 body.touch .top .chip > .ic { width: var(--m-ic-m); height: var(--m-ic-m); }
 body.touch .top .chip b { font-size: var(--m-fs-l); }
 body.touch .top .chip.event b { font-size: var(--m-fs-s); }
 body.touch .top .chip.diff-chip b { font-size: var(--m-fs-s); }
-body.touch .mult { flex: 1 1 100%; max-width: 340px; min-width: 0; height: 30px; padding: 0 var(--m-2); gap: var(--m-2); border-width: 1px; border-radius: var(--m-r-s); background: var(--m-surface); box-shadow: none; }
+body.touch .mult { flex: 1 1 100%; max-width: none; min-width: 0; height: calc(24px * var(--hs, 1)); margin-top: 2px; padding: 0 var(--m-2); gap: var(--m-2); border: 0; border-top: 1px solid var(--m-line); border-radius: 0; background: transparent; box-shadow: none; }
+/* pouco espaço (o gerenciador detectou sobreposição): só ícones e números */
+body.touch.hud-narrow .top .chip.diff-chip b, body.touch.hud-narrow .mult-next { display: none; }
+body.touch.hud-narrow .top .chip { padding: 0 var(--m-1); }
 body.touch .mult-num { font-size: 1.35rem; min-width: 2ch; }
 body.touch .mult-next { font-size: var(--m-fs-xs); margin-bottom: 2px; }
 body.touch .mult .bar { height: 7px; font-size: 0; }
@@ -1290,21 +1298,46 @@ body.touch .tutorial { top: calc(var(--hud-top-b, 84px) + var(--m-1)); left: cal
 body.touch .auto-tag { left: calc(var(--m-3) + var(--sl)); right: auto; transform: none; bottom: calc(var(--m-2) + env(safe-area-inset-bottom)); font-size: var(--m-fs-xs); }
 
 /* ---------- inferior direito: ataque principal em destaque, secundários padronizados ---------- */
-body.touch .tbtns { width: 284px; height: 144px; }
-body.touch .tb { width: 54px; height: 54px; border-width: 2px; }
+/* arco em volta do polegar direito, por prioridade:
+   1 arma/ataque (canto, maior) · 2 recarga (colada à esquerda) · 3-4 habilidades (arco acima)
+   · 5 faca e ultimate (borda do arco, menores). Espaço mínimo de 8 px entre áreas de toque.
+   O cluster inteiro escala junto: tamanho do jogador (--ts) × tamanho da tela (--hs). */
+body.touch .tbtns { width: 268px; height: 196px; transform: scale(calc(var(--ts, 1) * var(--hs, 1))); right: calc(var(--m-3) + var(--sr)); bottom: calc(var(--m-3) + env(safe-area-inset-bottom)); }
+body.touch .tb { width: 56px; height: 56px; border-width: 2px; }
 body.touch .tb .ic, body.touch .tb svg { width: 24px; height: 24px; }
-body.touch .tb.ab:nth-child(1) { right: 66px; bottom: 0; }
-body.touch .tb.ab:nth-child(2) { right: 0; bottom: 0; }
-body.touch .tb.ab:nth-child(3) { right: 66px; bottom: 66px; }
-body.touch .tb.ab.ult { right: 0; bottom: 66px; }
-body.touch .tb.wpn { right: 136px; bottom: 0; width: 74px; height: 74px; border-width: 3px; background: rgba(40, 32, 6, 0.72); box-shadow: 0 0 14px rgba(255, 193, 7, 0.35), 0 2px 0 rgba(0, 0, 0, 0.5); }
-body.touch .tb.wpn .ico svg { width: 48px; height: 24px; }
-body.touch .tb.mel { right: 146px; bottom: 88px; width: 54px; height: 54px; }
-body.touch .tb.rel { right: 222px; bottom: 10px; width: 54px; height: 54px; }
+body.touch .tb.wpn { right: 0; bottom: 0; width: 78px; height: 78px; border-width: 3px; background: rgba(40, 32, 6, 0.75); box-shadow: 0 0 14px rgba(255, 193, 7, 0.35), 0 2px 0 rgba(0, 0, 0, 0.5); }
+body.touch .tb.wpn .ico svg { width: 50px; height: 25px; }
+body.touch .tb.rel { right: 92px; bottom: 6px; width: 52px; height: 52px; }
+body.touch .tb.ab:nth-child(1) { right: 88px; bottom: 72px; }
+body.touch .tb.ab:nth-child(2) { right: 8px; bottom: 92px; }
+body.touch .tb.ab:nth-child(3) { right: 154px; bottom: 62px; width: 52px; height: 52px; }
+body.touch .tb.ab.ult { right: 72px; bottom: 140px; width: 52px; height: 52px; }
+body.touch .tb.mel { right: 156px; bottom: 0; width: 52px; height: 52px; }
 body.touch .tb.mel .ic, body.touch .tb.rel .ic { width: 22px; height: 22px; }
+/* bloqueado: menor, tracejado, cinza e com cadeado — não compete com os ativos */
+body.touch .tb.ab.locked { width: 42px; height: 42px; right: 76px; bottom: 144px; border-style: dashed; border-color: rgba(160, 168, 184, 0.5); background: rgba(14, 17, 24, 0.4); opacity: 0.6; }
+body.touch .tb.ab.locked .ic, body.touch .tb.ab.locked svg { width: 18px; height: 18px; color: #a0a8b8; }
+/* munição: baixa = borda pisca em amarelo; zerada = vermelho + recarga chamando */
+body.touch .tb.wpn.low { animation: ammo-low 0.7s infinite alternate; }
+body.touch .tb.wpn.empty { border-color: var(--action); box-shadow: 0 0 16px rgba(229, 57, 53, 0.55); }
+body.touch .tb.wpn.empty .wn { color: #ff8a80; }
+body.touch .tb.rel.urgent { border-color: var(--primary); color: var(--primary); animation: ammo-low 0.6s infinite alternate; }
+@keyframes ammo-low { from { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.0); } to { box-shadow: 0 0 0 5px rgba(255, 193, 7, 0.45); } }
+@media (prefers-reduced-motion: reduce) { body.touch .tb.wpn.low, body.touch .tb.rel.urgent { animation: none; } }
+/* joystick: guia na zona do polegar esquerdo, longe da borda */
+body.touch .touch::before { left: calc(var(--m-4) * 2 + var(--sl)); bottom: calc(var(--m-4) * 2 + env(safe-area-inset-bottom)); width: calc(100px * var(--hs, 1) * var(--ts, 1)); height: calc(100px * var(--hs, 1) * var(--ts, 1)); }
+body.touch .auto-tag { bottom: calc(var(--m-1) + env(safe-area-inset-bottom)); }
+/* aviso de montaria: compacto, logo abaixo da faixa do topo, nunca no centro */
+body.touch .mount-waypoint { top: calc(var(--hud-top-b, 84px) + var(--m-1)); bottom: auto; left: 50%; right: auto; transform: translateX(-50%); padding: 3px var(--m-2); gap: var(--m-1); border-radius: var(--m-r-s); background: var(--m-surface); box-shadow: var(--m-shadow); pointer-events: none; z-index: 5; }
+body.touch .mount-waypoint-text { font-size: var(--m-fs-s); }
+body.touch .mount-waypoint-icon { width: var(--m-ic-s); height: var(--m-ic-s); }
+/* recarga no cartão: linha fina, não compete com a vida */
+body.touch .pp .reload-line { font-size: 9.5px; margin: 0; }
+body.touch .pp .reload-line i { height: 4px; }
 
 /* ---------- canhoto: joystick à direita, botões à esquerda (espelha só a posição) ---------- */
-body.touch.lefty .tbtns { right: auto; left: calc(12px + env(safe-area-inset-left) + (var(--ts, 1) - 1) * 142px); transform: scale(calc(-1 * var(--ts, 1)), var(--ts, 1)); transform-origin: 50% 100%; } /* espelha no próprio lugar */
+body.touch.lefty .tbtns { right: auto; left: calc(12px + env(safe-area-inset-left) + (var(--ts, 1) * var(--hs, 1) - 1) * 134px); transform: scale(calc(-1 * var(--ts, 1) * var(--hs, 1)), calc(var(--ts, 1) * var(--hs, 1))); transform-origin: 50% 100%; } /* espelha no próprio lugar */
+body.touch.lefty .touch::before { left: auto; right: calc(var(--m-4) * 2 + var(--sr)); }
 body.touch.lefty .tb > * { transform: scaleX(-1); }
 body.touch.lefty .auto-tag { left: auto; right: calc(var(--m-3) + var(--sr)); }
 
@@ -1375,7 +1408,7 @@ body.touch .mount-waypoint { top: calc(5.1rem + env(safe-area-inset-top)); botto
 .tb.mnt.near { border-color: var(--primary); box-shadow: 0 0 14px rgba(255, 193, 7, 0.5); }
 .tb.mnt.dim { opacity: 0.55; }
 .tb.mnt.hidden { display: none; }
-body.touch .tb.mnt { right: 222px; bottom: 88px; width: 54px; height: 54px; }
+body.touch .tb.mnt { right: 216px; bottom: 0; width: 52px; height: 52px; } /* contextual: ponta da fileira de baixo (HUD mobile v2) */
 .tb .tl { position: absolute; left: 0; right: 0; bottom: 5px; text-align: center; font: 700 0.5rem/1 var(--body); color: #fff; text-shadow: 0 1px 0 #000; text-transform: uppercase; pointer-events: none; }
 .tb.mnt .ic, .tb.mnt svg { margin-top: -8px; }
 

@@ -1707,8 +1707,22 @@ export class UI {
     this.hMountCmds.classList.add('hidden');
     this.mountCmdKey = '';
     // waypoint: aponta direção e distância real até a montaria 3D estacionada no mapa
+    // celular: nada fixo na tela — a distância aparece por 6 s quando a montaria surge; depois só quando está perto
+    const touch = !!this.g.input.touchMode;
+    if (wm && wm !== this.wpSeen) { this.wpSeen = wm; this.wpAt = performance.now(); }
+    if (touch) { // fica logo abaixo da faixa do topo (contadores + chefe), medida agora
+      const bEl = this.hudEl.querySelector('.boss:not(.hidden)');
+      const yb = Math.max(this.hudEl.querySelector('.top')?.getBoundingClientRect().bottom || 0, bEl ? bEl.getBoundingClientRect().bottom : 0);
+      const tv = `${Math.round(yb + 4)}px`;
+      if (this.hMountWaypoint.style.top !== tv) this.hMountWaypoint.style.top = tv;
+    } else if (this.hMountWaypoint.style.top) this.hMountWaypoint.style.top = '';
+    // primeiro o aviso "montaria disponível" (3 s) ocupa o topo; depois a distância por mais 6 s
+    const wpAge = performance.now() - (this.wpAt || 0);
+    const wpFresh = touch ? wpAge > 3300 && wpAge < 9300 : true;
     if (wm && wm.def) {
-      if (!wm.alive) {
+      if (touch && !wpFresh && wm.alive && !wm.rider && Math.hypot(wm.x - p.pos.x, wm.z - p.pos.z) > MOUNT_USE_DIST) {
+        this.hMountWaypoint.classList.add('hidden');
+      } else if (!wm.alive) {
         this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `${wm.def.name} destruída — siga a pé`;
         this.hMountWaypoint.classList.remove('near');
         this.hMountWaypoint.classList.remove('hidden');
@@ -1730,6 +1744,8 @@ export class UI {
       } else {
         this.hMountWaypoint.classList.add('hidden');
       }
+    } else if (g.mountPending && touch) {
+      this.hMountWaypoint.classList.add('hidden'); // celular: só avisa quando a montaria aparece de fato
     } else if (g.mountPending) {
       // ainda não liberada: só informa (sem acesso antecipado)
       setT(this.hMountWaypoint.querySelector('.mount-waypoint-text'), `${g.mountPending.def.name}: chega com o chefe`);
@@ -2186,7 +2202,7 @@ export class UI {
   }
   // áreas da HUD do celular que nenhum aviso pode cobrir
   protectedRects() {
-    const sel = ['.top', '.boss:not(.hidden)', '.tutorial:not(.hidden)', '.pause-btn', '.radar', '.xpbar', '.tb', '.stick', '.auto-tag', '.wpicker:not(.hidden)', '.sound-hint:not(.hidden)'];
+    const sel = ['.top', '.boss:not(.hidden)', '.tutorial:not(.hidden)', '.pause-btn', '.radar', '.xpbar', '.tb', '.stick', '.auto-tag', '.wpicker:not(.hidden)', '.sound-hint:not(.hidden)', '.mount-waypoint:not(.hidden)', '.players .pp'];
     const out = [];
     for (const el of document.querySelectorAll(sel.join(','))) {
       if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') continue;
@@ -2237,6 +2253,7 @@ export class UI {
   // chamado pelo laço da UI: tenta de novo quando a fila espera vaga ou um menu fecha
   noticeTick() {
     if (!this.g.input.touchMode) return;
+    // fim da faixa de contadores (a barra do chefe se posiciona por esta medida, então ela não entra aqui)
     const tb = Math.max(this.hudEl.querySelector('.top')?.getBoundingClientRect().bottom || 0, 44);
     if (Math.abs(tb - (this.topB || 0)) > 1) document.body.style.setProperty('--hud-top-b', `${Math.round((this.topB = tb))}px`);
     if (document.querySelector('.notices .notice') && !this.nCur) [...this.noticeEl.querySelectorAll('.notice:not(.out)')].forEach((e) => e.remove());
