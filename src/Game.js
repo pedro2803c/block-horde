@@ -362,27 +362,9 @@ export class Game {
       p.pos.set(s.x, 0, s.z);
       p.mountId = montariaDaArena ? arenaDef.id : null;
     });
-    if (montariaDaArena) {
-      const ms = this.freeSpot(center.x + 3.2, center.z - 1.2, 1.35);
-      this.worldMount = {
-        id: arenaDef.id,
-        def: montariaDaArena,
-        x: ms.x,
-        z: ms.z,
-        spawnX: ms.x,
-        spawnZ: ms.z,
-        facing: -Math.PI * 0.25,
-        hp: montariaDaArena.maxHp,
-        maxHp: montariaDaArena.maxHp,
-        rider: null,
-        alive: true,
-        respawnT: 0,
-        hurtT: 0,
-        wheelT: 0,
-      };
-    } else {
-      this.worldMount = null;
-    }
+    // montaria: a partida começa a pé; ela só é liberada quando o chefe realmente aparece (releaseMount)
+    this.worldMount = null;
+    this.mountPending = montariaDaArena && !demo ? { id: arenaDef.id, def: montariaDaArena } : null;
     this.camTarget.set(center.x, 0, center.z);
     if (demo) {
       const demoPool = ['walker', 'walker', ...ENEMY_ORDER.filter((t) => !ENEMIES[t].boss && isEnemyAllowedInArena(t, arenaDef.id))];
@@ -1749,6 +1731,34 @@ export class Game {
     }
   }
 
+  // libera a montaria exclusiva da arena (uma vez por partida) no ponto livre perto do jogador e longe do chefe
+  releaseMount(boss) {
+    const pend = this.mountPending;
+    if (!pend || this.worldMount) return;
+    this.mountPending = null;
+    const A = this.arena;
+    const p = this.players.find((q) => q.alive) || this.players[0];
+    const R = Math.max(1.35, pend.def.size * 0.8);
+    const ok = (x, z) => x > 2 && z > 2 && x < A.W - 2 && z < A.D - 2 && !A.circleBlocked(x, z, R)
+      && !A.props.some((pr) => !pr.dead && Math.hypot(pr.x - x, pr.z - z) < R + 0.6)
+      && Math.hypot(boss.pos.x - x, boss.pos.z - z) > 6
+      && !this.zombies.some((q) => q.alive && Math.hypot(q.pos.x - x, q.pos.z - z) < R + 0.8);
+    let spot = null;
+    for (let d = 3; d <= 9 && !spot; d += 1)
+      for (let k = 0; k < 16 && !spot; k++) {
+        const a = (k / 16) * Math.PI * 2 + Math.atan2(p.pos.x - boss.pos.x, p.pos.z - boss.pos.z);
+        const x = p.pos.x + Math.sin(a) * d;
+        const z = p.pos.z + Math.cos(a) * d;
+        if (ok(x, z)) spot = { x, z };
+      }
+    if (!spot) spot = this.freeSpot(p.pos.x, p.pos.z, R);
+    this.worldMount = { id: pend.id, def: pend.def, x: spot.x, z: spot.z, spawnX: spot.x, spawnZ: spot.z, facing: Math.atan2(boss.pos.x - spot.x, boss.pos.z - spot.z), hp: pend.def.maxHp, maxHp: pend.def.maxHp, rider: null, alive: true, respawnT: 0, hurtT: 0, wheelT: 0 };
+    for (const q of this.players) q.mountId = pend.id;
+    for (let k = 0; k < 24; k++) this.parts.spawn(spot.x, 0.3, spot.z, rand(-3, 3), rand(2, 5), rand(-3, 3), 0.12, pick([0xffc107, 0x29b6f6, 0xffffff]), 0.8, 8, 2);
+    this.audio.play('pickup', { volume: 0.9, priority: true });
+    for (const q of this.players) this.ui.toast(q.id, `Montaria liberada: ${pend.def.name}! Siga o marcador`, 'vehicle');
+  }
+
   // --- montaria 3D ---
   startMount(p, arenaId, force = false) {
     const wm = this.worldMount;
@@ -1759,7 +1769,7 @@ export class Game {
       return;
     }
     if (!wm.alive) {
-      this.ui.toast(p.id, m.noRespawn ? `${m.name} foi destruído nesta partida` : `${m.name} em reforço (${Math.ceil(wm.respawnT)}s)`, 'gear', 'bad');
+      this.ui.toast(p.id, `${m.name} foi destruída nesta partida`, 'gear', 'bad');
       return;
     }
     if (wm.rider && wm.rider !== p) {
@@ -1795,7 +1805,6 @@ export class Game {
       if (destroyed) {
         wm.alive = false;
         wm.hp = 0;
-        wm.respawnT = 25;
         for (let k = 0; k < 18; k++) {
           this.parts.spawn(wm.x, 0.8, wm.z, rand(-4, 4), rand(2, 6), rand(-4, 4), 0.16, pick([0xff8020, 0xffc107, 0x333840]), 0.9, 14, 2);
         }
@@ -1810,8 +1819,7 @@ export class Game {
     const back = p.prevWeapon && WEAPONS[p.prevWeapon] ? p.prevWeapon : 'pistol';
     p.weapon = back;
     p.prevWeapon = null;
-    const noRe = wm && wm.def && wm.def.noRespawn;
-    this.ui.toast(p.id, destroyed ? (noRe ? 'Montaria destruída! Siga a pé' : 'Montaria destruída! Nova em 25s') : 'Desmontado', 'gear', destroyed ? 'bad' : undefined);
+    this.ui.toast(p.id, destroyed ? 'Montaria destruída! Siga a pé' : 'Desmontado', 'gear', destroyed ? 'bad' : undefined);
   }
 
   updateWorldMount(dt) {
@@ -1819,19 +1827,7 @@ export class Game {
     if (!wm) return;
     wm.hurtT = Math.max(0, wm.hurtT - dt);
     if (!wm.alive) {
-      if (wm.def.noRespawn) return; // Tubarão Esqueleto: unidade única por partida
-      wm.respawnT -= dt;
-      if (wm.respawnT <= 0) {
-        const s = this.freeSpot(wm.spawnX, wm.spawnZ, 1.35);
-        wm.x = s.x;
-        wm.z = s.z;
-        wm.facing = -Math.PI * 0.25;
-        wm.hp = wm.maxHp;
-        wm.alive = true;
-        wm.rider = null;
-        this.ui.toast(0, `${wm.def.name} disponível na arena!`, 'gear');
-      }
-      return;
+      return; // uma montaria por partida: destruída, não reaparece
     }
     if (wm.rider) {
       const r = wm.rider;
@@ -1848,7 +1844,8 @@ export class Game {
     }
   }
   // --- fim montaria ---
-  holdUse(pr, p, dt, need, label, done) {
+  // alarme do carro (restaurado: a declaração tinha sido sobrescrita por engano no commit das montarias)
+  triggerCarAlarm(pr) {
     pr.alarmT = 6;
     this.audio.play('siren', { volume: 0.65, pos: pr, rate: 1.2 });
     this.ui.banner('ALARME DO CARRO! A HORDA OUVIU', 'bad');
@@ -3064,7 +3061,9 @@ export class Game {
   // ------------------------------------------------------------------ ondas
   buildWave(w) {
     const coop = this.players.length > 1;
-    const n = Math.round((6 + w * 4) * (coop ? 1.35 : 1) * (this.arena.def.diff?.count || 1) * this.diff.mul.count);
+    const bossWave = w % 5 === 0;
+    // onda de chefe: 40% menos comuns para o confronto não virar acúmulo de horda
+    const n = Math.round((6 + w * 4) * (coop ? 1.35 : 1) * (this.arena.def.diff?.count || 1) * this.diff.mul.count * (bossWave ? 0.6 : 1));
     const list = [];
     // sorteio por peso entre os tipos já liberados; o zumbi comum fica mais raro com o tempo
     const here = (t) => isEnemyAllowedInArena(t, this.arena.def.id);
@@ -3096,7 +3095,7 @@ export class Game {
     if (w % 5 === 0) {
       const bossId = Array.isArray(bs) ? bs[(w / 5 - 1) % bs.length] : bs || 'boss';
       if (isEnemyAllowedInArena(bossId, this.arena.def.id)) {
-        list.splice(Math.floor(list.length * 0.6), 0, bossId);
+        list.unshift(bossId); // entra após o aviso de ameaça (updateWaves)
       }
     }
     return list;
@@ -3172,6 +3171,7 @@ export class Game {
     this.zombies.push(zb);
     if (def.boss) {
       this.boss = zb;
+      if (this.state === 'playing') this.releaseMount(zb); // evento real de aparição do chefe
       if (def.riseIntro) {
         zb.rise = def.riseIntro; // emerge do chão
         for (let k = 0; k < 40; k++) this.parts.spawn(x + rand(-1.5, 1.5), 0.2, z + rand(-1.5, 1.5), rand(-3, 3), rand(2, 6), rand(-3, 3), rand(0.12, 0.25), pick([0xe0c080, 0xd4a020, 0xb08a40]), 1.2, 12, 0);
@@ -3199,7 +3199,11 @@ export class Game {
     return null;
   }
   aliveCap() {
-    return Math.round((this.settings.quality === 'low' ? 40 : 60) * (this.diff?.mul.aliveCap || 1));
+    const k = this.diff?.mul.aliveCap || 1;
+    const hard = Math.round((this.settings.quality === 'low' ? 40 : 60) * k); // teto de desempenho
+    // curva progressiva: ~10 vivos na onda 1, ~19 na 5, ~30 na 10, teto a partir da ~onda 20
+    const ramp = Math.round((8 + 2.2 * Math.max(1, this.wave)) * k * (this.players.length > 1 ? 1.3 : 1));
+    return Math.min(hard, ramp);
   }
   countAlive() {
     let n = 0;
@@ -3237,6 +3241,13 @@ export class Game {
         this.spawnT = 0.5;
         this.ui.banner(`ONDA ${this.wave}`, 'wave');
         this.audio.play('wave', { volume: 0.9, priority: true });
+        // preparação para o chefe: sinais de ameaça e 6 s sem novos inimigos antes da entrada
+        if (this.toSpawn.length && ENEMIES[this.toSpawn[0]].boss) {
+          this.spawnT = 6;
+          setTimeout(() => this.state === 'playing' && this.ui.banner('AMEAÇA SE APROXIMANDO!', 'bad'), 1600);
+          this.audio.play('siren', { volume: 0.7, priority: true });
+          this.noiseShake(0.5);
+        }
         if (!this.boss) this.audio.setMusic('combat');
         // quem caiu volta
         const alive = this.players.find((p) => p.alive);
@@ -3255,12 +3266,25 @@ export class Game {
     this.spawnT -= dt;
     const alive = this.countAlive();
     if (this.toSpawn.length && this.spawnT <= 0 && alive < cap) {
-      this.spawnT = (Math.max(0.18, 0.75 - this.wave * 0.035) * rand(0.6, 1.3)) / this.diff.mul.spawnRate;
-      const gates = this.arena.gates.filter((g) => this.players.every((p) => !p.alive || Math.hypot(p.pos.x - g.x, p.pos.z - g.z) > 7));
+      // ondas 1–3 mais espaçadas para o jogador aprender e se posicionar
+      const calm = this.wave <= 3 ? 1.6 - (this.wave - 1) * 0.2 : 1;
+      this.spawnT = (Math.max(0.18, 0.75 - this.wave * 0.035) * rand(0.6, 1.3) * calm) / this.diff.mul.spawnRate;
+      // só pontos com caminho até os jogadores (evita horda presa em área fechada); portões ficam na borda, por isso olha a vizinhança
+      const reach = (q) => {
+        const A2 = this.arena;
+        if (!A2.dist) return true;
+        for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+          const i = Math.floor(q.x) + di;
+          const j = Math.floor(q.z) + dj;
+          if (A2.inb(i, j) && A2.dist[i + j * A2.W] < 1e8) return true;
+        }
+        return false;
+      };
+      const gates = this.arena.gates.filter((g) => reach(g) && this.players.every((p) => !p.alive || Math.hypot(p.pos.x - g.x, p.pos.z - g.z) > 7));
       let sx;
       let sz;
       // covas, portais, portões monumentais e túneis (longe dos jogadores) também trazem a horda
-      const graves = this.arena.graves.filter((g) => this.players.every((p) => !p.alive || Math.hypot(p.pos.x - g.x, p.pos.z - g.z) > 4));
+      const graves = this.arena.graves.filter((g) => reach(g) && this.players.every((p) => !p.alive || Math.hypot(p.pos.x - g.x, p.pos.z - g.z) > 4));
       if (graves.length && Math.random() < (this.arena.def.spawnShare ?? 0.3)) {
         const gv = pick(graves);
         sx = gv.x + rand(-0.2, 0.2);
@@ -3270,7 +3294,7 @@ export class Game {
           this.audio.play('groan1', { volume: 0.4, pos: { x: gv.x, z: gv.z }, rate: rand(0.7, 0.95) });
         }
       } else {
-        const g = pick(gates.length ? gates : this.arena.gates);
+        const g = pick(gates.length ? gates : this.arena.gates.filter(reach).length ? this.arena.gates.filter(reach) : this.arena.gates);
         sx = g.x + rand(-0.3, 0.3);
         sz = g.z + rand(-0.3, 0.3);
         // floresta: parte da horda brota da vegetação, nem perto nem longe demais dos jogadores
@@ -3287,7 +3311,9 @@ export class Game {
         const sp = this.siegeSpot(ENEMIES[nextType].radius || 0.9);
         if (sp) { sx = sp.x; sz = sp.z; }
       }
-      this.spawnZombie(nextType, sx, sz);
+      const nz = this.spawnZombie(nextType, sx, sz);
+      // entrada do chefe: segura a horda comum enquanto ele emerge
+      if (nz && nz.def.boss) this.spawnT = Math.max(this.spawnT, (nz.def.riseIntro || 1) + 2.5);
     }
     if (!this.toSpawn.length && alive === 0) {
       this.waveState = 'intermission';
@@ -3912,6 +3938,28 @@ export class Game {
       } else {
         vx = dx / td;
         vz = dz / td;
+      }
+      // recuperação de navegação: 3 s sem progresso longe do alvo → contorna pelo lado por 0,7 s (sem teletransporte)
+      z.navT = (z.navT || 0) + dt;
+      if (z.navT > 3) {
+        const mv = Math.hypot(z.pos.x - (z.navX ?? z.pos.x), z.pos.z - (z.navZ ?? z.pos.z));
+        if (mv < 0.3 && td > (def.reach || 1) + 2 && !def.static && !def.spit && !def.siegeSpot && !(z.stunT > 0) && !(z.rise > 0)) {
+          z.unstickT = 0.7;
+          z.unstickS = Math.random() < 0.5 ? 1 : -1;
+          this.navRecoveries = (this.navRecoveries || 0) + 1;
+        }
+        z.navT = 0;
+        z.navX = z.pos.x;
+        z.navZ = z.pos.z;
+      }
+      if (z.unstickT > 0) {
+        z.unstickT -= dt;
+        const ox = vx;
+        vx = vx * 0.35 - vz * z.unstickS;
+        vz = vz * 0.35 + ox * z.unstickS;
+        const l = Math.hypot(vx, vz) || 1;
+        vx /= l;
+        vz /= l;
       }
       // cuspidor mantém distância e cospe
       if (def.spit) {

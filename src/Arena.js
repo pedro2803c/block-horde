@@ -594,7 +594,14 @@ export class Arena {
         if (di && dj && (this.block[i + di + j * W] || this.block[i + (j + dj) * W] || this.dyn[i + di + j * W] || this.dyn[i + (j + dj) * W])) continue;
         // barricada: caro, mas atravessável (zumbis a quebram); lava: evitada; água/arbusto: um pouco mais caros
         const tr = this.terrain[nk];
-        const nd = d + c + (this.dyn[nk] === 1 ? 90 : 0) + (tr === T_LAVA ? 150 : tr === T_WATER ? 6 : tr === T_BUSH ? 3 : 0);
+        // esteira: quem está em nk anda para k (direção -di,-dj); contra a esteira é quase intransponível (ela arrasta mais rápido que a horda anda)
+        let beltC = 0;
+        const bl = this.beltCells && this.beltCells.get(nk);
+        if (bl) {
+          const along = -di * bl[0] - dj * bl[1];
+          beltC = along < -0.1 ? 80 : along > 0.1 ? -4 : 4;
+        }
+        const nd = d + c + beltC + (this.dyn[nk] === 1 ? 90 : 0) + (tr === T_LAVA ? 150 : tr === T_WATER ? 6 : tr === T_BUSH ? 3 : 0);
         if (nd < dist[nk]) {
           dist[nk] = nd;
           push(nk, nd);

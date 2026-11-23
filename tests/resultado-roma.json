@@ -1,5 +1,5 @@
 {
-  "data": "2026-11-21T22:43:49.469Z",
+  "data": "2026-11-23T00:49:24.197Z",
   "total": 139,
   "falhas": 0,
   "casos": [
@@ -31,7 +31,7 @@
       "observado": []
     },
     {
-      "caso": "Nenhum romano nas outras 7 arenas",
+      "caso": "Nenhum romano nas outras 8 arenas",
       "status": "passou",
       "esperado": "lista vazia",
       "observado": []
@@ -268,8 +268,8 @@
       "esperado": "jogador perde vida",
       "observado": {
         "danoSofrido": 10.6,
-        "aproximou": 7.68,
-        "distFinal": 1.32
+        "aproximou": 7.69,
+        "distFinal": 1.31
       }
     },
     {
@@ -307,8 +307,8 @@
       "esperado": "jogador perde vida",
       "observado": {
         "danoSofrido": 25,
-        "aproximou": 7.22,
-        "distFinal": 1.78
+        "aproximou": 7.23,
+        "distFinal": 1.77
       }
     },
     {
@@ -346,8 +346,8 @@
       "esperado": "jogador perde vida",
       "observado": {
         "danoSofrido": 10,
-        "aproximou": 0.06,
-        "distFinal": 8.94
+        "aproximou": 0.04,
+        "distFinal": 8.96
       }
     },
     {
@@ -385,8 +385,8 @@
       "esperado": "jogador perde vida",
       "observado": {
         "danoSofrido": 19.6,
-        "aproximou": 8.16,
-        "distFinal": 0.84
+        "aproximou": 8.15,
+        "distFinal": 0.85
       }
     },
     {
@@ -424,8 +424,8 @@
       "esperado": "jogador perde vida",
       "observado": {
         "danoSofrido": 12.6,
-        "aproximou": 8.16,
-        "distFinal": 0.84
+        "aproximou": 8.21,
+        "distFinal": 0.79
       }
     },
     {
@@ -463,8 +463,8 @@
       "esperado": "jogador perde vida",
       "observado": {
         "danoSofrido": 10,
-        "aproximou": 0.06,
-        "distFinal": 8.94
+        "aproximou": 0.02,
+        "distFinal": 8.98
       }
     },
     {
@@ -502,8 +502,8 @@
       "esperado": "jogador perde vida",
       "observado": {
         "danoSofrido": 11.5,
-        "aproximou": 7.58,
-        "distFinal": 1.42
+        "aproximou": 7.63,
+        "distFinal": 1.37
       }
     },
     {
@@ -541,8 +541,8 @@
       "esperado": "jogador perde vida",
       "observado": {
         "danoSofrido": 9.6,
-        "aproximou": 7.61,
-        "distFinal": 1.39
+        "aproximou": 7.59,
+        "distFinal": 1.41
       }
     },
     {
@@ -619,8 +619,8 @@
       "esperado": "jogador perde vida",
       "observado": {
         "danoSofrido": 7,
-        "aproximou": 3.02,
-        "distFinal": 5.98
+        "aproximou": 3.03,
+        "distFinal": 5.97
       }
     },
     {
@@ -697,8 +697,8 @@
       "esperado": "jogador perde vida",
       "observado": {
         "danoSofrido": 10,
-        "aproximou": 1.04,
-        "distFinal": 7.96
+        "aproximou": 1.03,
+        "distFinal": 7.97
       }
     },
     {
@@ -837,7 +837,7 @@
       "observado": {
         "morreu": true,
         "kills": 1,
-        "score": 45,
+        "score": 90,
         "nan": false
       }
     },
@@ -846,8 +846,8 @@
       "status": "passou",
       "esperado": "há sequências de 4",
       "observado": {
-        "tot": 220,
-        "hit": 89
+        "tot": 240,
+        "hit": 109
       }
     },
     {
@@ -855,8 +855,8 @@
       "status": "passou",
       "esperado": "há sequências de 3",
       "observado": {
-        "tot": 53,
-        "hit": 26
+        "tot": 48,
+        "hit": 20
       }
     },
     {
@@ -865,7 +865,7 @@
       "esperado": "afastamento máx. não cresce",
       "observado": {
         "inicio": 2.55,
-        "depois": 2.01,
+        "depois": 1.96,
         "vivos": 4
       }
     },
@@ -895,7 +895,7 @@
       "esperado": "distância aumenta",
       "observado": {
         "inicio": 3,
-        "depois": 5
+        "depois": 5.03
       }
     },
     {
@@ -915,8 +915,8 @@
       "esperado": "perfurante viva, comum morta",
       "observado": {
         "celula": [
-          7.5,
-          3.5
+          1.5,
+          1.5
         ],
         "perfuranteViva": true,
         "comumMorreu": true
@@ -942,7 +942,7 @@
       "esperado": "abertura angular cresce >10°; lados −1/0/1",
       "observado": {
         "aberturaInicio": 2.8,
-        "aberturaDepois": 75.8,
+        "aberturaDepois": 77.1,
         "lados": [
           0,
           1,
@@ -998,7 +998,7 @@
       "observado": {
         "entrouLunge": true,
         "danoLunge": 16.8,
-        "variacao": 1.801
+        "variacao": 2.216
       }
     },
     {
@@ -1007,7 +1007,7 @@
       "esperado": "fly=true, flyY > 1",
       "observado": {
         "fly": true,
-        "flyY": 1.31
+        "flyY": 1.3
       }
     },
     {
@@ -1137,7 +1137,7 @@
       "esperado": "voa + strafe + wind→lunge + raio roxo",
       "observado": {
         "voa": true,
-        "flyY": 1.46,
+        "flyY": 1.47,
         "strafe": true,
         "windAntes": true,
         "danoMergulho": 10,
@@ -1206,7 +1206,8 @@
       "cemiterio",
       "coliseu",
       "lab",
-      "templo"
+      "templo",
+      "naval"
     ],
     "noColiseu": [
       "rm_legion",
@@ -1306,21 +1307,21 @@
       "rm_elephant": "20/20"
     },
     "grupoLegiao": {
-      "tot": 220,
-      "hit": 89
+      "tot": 240,
+      "hit": 109
     },
     "trioCaes": {
-      "tot": 53,
-      "hit": 26
+      "tot": 48,
+      "hit": 20
     },
     "por": {
       "rm_legion": {
         "modelo": true,
-        "andou": 7.708,
+        "andou": 7.776,
         "causouDano": true,
         "danoSofrido": 10.6,
-        "aproximou": 7.68,
-        "distFinal": 1.32,
+        "aproximou": 7.69,
+        "distFinal": 1.31,
         "zVivo": true,
         "zHp": 39.1,
         "pistola": 12,
@@ -1333,11 +1334,11 @@
       },
       "rm_centurion": {
         "modelo": true,
-        "andou": 7.328,
+        "andou": 7.414,
         "causouDano": true,
         "danoSofrido": 25,
-        "aproximou": 7.22,
-        "distFinal": 1.78,
+        "aproximou": 7.23,
+        "distFinal": 1.77,
         "zVivo": true,
         "zHp": 172.5,
         "pistola": 12,
@@ -1350,11 +1351,11 @@
       },
       "rm_archer": {
         "modelo": true,
-        "andou": 0.14,
+        "andou": 0.123,
         "causouDano": true,
         "danoSofrido": 10,
-        "aproximou": 0.06,
-        "distFinal": 8.94,
+        "aproximou": 0.04,
+        "distFinal": 8.96,
         "zVivo": true,
         "zHp": 46,
         "pistola": 12,
@@ -1367,11 +1368,11 @@
       },
       "rm_gladiator": {
         "modelo": true,
-        "andou": 8.225,
+        "andou": 8.221,
         "causouDano": true,
         "danoSofrido": 19.6,
-        "aproximou": 8.16,
-        "distFinal": 0.84,
+        "aproximou": 8.15,
+        "distFinal": 0.85,
         "zVivo": true,
         "zHp": 74.8,
         "pistola": 12,
@@ -1384,11 +1385,11 @@
       },
       "rm_hound": {
         "modelo": true,
-        "andou": 8.421,
+        "andou": 8.465,
         "causouDano": true,
         "danoSofrido": 12.6,
-        "aproximou": 8.16,
-        "distFinal": 0.84,
+        "aproximou": 8.21,
+        "distFinal": 0.79,
         "zVivo": true,
         "zHp": 32.2,
         "pistola": 12,
@@ -1401,11 +1402,11 @@
       },
       "rm_praetor": {
         "modelo": true,
-        "andou": 0.258,
+        "andou": 0.226,
         "causouDano": true,
         "danoSofrido": 10,
-        "aproximou": 0.06,
-        "distFinal": 8.94,
+        "aproximou": 0.02,
+        "distFinal": 8.98,
         "zVivo": true,
         "zHp": 94.3,
         "pistola": 12,
@@ -1418,11 +1419,11 @@
       },
       "rm_beast": {
         "modelo": true,
-        "andou": 7.667,
+        "andou": 7.713,
         "causouDano": true,
         "danoSofrido": 11.5,
-        "aproximou": 7.58,
-        "distFinal": 1.42,
+        "aproximou": 7.63,
+        "distFinal": 1.37,
         "zVivo": true,
         "zHp": 69,
         "pistola": 12,
@@ -1435,11 +1436,11 @@
       },
       "rm_spirit": {
         "modelo": true,
-        "andou": 7.703,
+        "andou": 7.685,
         "causouDano": true,
         "danoSofrido": 9.6,
-        "aproximou": 7.61,
-        "distFinal": 1.39,
+        "aproximou": 7.59,
+        "distFinal": 1.41,
         "zVivo": true,
         "zHp": 80.5,
         "pistola": 12,
@@ -1466,11 +1467,11 @@
       },
       "rm_engineer": {
         "modelo": true,
-        "andou": 3.018,
+        "andou": 3.193,
         "causouDano": true,
         "danoSofrido": 7,
-        "aproximou": 3.02,
-        "distFinal": 5.98,
+        "aproximou": 3.03,
+        "distFinal": 5.97,
         "zVivo": true,
         "zHp": 82.8,
         "pistola": 12,
@@ -1500,11 +1501,11 @@
       },
       "rm_eagle": {
         "modelo": true,
-        "andou": 1.175,
+        "andou": 1.222,
         "causouDano": true,
         "danoSofrido": 10,
-        "aproximou": 1.04,
-        "distFinal": 7.96,
+        "aproximou": 1.03,
+        "distFinal": 7.97,
         "zVivo": true,
         "zHp": 109.2,
         "pistola": 12,
@@ -1563,7 +1564,7 @@
         "recuo": 0,
         "explosao": 51.2,
         "morreu": true,
-        "score": 45,
+        "score": 90,
         "kills": 1,
         "scoreDef": 15,
         "nan": false
@@ -1581,12 +1582,12 @@
     },
     "legiao": {
       "inicio": 2.55,
-      "depois": 2.01,
+      "depois": 1.96,
       "vivos": 4
     },
     "arqueiroDist": {
       "inicio": 3,
-      "depois": 5
+      "depois": 5.03
     },
     "arqueiroMira": {
       "mirou": true,
@@ -1596,8 +1597,8 @@
     },
     "cobertura": {
       "celula": [
-        7.5,
-        3.5
+        1.5,
+        1.5
       ],
       "perfuranteViva": true,
       "comumMorreu": true
@@ -1613,7 +1614,7 @@
     },
     "caes": {
       "aberturaInicio": 2.8,
-      "aberturaDepois": 75.8,
+      "aberturaDepois": 77.1,
       "lados": [
         0,
         1,
@@ -1651,12 +1652,12 @@
     "besta": {
       "entrouLunge": true,
       "danoLunge": 16.8,
-      "variacao": 1.801
+      "variacao": 2.216
     },
     "espirito": {
       "flutua": {
         "fly": true,
-        "flyY": 1.31
+        "flyY": 1.3
       },
       "contato": {
         "dano1": 5,
@@ -1734,7 +1735,7 @@
     },
     "aguia": {
       "voa": true,
-      "flyY": 1.46,
+      "flyY": 1.47,
       "strafe": true,
       "windAntes": true,
       "danoMergulho": 10,

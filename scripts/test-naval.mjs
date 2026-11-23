@@ -26,9 +26,11 @@ res.load = await run(({ NV }) => {
   const g = window.__bh; const { ARENAS, SURVIVORS } = window.__bhTest;
   const a = ARENAS.find((x) => x.id === 'naval');
   g.debugGod = true; g.startMatch(a, [SURVIVORS[0]], 'solo');
+  const noMountAtStart = !g.worldMount;
+  const __bs = g.arenaDef.boss; const __bz = g.spawnZombie(Array.isArray(__bs) ? __bs[0] : __bs || 'boss', g.players[0].pos.x + 14, g.players[0].pos.z); if (__bz) { __bz.alive = false; g.boss = null; }
   const p = g.players[0];
   const spawned = NV.map((t) => !!g.spawnZombie(t, p.pos.x + 6, p.pos.z + 6));
-  return { arena: g.arenaDef?.id || a.id, state: g.state, mount: g.worldMount?.def?.name, spawned: spawned.filter(Boolean).length };
+  return { noMountAtStart, mountAfterBoss: !!g.worldMount, arena: g.arenaDef?.id || a.id, state: g.state, mount: g.worldMount?.def?.name, spawned: spawned.filter(Boolean).length };
 }, { NV });
 await page.waitForTimeout(2500);
 await page.screenshot({ path: path.join(OUT, 'naval-arena.png') });
@@ -82,13 +84,13 @@ res.exclusive = await run(({ NV }) => {
     g.startMatch(a, [SURVIVORS[0]], 'solo');
     const p = g.players[0];
     const leaks = NV.filter((t) => g.spawnZombie(t, p.pos.x + 4, p.pos.z + 4)).length;
-    out[a.id] = { started: g.state, leaks, mount: !!g.worldMount };
+    out[a.id] = { started: g.state, leaks, mountAtStart: !!g.worldMount, mountPending: !!g.mountPending };
   }
   return out;
 }, { NV });
 
 // 6) montaria visível (print)
-await run(() => { const g = window.__bh; const { ARENAS, SURVIVORS } = window.__bhTest; g.startMatch(ARENAS.find((x) => x.id === 'naval'), [SURVIVORS[0]], 'solo'); const p = g.players[0]; g.startMount(p, 'naval', true); });
+await run(() => { const g = window.__bh; const { ARENAS, SURVIVORS } = window.__bhTest; g.startMatch(ARENAS.find((x) => x.id === 'naval'), [SURVIVORS[0]], 'solo'); const __bs = g.arenaDef.boss; const __bz = g.spawnZombie(Array.isArray(__bs) ? __bs[0] : __bs || 'boss', g.players[0].pos.x + 14, g.players[0].pos.z); if (__bz) { __bz.alive = false; g.boss = null; } const p = g.players[0]; g.startMount(p, 'naval', true); });
 await page.waitForTimeout(2000);
 await page.screenshot({ path: path.join(OUT, 'naval-tubarao-montado.png') });
 

@@ -1285,7 +1285,7 @@ export class UI {
     };
     this.runPreviews(items, 'mounts', (pv, it, t) => pv.mount(it.canvas, it.id, it.angle, t, it.active));
     return this.win('enemies items mounts', 'Montarias', () => this.showScreen('menu'),
-      h('p', { class: 'muted', style: 'margin:0 0 .8rem' }, 'Cada arena tem uma montaria própria, estacionada no mapa desde o início da partida. Este catálogo é só para consulta: a montaria não pode ser levada para outra arena. Toque ou clique num card para ver os detalhes.'),
+      h('p', { class: 'muted', style: 'margin:0 0 .8rem' }, 'Cada arena tem uma montaria própria, liberada quando o chefe aparece (uma por partida; destruída, não volta). Este catálogo é só para consulta: a montaria não pode ser levada para outra arena. Toque ou clique num card para ver os detalhes.'),
       h('ul', { class: 'beast-grid' }, MOUNT_CATALOG.map(card)),
       h('div', { class: 'row end' }, btn('', 'gamepad', 'Controles de montarias', () => this.showScreen('controls', { back: 'mounts', tab: 4 })), btn('primary back', 'check', 'Ok', () => this.showScreen('menu'))));
   }
@@ -1307,7 +1307,7 @@ export class UI {
         h('div', { class: 'md-view' }, canvas,
           h('div', { class: 'md-tags' }, h('b', {}, info.arena), ...info.traits.map((t) => h('span', {}, t))),
           this.mountStats(def),
-          def.noRespawn ? h('p', { class: 'md-warn' }, icon('warning'), 'Unidade única: destruída, não volta nesta partida.') : h('p', { class: 'muted' }, 'Se for destruída, uma nova chega em 25 s.')),
+          h('p', { class: 'md-warn' }, icon('warning'), 'Chega quando o chefe aparece. Unidade única: destruída, não volta nesta partida.')),
         h('div', { class: 'md-info' },
           h('p', {}, info.desc),
           h('h3', { class: 'section' }, 'Ataques e habilidades'),
@@ -1320,7 +1320,7 @@ export class UI {
             h('tbody', {}, acts.map((a) => h('tr', {}, h('td', {}, a.name), h('td', {}, kbOf(a.id).split(' · ').map((x) => h('kbd', {}, x))), h('td', {}, h('kbd', {}, padKey(a.id))), h('td', {}, h('small', {}, touchOf[a.id]))))))),
           h('h3', { class: 'section' }, 'Como utilizar'),
           h('ol', { class: 'md-how' },
-            h('li', {}, h('b', {}, 'Entrar: '), `ao começar uma partida em ${info.arena}, siga o aviso com a distância (canto inferior direito) até o anel luminoso no chão e aperte ${tk} (controle: ${padKey('toggle')}; celular: botão Montar).`),
+            h('li', {}, h('b', {}, 'Entrar: '), `em ${info.arena}, a montaria é liberada quando o chefe aparece (onda 5). Siga o aviso com a distância (canto inferior direito) até o anel luminoso no chão e aperte ${tk} (controle: ${padKey('toggle')}; celular: botão Montar).`),
             h('li', {}, h('b', {}, 'Atacar: '), `atire normalmente; a arma vira ${w.name}, com munição infinita.`),
             h('li', {}, h('b', {}, 'Habilidades: '), skills.length ? `${skills.map((s) => `${s.name} (${kbOf(s.act)})`).join(', ')}. O HUD mostra a recarga de cada uma.` : 'esta montaria não tem habilidades extras, só o ataque principal.'),
             h('li', {}, h('b', {}, 'Sair: '), `aperte ${tk} de novo; ela fica estacionada onde você desceu.`),
@@ -1710,7 +1710,7 @@ export class UI {
     // waypoint: aponta direção e distância real até a montaria 3D estacionada no mapa
     if (wm && wm.def) {
       if (!wm.alive) {
-        this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `${wm.def.name} — reforço em ${Math.ceil(wm.respawnT)}s`;
+        this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `${wm.def.name} destruída — siga a pé`;
         this.hMountWaypoint.classList.remove('near');
         this.hMountWaypoint.classList.remove('hidden');
       } else if (!wm.rider) {
@@ -1718,7 +1718,7 @@ export class UI {
         const dz = wm.z - p.pos.z;
         const dist = Math.hypot(dx, dz);
         if (dist <= MOUNT_USE_DIST) {
-          this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `${this.mountGlyph('toggle', 'Toque em Montar', 'Aperte')} para montar — ${wm.def.name}`;
+          this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = this.inputDevice() === 'touch' ? `Toque em Montar — ${wm.def.name}` : `${this.mountGlyph('toggle', '', 'Aperte')} para montar — ${wm.def.name}`;
           this.hMountWaypoint.classList.add('near');
         } else {
           const ang = Math.atan2(dz, dx);
@@ -1731,9 +1731,16 @@ export class UI {
       } else {
         this.hMountWaypoint.classList.add('hidden');
       }
+    } else if (g.mountPending) {
+      // ainda não liberada: só informa (sem acesso antecipado)
+      setT(this.hMountWaypoint.querySelector('.mount-waypoint-text'), `${g.mountPending.def.name}: chega com o chefe`);
+      this.hMountWaypoint.classList.remove('near');
+      this.hMountWaypoint.classList.add('pending');
+      this.hMountWaypoint.classList.remove('hidden');
     } else {
       this.hMountWaypoint.classList.add('hidden');
     }
+    if (!g.mountPending || wm) this.hMountWaypoint.classList.remove('pending');
   }
 
   updateHud(dt) {

@@ -1428,3 +1428,5 @@ kbd.listening { background: var(--primary); color: var(--primary-ink); animation
 .md-how { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.35rem; color: var(--text); }
 .md-how b { color: var(--primary); }
 @media (max-width: 820px) { .md-grid { grid-template-columns: 1fr; } .md-view .model.big { max-width: 420px; margin: 0 auto; } }
+.mount-waypoint.pending { border-color: var(--border-hi); opacity: 0.85; }
+.mount-waypoint.pending .mount-waypoint-icon { color: var(--muted); }

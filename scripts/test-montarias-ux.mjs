@@ -37,6 +37,9 @@ const start = (page, id) => page.evaluate((id) => {
   const g = window.__bh; const { ARENAS, SURVIVORS } = window.__bhTest;
   g.debugGod = true; g.startMatch(ARENAS.find((a) => a.id === id), [SURVIVORS[0]], 'solo');
   g.tut = null;
+  // montaria só existe após a aparição real do chefe: dispara o evento e retira o chefe
+  window.__noMountAtStart = !g.worldMount;
+  const __bs = g.arenaDef.boss; const __bz = g.spawnZombie(Array.isArray(__bs) ? __bs[0] : __bs || 'boss', g.players[0].pos.x + 14, g.players[0].pos.z); if (__bz) { __bz.alive = false; g.boss = null; }
 }, id);
 const rectsOverlap = (page) => page.evaluate(() => {
   const r = (s) => { const e = document.querySelector(s); if (!e || e.offsetParent === null && getComputedStyle(e).position !== 'fixed') return null; const b = e.getBoundingClientRect(); return b.width && b.height ? b : null; };
