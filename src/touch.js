@@ -4,7 +4,7 @@
 // Botões: 3 habilidades, ultimate, arma (toque = próxima; segure = lista), recarga e faca.
 import { ACTIVES, ULTIMATES } from './abilities.js';
 import { WEAPONS, WEAPON_ORDER } from './data.js';
-import { MOUNT_INFO, MOUNT_USE_DIST } from './mounts.js';
+import { MOUNT_INFO, MOUNT_USE_DIST, mountSkillAt } from './mounts.js';
 import { icon, weaponIcon } from './icons.js';
 
 const BASE_R = 58; // raio do direcional (px) no tamanho 100%
@@ -352,12 +352,12 @@ export class TouchControls {
       this.bMount.classList.toggle('dim', !p.isMounted && !near);
       this.bMount.classList.toggle('near', near);
     }
-    // montado no Tubarão Esqueleto: os botões de habilidade viram os golpes da montaria
+    // montado: os botões de habilidade viram os ataques da montaria (slot 0..3)
     const skills = p.isMounted && wm && wm.rider === p ? MOUNT_INFO[wm.id]?.skills : null;
     for (let i = 0; i < 4; i++) {
       const b = this.ab[i];
       const id = p.slots[i];
-      const sk = skills && skills[i];
+      const sk = skills ? mountSkillAt(wm.id, i) : null;
       const def = sk ? null : i === 3 ? ULTIMATES[id] : ACTIVES[id];
       const locked = !sk && i === 3 && !p.ultOn;
       const key = (sk ? 'M' + sk.icon : def ? def.icon : '') + (locked ? 'L' : '');

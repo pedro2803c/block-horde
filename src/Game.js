@@ -17,7 +17,7 @@ import { platform } from './platform.js';
 import { TouchControls } from './touch.js';
 import { ControllerManager } from './gamepad.js';
 import { diffOf } from './difficulty.js';
-import { mountDef, mountForArena, drawMount, MOUNT_USE_DIST } from './mounts.js';
+import { mountDef, mountForArena, drawMount, MOUNT_USE_DIST, mountSkills, mountSkillAt, mountRam, mountWeaponDef, MOUNTS, MOUNT_SKILLS } from './mounts.js';
 import { loadMountKeys } from './mountControls.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -115,7 +115,7 @@ export class Game {
       if (document.hidden && this.state === 'playing' && !this.testMode) this.pause();
     });
     window.__bh = this;
-    if (this.testMode) window.__bhTest = { Arena, ARENAS, ENEMIES, SURVIVORS };
+    if (this.testMode) window.__bhTest = { Arena, ARENAS, ENEMIES, SURVIVORS, MOUNTS, MOUNT_SKILLS, mountSkillAt };
   }
 
   async boot() {
@@ -670,6 +670,7 @@ export class Game {
     return w;
   }
   cycleWeapon(p, dir) {
+    if (p.isMounted) return; // montado: a arma é a da montaria, não troca com Q/E/roda
     const owned = WEAPON_ORDER.filter((id) => this.unlocked.has(id));
     let i = owned.indexOf(p.weapon);
     for (let k = 0; k < owned.length; k++) {
@@ -683,6 +684,7 @@ export class Game {
   }
   selectWeapon(p, id) {
     if (p.weapon === id) return;
+    if (p.isMounted) return; // a montaria mantém o próprio ataque até desmontar
     p.weapon = id;
     p.reloadT = 0; // trocar de arma cancela a recarga
     p.bloom = 0;
@@ -694,6 +696,7 @@ export class Game {
   }
   // tecla do grupo: saca a última arma usada do grupo; apertar de novo alterna entre as do grupo
   selectGroup(p, g) {
+    if (p.isMounted) return;
     const list = WEAPON_GROUPS[g].filter((id) => this.unlocked.has(id) && this.usable(p, id));
     if (!list.length) return;
     const cur = list.indexOf(p.weapon);
@@ -961,6 +964,7 @@ export class Game {
 
   // corpo a corpo: faca (padrão) ou machado (liberado no x15 ou achado em caixa)
   melee(p) {
+    if (p.isMounted) return; // montado, o corpo a corpo é o ataque da montaria
     const m = MELEE[this.upg.axe ? 'axe' : 'knife'];
     const fast = p.energyT > 0 ? 0.7 : 1;
     p.meleeCd = m.rate * fast;
@@ -1816,6 +1820,8 @@ export class Game {
       }
     }
     p.mountHp = 0;
+    p.dashDmg = 30; // volta ao padrão do personagem ao desmontar
+    p.dashKnock = 6;
     const back = p.prevWeapon && WEAPONS[p.prevWeapon] ? p.prevWeapon : 'pistol';
     p.weapon = back;
     p.prevWeapon = null;
@@ -1841,6 +1847,23 @@ export class Game {
       const hs = Math.hypot(r.vel.x, r.vel.z);
       wm.wheelT += hs * dt * 2.6;
       r.mountHp = wm.hp;
+      // atropelamento passivo: em velocidade, a montaria fere quem estiver à frente (com recarga por inimigo)
+      const ram = mountRam(wm.id);
+      if (ram && hs > 4.5) {
+        const fx = Math.sin(wm.facing);
+        const fz = Math.cos(wm.facing);
+        for (const z of this.zombies) {
+          if (!z.alive || z.def.fly) continue;
+          if ((z.mountRamT || 0) > this.time) continue;
+          const dx = z.pos.x - wm.x;
+          const dz = z.pos.z - wm.z;
+          const d = Math.hypot(dx, dz);
+          if (d > 1.45 + z.radius) continue;
+          if (d > 0.4 && (dx * fx + dz * fz) / d < 0.25) continue; // só quem está à frente
+          z.mountRamT = this.time + 0.6;
+          this.damageZombie(z, ram.dmg, fx, fz, r, ram.knock);
+        }
+      }
     }
   }
   // --- fim montaria ---
@@ -2537,6 +2560,8 @@ export class Game {
     p.dashT = 0.2;
     p.dashDir = a;
     p.dashHit = new Set();
+    p.dashDmg = 30; // padrão do personagem; a montaria define o próprio valor ao investir
+    p.dashKnock = 6;
     p.dashRam = p.shieldT > 0; // interação: Investida + Escudo tático = Aríete
     if (p.dashRam) this.ui.toast(p.id, 'Aríete! (Investida + Escudo)', 'hexShield');
     this.audio.play('swing', { volume: 0.8, pos: p.pos, rate: 0.55 });
@@ -2796,56 +2821,174 @@ export class Game {
     if (regen) p.hp = Math.min(p.maxHp, p.hp + regen * dt);
     if (p.furyT > 0 && Math.random() < dt * 20) this.parts.spawn(p.pos.x + rand(-0.35, 0.35), rand(0.3, 1.6), p.pos.z + rand(-0.35, 0.35), 0, rand(1, 2), 0, rand(0.08, 0.14), pick([0xff5a1a, 0xffb030, 0xff2a10]), 0.45, -1, 2);
     this.updateNavalSet(p);
-    const shark = p.isMounted && this.worldMount && this.worldMount.rider === p && this.worldMount.def.kind === 'shark';
-    if (shark) {
-      // montado: teclas configuráveis (solo/J1) + botões de habilidade (controle, toque e J2)
+    // montado: os 4 botões de habilidade viram os ataques da montaria (dano real, recarga própria)
+    const mounted = p.isMounted && p.mountId ? p.mountId : null;
+    const mountedSkills = mounted ? mountSkills(mounted) : null;
+    if (mountedSkills && mountedSkills.length) {
       const mk = this.mountKeys;
-      const acts = ['heavy', 'dash', 'second', 'special'];
       const kb = !(this.players.length > 1 && p.id === 1);
-      for (let i = 0; i < 4; i++) if (this.input.anyHit(kb ? [mk[acts[i]], ...p.akeys[i]] : p.akeys[i])) this.sharkAbility(p, i);
+      for (let i = 0; i < 4; i++) {
+        const sk = mountSkillAt(mounted, i);
+        if (!sk) continue;
+        if (this.input.anyHit(kb ? [mk[sk.act], ...p.akeys[i]] : p.akeys[i])) this.mountAbility(p, i);
+      }
     } else for (let i = 0; i < 4; i++) if (this.input.anyHit(p.akeys[i])) this.useAbility(p, i);
   }
-  // Tubarão Esqueleto: 4 habilidades nas teclas de habilidade enquanto montado
-  sharkAbility(p, i) {
+
+  // ------------------------------------------------------------------ ataques das montarias
+  // Um único executor para todas as montarias: os dados vêm de MOUNT_SKILLS e o dano passa pelo
+  // sistema real (damageZombie / hitscan / explosion), com recarga em p.sharkCd (o HUD já lê esse array).
+  mountAbility(p, slot) {
+    if (!p.isMounted || !this.worldMount || this.worldMount.rider !== p) return;
+    const sk = mountSkillAt(p.mountId, slot);
+    if (!sk) return;
     p.sharkCd = p.sharkCd || [0, 0, 0, 0];
     const now = this.time;
-    const CD = [4, 7, 10, 18];
-    const NAMES = ['Mordida Destruidora', 'Investida Abissal', 'Onda Esquelética', 'Fúria Predadora'];
-    if (now < p.sharkCd[i]) {
-      this.ui.toast(p.id, `${NAMES[i]}: ${Math.ceil(p.sharkCd[i] - now)}s`, 'paw', 'bad');
+    if (now < p.sharkCd[slot]) {
+      this.ui.toast(p.id, `${sk.name}: ${Math.ceil(p.sharkCd[slot] - now)}s`, sk.icon || 'paw', 'bad');
       return;
     }
-    p.sharkCd[i] = now + CD[i]; // recarga própria: não mexe nas habilidades do personagem
-    const fx = Math.sin(p.aim), fz = Math.cos(p.aim);
-    const area = (cx, cz, r, dmg, stun) => {
-      for (const z of this.zombies) {
-        if (!z.alive) continue;
-        const d = Math.hypot(z.pos.x - cx, z.pos.z - cz);
-        if (d < r + z.radius) {
-          this.damageZombie(z, dmg, z.pos.x - p.pos.x, z.pos.z - p.pos.z, p, 4);
-          if (stun && !z.def.boss) z.stunT = Math.max(z.stunT || 0, stun);
-        }
+    if (p.dashT > 0) return; // durante uma investida a montaria não ativa outro golpe
+    p.sharkCd[slot] = now + sk.cd;
+    const fx = Math.sin(p.aim);
+    const fz = Math.cos(p.aim);
+    switch (sk.kind) {
+      case 'burst': {
+        // rajada: cada tiro é um hitscan de verdade (acerta inimigos, cenário e barris)
+        const base = mountWeaponDef(MOUNTS[p.mountId]?.weapon) || {};
+        const w = { ...base, dmg: sk.dmg, range: sk.range, pellets: 1, heavy: true, knock: 1.1 };
+        for (let k = 0; k < (sk.shots || 6); k++) this.later(k * 0.07, () => {
+          if (!p.alive || !p.isMounted) return;
+          const a = p.aim + rand(-(sk.spread || 0.04), sk.spread || 0.04);
+          const mx = p.pos.x + Math.sin(a) * 0.9;
+          const mz = p.pos.z + Math.cos(a) * 0.9;
+          this.flashes.push({ x: mx, z: mz, life: 0.05 });
+          this.hitscan(p, mx, mz, a, w);
+          this.audio.play(sk.sound || 'shot_lmg', { volume: 0.4, pos: p.pos, rate: rand(0.95, 1.05) });
+        });
+        break;
       }
-    };
-    if (i === 0) {
-      area(p.pos.x + fx * 1.8, p.pos.z + fz * 1.8, 1.6, 160);
-      this.audio.play('stomp', { pos: p.pos, volume: 0.9 });
-      for (let k = 0; k < 14; k++) this.parts.spawn(p.pos.x + fx * 1.8, 0.8, p.pos.z + fz * 1.8, rand(-3, 3), rand(1, 4), rand(-3, 3), 0.1, pick([0xffffff, 0x40e0ff]), 0.4, 8, 2);
-    } else if (i === 1) {
-      p.dashT = 0.45; p.dashDir = p.aim; p.dashHit = new Set(); p.dashRam = true;
-      this.audio.play('roar', { pos: p.pos, volume: 0.8, rate: 0.8 });
-    } else if (i === 2) {
-      area(p.pos.x, p.pos.z, 4.5, 90, 1.0);
-      this.noiseShake(0.45);
-      this.audio.play('stomp', { pos: p.pos, volume: 1, rate: 0.7 });
-      for (let k = 0; k < 28; k++) { const a = (k / 28) * Math.PI * 2; this.parts.spawn(p.pos.x, 0.3, p.pos.z, Math.sin(a) * 9, rand(1, 2.5), Math.cos(a) * 9, 0.12, pick([0x29b6f6, 0xeae4d6, 0x9adcff]), 0.6, 6, 2); }
-    } else {
-      p.furyT = 8;
-      this.audio.play('roar', { volume: 0.9, pos: p.pos, rate: 1.1, priority: true });
-      this.noiseShake(0.4);
+      case 'cone':
+        this.mountHitCone(p, sk.range, sk.arc, sk.dmg, sk);
+        this.mountFx(p, 'cone', sk);
+        break;
+      case 'area':
+      case 'nova':
+        this.mountHitArea(p, p.pos.x, p.pos.z, sk.radius, sk.dmg, sk);
+        this.mountFx(p, sk.kind, sk);
+        break;
+      case 'bite':
+        this.mountHitArea(p, p.pos.x + fx * (sk.offset || 1.6), p.pos.z + fz * (sk.offset || 1.6), sk.radius || 1.6, sk.dmg, sk);
+        this.mountFx(p, 'bite', sk);
+        break;
+      case 'line':
+        this.mountHitLine(p, sk.range, sk.width || 1, sk.dmg, sk);
+        this.mountFx(p, 'line', sk);
+        break;
+      case 'sides': {
+        const ox = Math.cos(p.aim) * (sk.offset || 1.4);
+        const oz = -Math.sin(p.aim) * (sk.offset || 1.4);
+        this.mountHitArea(p, p.pos.x + ox, p.pos.z + oz, sk.radius, sk.dmg, sk);
+        this.mountHitArea(p, p.pos.x - ox, p.pos.z - oz, sk.radius, sk.dmg, sk);
+        this.mountFx(p, 'sides', sk);
+        break;
+      }
+      case 'charge':
+        p.dashT = sk.dur || 0.42;
+        p.dashDir = p.aim;
+        p.dashHit = new Set();
+        p.dashDmg = sk.dmg ?? 30;
+        p.dashKnock = sk.knock ?? 6;
+        p.dashRam = sk.ram || 1;
+        this.audio.play(sk.sound || 'roar', { volume: 0.8, pos: p.pos, rate: 0.85 });
+        this.noiseShake(0.25);
+        break;
+      case 'fury':
+        p.furyT = sk.dur || 8;
+        this.audio.play(sk.sound || 'roar', { volume: 0.9, pos: p.pos, rate: 1.1, priority: true });
+        this.noiseShake(0.4);
+        break;
     }
-    this.ui.toast(p.id, NAMES[i], 'paw');
+    this.ui.toast(p.id, sk.name, sk.icon || 'paw');
   }
+  // dano em círculo: usa damageZombie (resistências, crítico, empurrão e morte reais)
+  mountHitArea(p, cx, cz, radius, dmg, sk = {}) {
+    let n = 0;
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      const dx = z.pos.x - cx;
+      const dz = z.pos.z - cz;
+      const d = Math.hypot(dx, dz);
+      if (d > radius + z.radius) continue;
+      const nx = d ? dx / d : Math.sin(p.aim);
+      const nz = d ? dz / d : Math.cos(p.aim);
+      this.damageZombie(z, dmg, nx, nz, p, sk.knock ?? 4);
+      if (z.alive && sk.stun && !z.def.boss) z.stunT = Math.max(z.stunT || 0, sk.stun);
+      if (z.alive && sk.burn) this.applyStatus(z, 'fire', sk.burn, p);
+      n++;
+    }
+    return n;
+  }
+  // leque frontal: direção e alcance respeitados; nada atrás da montaria é atingido
+  mountHitCone(p, range, arc, dmg, sk = {}) {
+    let n = 0;
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      const dx = z.pos.x - p.pos.x;
+      const dz = z.pos.z - p.pos.z;
+      const d = Math.hypot(dx, dz);
+      if (d > range + z.radius) continue;
+      const a = Math.atan2(dx, dz);
+      if (d > 0.85 + z.radius && Math.abs(angDiff(p.aim, a)) > (arc || 1) / 2 + z.radius / Math.max(1, d)) continue;
+      this.damageZombie(z, dmg, Math.sin(a), Math.cos(a), p, sk.knock ?? 4);
+      if (z.alive && sk.stun && !z.def.boss) z.stunT = Math.max(z.stunT || 0, sk.stun);
+      n++;
+    }
+    return n;
+  }
+  // estocada: retângulo à frente (alcance x largura), sem atingir quem está atrás
+  mountHitLine(p, range, width, dmg, sk = {}) {
+    const fx = Math.sin(p.aim);
+    const fz = Math.cos(p.aim);
+    let n = 0;
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      const dx = z.pos.x - p.pos.x;
+      const dz = z.pos.z - p.pos.z;
+      const along = dx * fx + dz * fz;
+      const perp = Math.abs(dx * fz - dz * fx);
+      if (along < -0.3 || along > range + z.radius || perp > width / 2 + z.radius) continue;
+      this.damageZombie(z, dmg, fx, fz, p, sk.knock ?? 4);
+      n++;
+    }
+    return n;
+  }
+  // efeito visual/sonoro do golpe (o dano já foi aplicado)
+  mountFx(p, kind, sk) {
+    const fx = Math.sin(p.aim);
+    const fz = Math.cos(p.aim);
+    const col = { praca: 0xffd040, armazem: 0xffc107, vale: 0xd8b080, distrito: 0xff8020, coliseu: 0xffe080, lab: 0x40ffb0, templo: 0xffb040, naval: 0x40e0ff }[p.mountId] || 0xffc107;
+    this.audio.play(sk.sound || 'melee_hit', { volume: 0.7, pos: p.pos, rate: rand(0.85, 1.05) });
+    if (kind === 'area' || kind === 'nova') {
+      this.noiseShake(0.35);
+      for (let k = 0; k < 26; k++) {
+        const a = (k / 26) * Math.PI * 2;
+        this.parts.spawn(p.pos.x, 0.35, p.pos.z, Math.sin(a) * 9, rand(1, 3), Math.cos(a) * 9, 0.11, pick([col, 0xffffff]), 0.55, 6, 2);
+      }
+    } else if (kind === 'sides') {
+      for (const s of [1, -1]) {
+        const ox = p.pos.x + Math.cos(p.aim) * 1.5 * s;
+        const oz = p.pos.z - Math.sin(p.aim) * 1.5 * s;
+        for (let k = 0; k < 10; k++) this.parts.spawn(ox, 0.6, oz, rand(-3, 3), rand(0.5, 2), rand(-3, 3), 0.08, pick([col, 0xffffff]), 0.3, 0, 2);
+      }
+    } else {
+      const reach = kind === 'line' ? (sk.range || 6) : (sk.range || 2.6);
+      for (let k = 0; k < 12; k++) this.parts.spawn(p.pos.x + fx * reach * rand(0.3, 1), rand(0.4, 1.4), p.pos.z + fz * reach * rand(0.3, 1), rand(-2, 2), rand(0.5, 2), rand(-2, 2), 0.08, pick([col, 0xffffff]), 0.3, 0, 2);
+      this.noiseShake(0.18);
+    }
+  }
+  // compatibilidade: o teste da Arena 09 chama sharkAbility
+  sharkAbility(p, i) { this.mountAbility(p, i); }
   // investida: movimento forçado, atropela quem estiver no caminho
   updateDash(p, dt) {
     p.dashT = Math.max(0, p.dashT - dt);
@@ -2861,7 +3004,7 @@ export class Game {
       if (!z.alive || p.dashHit.has(z) || z.def.fly) continue;
       if (Math.hypot(z.pos.x - p.pos.x, z.pos.z - p.pos.z) < z.radius + 0.7) {
         p.dashHit.add(z);
-        this.damageZombie(z, 30 * ram, dx, dz, p, 6 * ram);
+        this.damageZombie(z, (p.dashDmg ?? 30) * ram, dx, dz, p, (p.dashKnock ?? 6) * ram);
       }
     }
     if (p.dashT === 0) p.vel.multiplyScalar(0.2);

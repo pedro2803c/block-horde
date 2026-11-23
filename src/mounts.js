@@ -15,6 +15,7 @@ export const MOUNTS = {
   lab:     { name: 'Exoesqueleto Experimental', hp: 200, speed: 7.0,  weapon: 'm_mount_plasma', color: 0x40ffb0, size: 1.2, kind: 'exo',      seatY: 0.46, seatZ:  0.00 },
   templo:  { name: 'Leão de Sekhmet',           hp: 260, speed: 9.0,  weapon: 'm_mount_roar',   color: 0xd4a040, size: 1.6, kind: 'lion',     seatY: 0.78, seatZ: -0.05 },
   naval:   { name: 'Tubarão Esqueleto',         hp: 360, speed: 9.2,  weapon: 'm_mount_bite',   color: 0x40e0ff, size: 2.0, kind: 'shark',    seatY: 0.94, seatZ: -0.12, noRespawn: true },
+  cemiterio: { name: 'Golem de Ossos', hp: 420, speed: 5.0, weapon: 'm_mount_bone', color: 0xd8c8a0, size: 2.2, kind: 'golem', seatY: 1.20, seatZ: -0.10 },
 };
 
 // Armas das montarias (registradas em WEAPONS)
@@ -22,11 +23,12 @@ const MOUNT_WEAPONS = {
   m_mount_mg:     { name: 'Metralhadora', kind: 'gun',    dmg: 16, range: 24, rate: 0.10, pellets: 1, spread: 0.03, mag: Infinity, ammo: Infinity, color: 0xffd040, sound: 'shot_lmg', heavy: true, kick: 0.05 },
   m_mount_fork:   { name: 'Garfos',       kind: 'gun',    dmg: 34, range: 5,  rate: 0.55, pellets: 1, spread: 0.12, mag: Infinity, ammo: Infinity, color: 0xffc107, sound: 'melee_hit', heavy: true },
   m_mount_tusk:   { name: 'Presas',       kind: 'gun',    dmg: 40, range: 4,  rate: 0.50, pellets: 1, spread: 0.15, mag: Infinity, ammo: Infinity, color: 0xd8b080, sound: 'melee_hit', heavy: true },
-  m_mount_cannon: { name: 'Canhão',       kind: 'rocket', dmg: 95, range: 32, rate: 1.30, speed: 20, pellets: 1, spread: 0, mag: Infinity, ammo: Infinity, color: 0xff8020, sound: 'shot_rifle', heavy: true, kick: 0.4 },
+  m_mount_cannon: { name: 'Canhão',       kind: 'rocket', dmg: 95, range: 32, rate: 1.30, speed: 20, pellets: 1, spread: 0, radius: 3.4, mag: Infinity, ammo: Infinity, color: 0xff8020, sound: 'shot_rifle', heavy: true, kick: 0.4 },
   m_mount_lance:  { name: 'Lança',        kind: 'gun',    dmg: 46, range: 7,  rate: 0.65, pellets: 1, spread: 0.08, mag: Infinity, ammo: Infinity, color: 0xffe080, sound: 'shot_rifle', heavy: true },
   m_mount_plasma: { name: 'Plasma',       kind: 'bolt',   dmg: 24, range: 22, rate: 0.18, speed: 26, pellets: 1, spread: 0, mag: Infinity, ammo: Infinity, color: 0x40ffb0, sound: 'shot_plasma', heavy: false },
-  m_mount_roar:   { name: 'Rugido',              kind: 'flame',  dmg: 10, range: 9,  rate: 0.14, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffb040, sound: 'flame', heavy: false },
+  m_mount_roar:   { name: 'Rugido',              kind: 'flame',  dmg: 18, range: 7,  rate: 0.14, arc: 1.1, burn: { dps: 12, t: 3 }, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffb040, sound: 'flame', heavy: false },
   m_mount_bite:   { name: 'Mandíbulas', kind: 'gun',    dmg: 58, range: 5.5, rate: 0.45, pellets: 1, spread: 0.10, mag: Infinity, ammo: Infinity, color: 0x40e0ff, sound: 'stomp', heavy: true },
+  m_mount_bone:   { name: 'Punho Ósseo', kind: 'gun',    dmg: 55, range: 3.0, rate: 0.60, pellets: 1, spread: 0.10, mag: Infinity, ammo: Infinity, color: 0xd8c8a0, sound: 'melee_hit', heavy: true },
 };
 
 for (const m of Object.values(MOUNTS)) {
@@ -37,28 +39,84 @@ for (const [id, w] of Object.entries(MOUNT_WEAPONS)) {
   if (!WEAPONS[id]) WEAPONS[id] = w;
 }
 
+// ---- Habilidades de combate das montarias (fonte única) ----
+// A ordem segue os botões de habilidade: heavy, dash, second, special (slot 0..3 do HUD/controle/toque).
+// kind: burst (rajada de tiros) | cone (leque frontal) | area (círculo) | line (estocada em linha)
+//       sides (lâminas laterais) | charge (investida que atropela) | bite (mordida curta) | nova (onda em volta) | fury (fúria)
+// O dano é aplicado pelo sistema real do jogo (Game.mountAbility → damageZombie / hitscan / explosion).
+export const MOUNT_SKILLS = {
+  praca: [
+    { act: 'heavy', name: 'Rajada Pesada', icon: 'target', cd: 5, kind: 'burst', shots: 8, dmg: 22, range: 20, spread: 0.05, sound: 'shot_lmg', desc: 'Rajada de 8 tiros da metralhadora pesada, de longo alcance.' },
+    { act: 'dash',  name: 'Atropelamento', icon: 'run',    cd: 8, kind: 'charge', dur: 0.45, dmg: 70, knock: 14, sound: 'roar', desc: 'Acelera e atropela os inimigos à frente.' },
+  ],
+  armazem: [
+    { act: 'heavy',  name: 'Aríete Frontal',       icon: 'paw',   cd: 5, kind: 'cone', range: 3.2, arc: 1.0, dmg: 85, knock: 13, sound: 'hit_armor', desc: 'Golpe dos garfos à frente: dano alto e empurrão forte.' },
+    { act: 'second', name: 'Empurrão Hidráulico',  icon: 'burst', cd: 8, kind: 'cone', range: 3.6, arc: 1.4, dmg: 25, knock: 18, stun: 0.4, sound: 'stomp', desc: 'Empurra todos à frente sem matar: abre espaço para manobrar.' },
+  ],
+  vale: [
+    { act: 'heavy', name: 'Garras',    icon: 'paw', cd: 4, kind: 'cone', range: 3.4, arc: 1.6, dmg: 55, knock: 7, sound: 'blade', desc: 'Garras em leque: fere vários inimigos à frente.' },
+    { act: 'dash',  name: 'Investida', icon: 'run', cd: 7, kind: 'charge', dur: 0.4, dmg: 55, knock: 10, sound: 'roar', desc: 'Corrida curta que atropela quem estiver no caminho.' },
+  ],
+  distrito: [
+    { act: 'heavy', name: 'Metralhadora de Casco', icon: 'target', cd: 4, kind: 'burst', shots: 6, dmg: 18, range: 18, spread: 0.05, sound: 'shot_lmg', desc: 'Seis tiros de metralhadora para alvos próximos.' },
+  ],
+  coliseu: [
+    { act: 'heavy',  name: 'Estocada de Lança', icon: 'target', cd: 5, kind: 'line', range: 8, width: 1.0, dmg: 85, knock: 8, sound: 'blade', desc: 'Estocada longa que fura a fila de inimigos à frente.' },
+    { act: 'dash',   name: 'Atropelamento',     icon: 'run',    cd: 8, kind: 'charge', dur: 0.45, dmg: 70, knock: 14, sound: 'roar', desc: 'Acelera e atropela os inimigos à frente.' },
+    { act: 'second', name: 'Lâminas Laterais',  icon: 'burst',  cd: 6, kind: 'sides', offset: 1.5, radius: 2.0, dmg: 60, knock: 9, sound: 'blade', desc: 'As foices das rodas cortam dos dois lados.' },
+  ],
+  lab: [
+    { act: 'heavy',  name: 'Braço Mecânico',  icon: 'paw',   cd: 4, kind: 'cone', range: 3.0, arc: 1.1, dmg: 70, knock: 11, sound: 'hit_armor', desc: 'Golpe pesado do braço hidráulico à frente.' },
+    { act: 'second', name: 'Pulso Energético', icon: 'burst', cd: 9, kind: 'area', radius: 4.5, dmg: 65, knock: 6, stun: 0.8, sound: 'emp', desc: 'Descarga de plasma em volta: dano em área e atordoa.' },
+  ],
+  templo: [
+    { act: 'heavy',  name: 'Patada Solar',     icon: 'paw',   cd: 4, kind: 'cone', range: 3.2, arc: 1.3, dmg: 65, knock: 10, sound: 'blade', desc: 'Patada de leão com dano alto à frente.' },
+    { act: 'dash',   name: 'Investida Sagrada', icon: 'run',   cd: 8, kind: 'charge', dur: 0.4, dmg: 60, knock: 12, sound: 'roar', desc: 'Avanço sagrado que atropela os inimigos.' },
+    { act: 'second', name: 'Onda Solar',       icon: 'burst', cd: 9, kind: 'area', radius: 5, dmg: 55, knock: 5, burn: { dps: 10, t: 2.5 }, sound: 'wave', desc: 'Onda de fogo em volta: dano em área e queimadura.' },
+  ],
+  cemiterio: [
+    { act: 'heavy',  name: 'Golpe de Ossos',  icon: 'paw',   cd: 4, kind: 'cone', range: 3.6, arc: 1.4, dmg: 80, knock: 10, sound: 'melee_hit', desc: 'Golpe pesado de osso: dano alto a frente.' },
+    { act: 'dash',   name: 'Investida Ossea', icon: 'run',   cd: 8, kind: 'charge', dur: 0.45, dmg: 70, knock: 12, sound: 'stomp', desc: 'Avanco pesado que atropela os inimigos.' },
+    { act: 'second', name: 'Onda de Ossos',    icon: 'burst', cd: 9, kind: 'area', radius: 5, dmg: 70, knock: 6, sound: 'stomp', desc: 'Onda de energia ossea em volta: dano em area.' },
+    { act: 'special', name: 'Furia do Tumulo', icon: 'flame', cd: 18, kind: 'fury', dur: 8, sound: 'roar', desc: 'Por 8 s: mais velocidade de ataque e dano.' },
+  ],
+  naval: [
+    { act: 'heavy',   name: 'Mordida Destruidora', icon: 'paw',   cd: 4,  kind: 'bite', dmg: 160, radius: 1.6, offset: 1.8, knock: 4, sound: 'stomp', desc: 'Mordida frontal de dano muito alto.' },
+    { act: 'dash',    name: 'Investida Abissal',   icon: 'run',   cd: 7,  kind: 'charge', dur: 0.45, dmg: 30, ram: 2, knock: 6, sound: 'roar', desc: 'Avanço rápido que atropela quem estiver no caminho.' },
+    { act: 'second',  name: 'Onda Esquelética',    icon: 'burst', cd: 10, kind: 'nova', radius: 4.5, dmg: 90, knock: 4, stun: 1.0, sound: 'stomp', desc: 'Impacto aquático em volta: dano em área e atordoa.' },
+    { act: 'special', name: 'Fúria Predadora',     icon: 'flame', cd: 18, kind: 'fury', dur: 8, sound: 'roar', desc: 'Por 8 s: mais velocidade de ataque e dano.' },
+  ],
+};
+// atropelamento passivo: dano ao encostar com velocidade (só veículos e montarias pesadas)
+export const MOUNT_RAM = {
+  praca:    { dmg: 26, knock: 9 },
+  armazem:  { dmg: 18, knock: 7 },
+  distrito: { dmg: 30, knock: 11 },
+  coliseu:  { dmg: 28, knock: 10 },
+  vale:     { dmg: 22, knock: 8 },
+  templo:   { dmg: 20, knock: 7 },
+  cemiterio: { dmg: 24, knock: 9 },
+};
+
 // ---- Catálogo (menu MONTARIAS + HUD contextual) — só informação, não altera gameplay ----
 // skills: ações extras da montaria; "act" liga a habilidade à ação configurável em mountControls.js
 export const MOUNT_INFO = {
-  praca:   { arena: 'Cidade Abandonada', desc: 'Veículo militar blindado com metralhadora pesada no teto. Rápido e resistente nas ruas.', traits: ['Veículo', 'Tiro contínuo', 'Alcance longo'], attack: 'Metralhadora: rajada contínua de alcance longo.' },
-  armazem: { arena: 'Complexo Industrial', desc: 'Empilhadeira reforçada que usa os garfos como arma de impacto em curta distância.', traits: ['Veículo', 'Corpo a corpo', 'Resistente'], attack: 'Garfos: golpe frontal forte a curta distância.' },
-  vale:    { arena: 'Floresta Sombria', desc: 'Javali mutante veloz que ataca com presas afiadas.', traits: ['Criatura', 'Corpo a corpo', 'Ágil'], attack: 'Presas: investida curta com dano alto.' },
-  distrito:{ arena: 'Base Militar', desc: 'Tanque pesado e lento, com canhão explosivo de longo alcance.', traits: ['Veículo pesado', 'Explosivo', 'Muito resistente'], attack: 'Canhão: projétil explosivo de longo alcance.' },
-  coliseu: { arena: 'Coliseu', desc: 'Carro de guerra puxado a cavalos, o mais rápido de todos, armado com lança.', traits: ['Carro de guerra', 'Muito rápido', 'Corpo a corpo'], attack: 'Lança: estocada de médio alcance.' },
-  lab:     { arena: 'Laboratório de Pesquisa', desc: 'Armadura experimental que dispara rajadas rápidas de plasma.', traits: ['Armadura', 'Energia', 'Cadência alta'], attack: 'Plasma: projéteis de energia em sequência.' },
-  templo:  { arena: 'Templo Antigo', desc: 'Leão sagrado de Sekhmet que solta um rugido de fogo à frente.', traits: ['Criatura', 'Fogo', 'Área curta'], attack: 'Rugido: jato de fogo em cone à frente.' },
-  naval:   { arena: 'Cemitério Naval', desc: 'Esqueleto de tubarão com mandíbulas enormes e plataforma para o piloto. Unidade única: destruído, não volta na partida.', traits: ['Criatura', 'Corpo a corpo', '4 habilidades', 'Única por partida'], attack: 'Mandíbulas: mordida frontal de curta distância.',
-    skills: [
-      { act: 'heavy',   name: 'Mordida Destruidora', icon: 'paw',    cd: 4,  desc: 'Mordida frontal de dano muito alto.' },
-      { act: 'dash',    name: 'Investida Abissal',   icon: 'run',    cd: 7,  desc: 'Avanço rápido que atropela quem estiver no caminho.' },
-      { act: 'second',  name: 'Onda Esquelética',    icon: 'burst',  cd: 10, desc: 'Impacto aquático em volta: dano em área e atordoa.' },
-      { act: 'special', name: 'Fúria Predadora',     icon: 'flame',  cd: 18, desc: 'Por 8 s: mais velocidade de ataque e dano.' },
-    ] },
+  praca:   { arena: 'Cidade Abandonada', desc: 'Veículo militar blindado com metralhadora pesada no teto. Rápido e resistente nas ruas.', traits: ['Veículo', 'Tiro contínuo', 'Alcance longo'], attack: 'Metralhadora: rajada contínua; rajada pesada e atropelamento.' },
+  armazem: { arena: 'Complexo Industrial', desc: 'Empilhadeira reforçada que usa os garfos como arma de impacto em curta distância.', traits: ['Veículo', 'Corpo a corpo', 'Resistente'], attack: 'Garfos: golpe frontal, aríete e empurrão hidráulico.' },
+  vale:    { arena: 'Floresta Sombria', desc: 'Javali mutante veloz que ataca com presas afiadas.', traits: ['Criatura', 'Corpo a corpo', 'Ágil'], attack: 'Presas: mordida curta, garras e investida.' },
+  distrito:{ arena: 'Base Militar', desc: 'Tanque pesado e lento, com canhão explosivo de longo alcance.', traits: ['Veículo pesado', 'Explosivo', 'Muito resistente'], attack: 'Canhão explosivo e metralhadora de casco.' },
+  coliseu: { arena: 'Coliseu', desc: 'Carro de guerra puxado a cavalos, o mais rápido de todos, armado com lança.', traits: ['Carro de guerra', 'Muito rápido', 'Corpo a corpo'], attack: 'Lança: estocada, atropelamento e lâminas laterais.' },
+  lab:     { arena: 'Laboratório de Pesquisa', desc: 'Armadura experimental que dispara rajadas rápidas de plasma.', traits: ['Armadura', 'Energia', 'Cadência alta'], attack: 'Plasma: rajadas, braço mecânico e pulso energético.' },
+  templo:  { arena: 'Templo Antigo', desc: 'Leão sagrado de Sekhmet que solta um rugido de fogo à frente.', traits: ['Criatura', 'Fogo', 'Área curta'], attack: 'Rugido de fogo, patada solar, investida e onda solar.' },
+  naval:   { arena: 'Cemitério Naval', desc: 'Esqueleto de tubarão com mandíbulas enormes e plataforma para o piloto. Unidade única: destruído, não volta na partida.', traits: ['Criatura', 'Corpo a corpo', '4 habilidades', 'Única por partida'], attack: 'Mandíbulas: mordida frontal de curta distância.' },
+  cemiterio: { arena: 'Necrópole', desc: 'Golem de ossos animado por magia negra. Lento, pesado e devastador em combate corpo a corpo.', traits: ['Criatura', 'Corpo a corpo', 'Pesado', '4 habilidades'], attack: 'Punho ósseo: golpe pesado de curta distância.' },
 };
+// cada montaria recebe suas habilidades reais no catálogo/HUD/controles
+for (const [id, list] of Object.entries(MOUNT_SKILLS)) if (MOUNT_INFO[id]) MOUNT_INFO[id].skills = list;
 // ordem do catálogo; entradas "future" ainda não existem no jogo (só aparecem como "Em breve")
 export const MOUNT_CATALOG = [
   'praca', 'armazem', 'vale', 'distrito',
-  { id: 'cemiterio', future: true, name: 'Golem de Ossos', arena: 'Necrópole', desc: 'Montaria planejada para a Necrópole. Ainda não está disponível no jogo.' },
+  'cemiterio',
   'coliseu', 'lab', 'templo', 'naval',
 ];
 
@@ -68,6 +126,15 @@ export function mountForArena(arenaId) { return MOUNTS[arenaId] || null; }
 export function mountDef(id) { return MOUNTS[id] || null; }
 export function allMountIds() { return Object.keys(MOUNTS); }
 export function mountWeaponDef(id) { return MOUNT_WEAPONS[id] || null; }
+export function mountSkills(id) { return MOUNT_SKILLS[id] || null; }
+// habilidade da montaria no slot do botão (0..3): heavy, dash, second, special
+const MOUNT_SLOT = { heavy: 0, dash: 1, second: 2, special: 3 };
+export function mountSkillAt(id, slot) {
+  const list = MOUNT_SKILLS[id];
+  if (!list) return null;
+  return list.find((s) => MOUNT_SLOT[s.act] === slot) || null;
+}
+export function mountRam(id) { return MOUNT_RAM[id] || null; }
 
 // Desenha o modelo 3D voxel de cada montaria (+ marcador luminoso quando estacionada)
 export function drawMount(B, G, wm, time, near = false) {
@@ -309,6 +376,19 @@ export function drawMount(B, G, wm, time, near = false) {
       break;
     }
 
+    case 'golem': {
+      const s = Math.sin(w) * 0.18;
+      box(0, 0.55, 0, 1.3, 1.1, 1.1, 0xc8b890);
+      box(0, 1.35, 0, 1.0, 0.9, 0.9, 0xd8c8a0);
+      box(0, 1.95, 0, 0.7, 0.6, 0.7, 0xe8d8b0);
+      p(-0.85, 1.3, 0, s, 0, 0, 0, 0, 0.35, 0.9, 0.35, 0xb8a880);
+      p(0.85, 1.3, 0, -s, 0, 0, 0, 0, 0.35, 0.9, 0.35, 0xb8a880);
+      p(-0.35, 0.2, 0.2, 0, 0, 0, 0, 0, 0.4, 0.4, 0.4, 0xa89870);
+      p(0.35, 0.2, 0.2, 0, 0, 0, 0, 0, 0.4, 0.4, 0.4, 0xa89870);
+      glow(-0.18, 2.0, 0.32, 0.12, 0.10, 0.06, 0x2ecc71);
+      glow(0.18, 2.0, 0.32, 0.12, 0.10, 0.06, 0x2ecc71);
+      break;
+    }
     case 'lion':
     default: {
       // LEÃO DE SEKHMET (templo)

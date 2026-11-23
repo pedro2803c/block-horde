@@ -609,7 +609,7 @@ function drawSpecter(B, G, base, z, col, t) {
   }
 }
 
-const BODIES = { spider: drawSpider, bat: drawBat, dog: drawDog, spore: drawSpore, wasp: drawWasp, specter: drawSpecter };
+const BODIES = { spider: drawSpider, bat: drawBat, dog: drawDog, spore: drawSpore, wasp: drawWasp, specter: drawSpecter, nv_crab: drawNvCrab, nv_octopus: drawNvOctopus, nv_angler: drawNvAngler, nv_shark: drawNvShark, nv_serpent: drawNvSerpent, nv_mimic: drawNvMimic };
 
 // ------------------------------------------------------------------ Egito Antigo (só no Templo Antigo)
 const GOLD = 0xd4a020;
@@ -1943,6 +1943,96 @@ BODIES.rm_eagle = drawRmEagle;
 OTHER_COLORS.rm_eagle = [0x9a30d0, GOLD];
 
 // Desenha um inimigo. z = { type, def, look, pos, facing, scale, walk, hurtT, attackT, state, alive, deadT, fallDir, rise, flyY }
+// ------------------------------------------------------------------ Cemitério Naval — criaturas marinhas com anatomia própria
+function drawNvCrab(B, G, base, z, col, t) {
+  const m = base;
+  // carapaça
+  B.part(m, 0, 0.5, 0, 0, 0, 0, 0, 0, 1.6, 0.7, 2.0, col(0xc84830));
+  // pinças
+  B.part(m, -1.1, 0.7, 0.6, 0, 0.3, 0, 0, 0, 0, 0.7, 0.5, 0.9, col(0x7a2c1e));
+  B.part(m, 1.1, 0.7, 0.6, 0, -0.3, 0, 0, 0, 0, 0.7, 0.5, 0.9, col(0x7a2c1e));
+  // patas (6)
+  for (let i = 0; i < 3; i++) {
+    const x = -1.2 + i * 0.6;
+    B.part(m, x, 0.15, 0.9, 0, 0, 0, 0, 0, 0, 0.25, 0.3, 0.25, col(0x7a2c1e));
+    B.part(m, x, 0.15, -0.9, 0, 0, 0, 0, 0, 0, 0.25, 0.3, 0.25, col(0x7a2c1e));
+  }
+  // olhos
+  G.part(m, -0.3, 0.85, 1.0, 0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.12, 0xffe060);
+  G.part(m, 0.3, 0.85, 1.0, 0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.12, 0xffe060);
+}
+function drawNvOctopus(B, G, base, z, col, t) {
+  const m = base;
+  // cabeça
+  B.part(m, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 1.4, 1.2, 1.4, col(0x3c4468));
+  // tentáculos (8)
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const x = Math.sin(a) * 1.0;
+    const zp = Math.cos(a) * 1.0;
+    B.part(m, x, 0.3, zp, 0, a, 0, 0, 0, 0, 0.22, 0.6, 0.22, col(0x1e2438));
+  }
+  // olhos
+  G.part(m, -0.35, 1.1, 0.7, 0, 0, 0, 0, 0, 0, 0.2, 0.2, 0.12, 0xff2a1a);
+  G.part(m, 0.35, 1.1, 0.7, 0, 0, 0, 0, 0, 0, 0.2, 0.2, 0.12, 0xff2a1a);
+}
+function drawNvAngler(B, G, base, z, col, t) {
+  const m = base;
+  // corpo de peixe
+  B.part(m, 0, 0.6, 0, 0, 0, 0, 0, 0, 0, 0.9, 0.7, 1.8, col(0x286274));
+  // boca
+  B.part(m, 0, 0.5, 1.0, 0, 0, 0, 0, 0, 0, 0.7, 0.4, 0.4, col(0x1a3a44));
+  // dente
+  B.part(m, 0, 0.35, 1.2, 0, 0, 0, 0, 0, 0, 0.12, 0.25, 0.12, 0xeeeecc);
+  // lanterna
+  G.part(m, 0, 1.3, 0.6, 0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.18, 0x40e8ff);
+  // cauda
+  B.part(m, 0, 0.6, -1.1, 0, 0, 0, 0, 0, 0, 0.15, 0.4, 0.6, col(0x286274));
+}
+function drawNvShark(B, G, base, z, col, t) {
+  const m = base;
+  // corpo hidrodinâmico
+  B.part(m, 0, 0.6, 0, 0, 0, 0, 0, 0, 0, 0.7, 0.6, 2.4, col(0x3a6a84));
+  // nadadeira dorsal
+  B.part(m, 0, 1.1, 0, 0, 0, 0, 0, 0, 0, 0.12, 0.5, 0.6, col(0x1e3a4c));
+  // cauda
+  B.part(m, 0, 0.6, -1.4, 0, 0, 0, 0, 0, 0, 0.4, 0.5, 0.6, col(0x3a6a84));
+  // mandíbula
+  B.part(m, 0, 0.35, 1.1, 0, 0, 0, 0, 0, 0, 0.6, 0.25, 0.5, col(0x1e3a4c));
+  // olho
+  G.part(m, 0.3, 0.75, 0.9, 0, 0, 0, 0, 0, 0, 0.1, 0.1, 0.06, 0xff2a1a);
+}
+function drawNvSerpent(B, G, base, z, col, t) {
+  const m = base;
+  // segmentos
+  for (let i = 0; i < 6; i++) {
+    const x = (i - 2.5) * 0.7;
+    B.part(m, x, 0.5 + Math.sin(t*2 + i)*0.1, 0, 0, 0, 0, 0, 0, 0, 0.45, 0.45, 0.5, col(0x1e7a64));
+  }
+  // cabeça
+  B.part(m, 3.0, 0.7, 0, 0, 0.3, 0, 0, 0, 0, 0.7, 0.6, 0.8, col(0x30d890));
+  // mandíbula
+  B.part(m, 3.4, 0.5, 0, 0, 0, 0, 0, 0, 0, 0.5, 0.3, 0.4, col(0x1a5a44));
+}
+function drawNvMimic(B, G, base, z, col, t) {
+  const m = base;
+  // baú
+  B.part(m, 0, 0.4, 0, 0, 0, 0, 0, 0, 0, 1.4, 0.7, 1.0, col(0x8a5828));
+  // tampa aberta
+  B.part(m, 0, 1.0, -0.3, 0.6, 0, 0, 0, 0, 0, 1.4, 0.25, 0.9, col(0x6a4020));
+  // dentes
+  for (let i = 0; i < 5; i++) {
+    const x = -0.5 + i * 0.25;
+    B.part(m, x, 0.75, 0.4, 0, 0, 0, 0, 0, 0, 0.08, 0.2, 0.08, 0xeeeecc);
+  }
+  // pernas
+  B.part(m, -0.5, 0.1, 0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  B.part(m, 0.5, 0.1, 0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  B.part(m, -0.5, 0.1, -0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  B.part(m, 0.5, 0.1, -0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  // língua
+  B.part(m, 0, 0.6, 0.5, 0, 0, 0, 0, 0, 0, 0.15, 0.12, 0.4, 0xcc3333);
+}
 export function drawEnemy(B, G, z, t) {
   const type = z.type;
   const def = z.def;
