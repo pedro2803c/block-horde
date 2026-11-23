@@ -365,6 +365,8 @@ export class Game {
     // montaria: a partida começa a pé; ela só é liberada quando o chefe realmente aparece (releaseMount)
     this.worldMount = null;
     this.mountPending = montariaDaArena && !demo ? { id: arenaDef.id, def: montariaDaArena } : null;
+    this.mountDef = montariaDaArena || null;
+    this.mountReleases = 0;
     this.camTarget.set(center.x, 0, center.z);
     if (demo) {
       const demoPool = ['walker', 'walker', ...ENEMY_ORDER.filter((t) => !ENEMIES[t].boss && isEnemyAllowedInArena(t, arenaDef.id))];
@@ -1737,9 +1739,19 @@ export class Game {
 
   // libera a montaria exclusiva da arena (uma vez por partida) no ponto livre perto do jogador e longe do chefe
   releaseMount(boss) {
+    if (this.mountReleases >= 3) return;
+    if (this.worldMount && this.worldMount.alive) {
+      const wm = this.worldMount;
+      if (wm.rider) { this.dismount(wm.rider, true); }
+      wm.alive = false; wm.hp = 0;
+    }
+    this.worldMount = null;
+    if (!this.mountPending && this.mountDef) this.mountPending = { id: this.arena.def.id, def: this.mountDef };
     const pend = this.mountPending;
-    if (!pend || this.worldMount) return;
+    if (!pend) return;
     this.mountPending = null;
+    this.mountReleases += 1;
+    const releaseN = this.mountReleases;
     const A = this.arena;
     const p = this.players.find((q) => q.alive) || this.players[0];
     const R = Math.max(1.35, pend.def.size * 0.8);
@@ -1760,7 +1772,8 @@ export class Game {
     for (const q of this.players) q.mountId = pend.id;
     for (let k = 0; k < 24; k++) this.parts.spawn(spot.x, 0.3, spot.z, rand(-3, 3), rand(2, 5), rand(-3, 3), 0.12, pick([0xffc107, 0x29b6f6, 0xffffff]), 0.8, 8, 2);
     this.audio.play('pickup', { volume: 0.9, priority: true });
-    for (const q of this.players) this.ui.toast(q.id, `Montaria liberada: ${pend.def.name}! Siga o marcador`, 'vehicle');
+    const msg = releaseN === 1 ? 'Uma montaria esta disponivel!' : releaseN === 2 ? 'Nova montaria liberada!' : 'Ultima montaria disponivel! Prepare-se para o confronto final!';
+    for (const q of this.players) this.ui.toast(q.id, msg, 'vehicle');
   }
 
   // --- montaria 3D ---
