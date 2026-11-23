@@ -13,3 +13,4 @@ tests/resultado-controles.json
 tests/hud-shots/
 tests/resultado-desempenho.json
 tests/resultado-fumaca.json
+tests/resultado-arenas-evento.json

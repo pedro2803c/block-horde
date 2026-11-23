@@ -28,6 +28,8 @@ function h(tag, attrs = {}, ...kids) {
 const fmt = (n) => Math.floor(n).toLocaleString('pt-BR');
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const tip = () => TIPS[Math.floor(Math.random() * TIPS.length)];
+// rótulo curto do evento climático no chip do topo (todos os eventos de EVENT_INFO em Game.js)
+const EVENT_LABEL = { rain: 'CHUVA', blackout: 'APAGÃO', fog: 'NEBLINA', alarm: 'REFORÇOS', hordealarm: 'ALARME', overload: 'SOBRECARGA', breach: 'BRECHA', trial: 'PROVAÇÃO', curse: 'MALDIÇÃO' };
 
 // Quantidade de colunas da escolha de sobreviventes: aproveita a largura,
 // evita uma linha com um único cartão e equilibra o tamanho das linhas.
