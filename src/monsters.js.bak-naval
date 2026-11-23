@@ -1,0 +1,2107 @@
+import * as THREE from 'three';
+import { baseMatrix, drawCharacter } from './render.js';
+
+// Modelos 3D dos inimigos, feitos de caixas.
+// Humanoides usam o esqueleto de drawCharacter (render.js) com peças extras;
+// aranha, morcego, cão e esporo têm esqueletos próprios desenhados aqui.
+// extras: [osso, cx, cy, cz, sx, sy, sz, cor, rx?, rz?, brilho?]
+
+const SWAP = { armL: 'armR', armR: 'armL', legL: 'legR', legR: 'legL' };
+function mirror(...parts) {
+  const out = [];
+  for (const e of parts) {
+    out.push(e);
+    const m = e.slice();
+    m[0] = SWAP[e[0]] || e[0];
+    m[1] = -e[1];
+    if (m[9]) m[9] = -m[9];
+    out.push(m);
+  }
+  return out;
+}
+
+const BLOOD = 0x8a1610;
+const BLOOD_D = 0x5a0c08;
+const TEETH = 0xeee4cc;
+const GLOW = true;
+
+// rosto bravo: olhos brilhantes inclinados, sobrancelha e boca com dentes
+function face(eye, { brow = 0x2a1a14, mouth = 0x2a0606, open = 0.12, fangs = true } = {}) {
+  return [
+    ...mirror(
+      ['head', 0.13, 0.33, 0.276, 0.12, 0.07, 0.02, eye, 0, 0.28, GLOW],
+      ['head', 0.13, 0.405, 0.278, 0.17, 0.045, 0.025, brow, 0, 0.38],
+    ),
+    ['head', 0, 0.15, 0.277, 0.3, open, 0.02, mouth],
+    ...(fangs ? mirror(['head', 0.09, 0.15 + open / 2 - 0.03, 0.284, 0.05, 0.06, 0.015, TEETH], ['head', 0.06, 0.15 - open / 2 + 0.025, 0.284, 0.04, 0.05, 0.015, TEETH]) : []),
+  ];
+}
+
+// ------------------------------------------------------------------ humanoides
+const ZUMBI_SKIN = 0x7fae4a;
+const ZUMBI_SHIRT = 0xd6cfbd;
+const ZUMBI_HAIR = 0x4a3220;
+
+const PALE = 0xd2b6a0;
+const PALE_D = 0xbc9e88;
+const STONE = 0x6a5a52;
+const STONE_D = 0x4e423c;
+const LAVA = 0xff5a1a;
+const ROBE = 0x4a2a62;
+const ROBE_D = 0x37204a;
+const ARMOR = 0x464a50;
+const ARMOR_L = 0x5c6168;
+const ARMOR_D = 0x2c2f33;
+
+const HUMANS = {
+  walker: {
+    skin: ZUMBI_SKIN, shirt: ZUMBI_SHIRT, sleeve: ZUMBI_SKIN, pants: 0x5f6b3a, boots: 0x3a3424, noFace: true, arms: 'reach',
+    extras: [
+      ...face(0xb4ff3a),
+      // cabelo
+      ['head', 0, 0.56, -0.02, 0.57, 0.08, 0.58, ZUMBI_HAIR],
+      ['head', 0, 0.4, -0.275, 0.57, 0.3, 0.04, ZUMBI_HAIR],
+      ...mirror(['head', 0.275, 0.46, -0.08, 0.03, 0.16, 0.36, ZUMBI_HAIR]),
+      ['head', 0.06, 0.53, 0.26, 0.2, 0.06, 0.06, ZUMBI_HAIR],
+      // camisa rasgada com manga curta e sangue
+      ...mirror(['armL', 0, -0.07, 0, 0.2, 0.16, 0.22, ZUMBI_SHIRT]),
+      ['torso', 0.17, -0.04, 0, 0.1, 0.09, 0.3, ZUMBI_SHIRT],
+      ['torso', -0.06, -0.05, 0, 0.09, 0.11, 0.3, ZUMBI_SHIRT],
+      ['torso', 0.08, 0.32, 0.166, 0.2, 0.2, 0.012, BLOOD],
+      ['torso', -0.14, 0.12, 0.166, 0.13, 0.1, 0.012, BLOOD],
+      ['torso', -0.12, 0.38, 0.166, 0.08, 0.08, 0.012, ZUMBI_SKIN],
+      ['armR', 0, -0.3, 0.096, 0.09, 0.1, 0.012, BLOOD],
+      // calça rasgada mostrando a pele
+      ['legL', 0, -0.35, 0.121, 0.12, 0.08, 0.012, ZUMBI_SKIN],
+      ['legR', -0.106, -0.26, 0.03, 0.012, 0.1, 0.1, ZUMBI_SKIN],
+      ['legR', 0, -0.2, 0.121, 0.08, 0.06, 0.012, BLOOD_D],
+    ],
+  },
+
+  runner: {
+    skin: 0xc9c1b1, shirt: 0xdcd6c6, sleeve: 0xc9c1b1, pants: 0x3c3c3c, boots: 0x2c2a28, noFace: true, arms: 'run',
+    extras: [
+      ...face(0xff3a2a),
+      ['head', 0, 0.56, 0, 0.5, 0.03, 0.5, 0xb8b0a0],
+      // regata: ombros de fora
+      ...mirror(['torso', 0.235, 0.43, 0, 0.08, 0.13, 0.33, 0xc9c1b1]),
+      ['torso', 0, 0.48, 0.166, 0.16, 0.08, 0.012, 0xc9c1b1],
+      ['torso', -0.1, 0.22, 0.166, 0.14, 0.16, 0.012, BLOOD],
+      ['torso', 0.13, 0.08, 0.166, 0.09, 0.08, 0.012, 0xb0a890],
+      // bermuda: canelas de fora
+      ...mirror(['legL', 0, -0.35, 0, 0.215, 0.2, 0.245, 0xc9c1b1]),
+      ['legL', 0, -0.25, 0.123, 0.21, 0.04, 0.012, 0x2a2a2a],
+      ['armL', 0, -0.32, 0.096, 0.07, 0.08, 0.012, BLOOD],
+    ],
+  },
+
+  brute: {
+    skin: PALE, shirt: PALE, sleeve: PALE, hands: 0xa82020, pants: 0x5a4232, boots: 0x332620, noFace: true, arms: 'brawl',
+    extras: [
+      ...face(0xff3020, { open: 0.14 }),
+      ['head', 0, 0.06, 0.27, 0.44, 0.1, 0.05, PALE_D],
+      // peito largo, suspensórios e cinto
+      ['torso', 0, 0.36, 0.17, 0.5, 0.18, 0.04, PALE_D],
+      ...mirror(
+        ['torso', 0.14, 0.26, 0.168, 0.07, 0.52, 0.015, 0x6a4428],
+        ['torso', 0.14, 0.26, -0.168, 0.07, 0.52, 0.015, 0x6a4428],
+        ['torso', 0.14, 0.42, 0.178, 0.09, 0.07, 0.015, 0xb89040],
+      ),
+      ['torso', 0, 0.025, 0, 0.58, 0.08, 0.36, 0x4a3020],
+      ['torso', 0, 0.025, 0.182, 0.1, 0.07, 0.015, 0xb89040],
+      ['torso', -0.16, 0.2, 0.172, 0.1, 0.12, 0.012, BLOOD],
+      ['head', -0.13, 0.5, 0.276, 0.08, 0.06, 0.012, BLOOD],
+      // ombreiras com espinhos, braçadeiras e luvas grandes
+      ...mirror(
+        ['armL', 0.03, -0.03, 0, 0.3, 0.17, 0.3, 0x55555c],
+        ['armL', 0.07, 0.11, 0.07, 0.07, 0.16, 0.07, 0xb4b4bc, 0, -0.45],
+        ['armL', 0.07, 0.11, -0.07, 0.07, 0.16, 0.07, 0xb4b4bc, 0, -0.45],
+        ['armL', 0, -0.33, 0, 0.23, 0.14, 0.25, 0x5e5e66],
+        ['armL', 0.116, -0.33, 0.06, 0.012, 0.04, 0.04, 0xa8a8b0],
+        ['armL', 0.116, -0.33, -0.06, 0.012, 0.04, 0.04, 0xa8a8b0],
+        ['armL', 0, -0.48, 0, 0.25, 0.19, 0.27, 0xa82020],
+      ),
+      ['armR', 0, -0.16, 0.096, 0.07, 0.09, 0.012, BLOOD],
+    ],
+  },
+
+  spitter: {
+    skin: 0x7e9a48, shirt: 0x7e9a48, sleeve: 0x7e9a48, pants: 0x5a4a34, boots: 0x3a3022, noFace: true, arms: 'reach',
+    extras: [
+      ...face(0x9aff3a, { open: 0.18, mouth: 0x1e1406 }),
+      ['head', 0.03, 0.02, 0.29, 0.09, 0.16, 0.04, 0x8aff3a, 0, 0, GLOW],
+      ['head', 0, 0.56, 0, 0.5, 0.03, 0.5, 0x6e8a40],
+      // barriga inchada, feridas e ombros grossos
+      ['torso', 0, 0.2, 0.19, 0.52, 0.38, 0.12, 0x8aa856],
+      ['torso', 0, 0.14, 0.255, 0.36, 0.22, 0.02, 0xa4b878],
+      ['torso', 0.14, 0.3, 0.256, 0.12, 0.12, 0.012, BLOOD],
+      ['torso', -0.18, 0.08, 0.256, 0.1, 0.1, 0.012, BLOOD_D],
+      ['torso', 0, 0.025, 0, 0.6, 0.07, 0.4, 0x4a3a24],
+      ...mirror(['armL', 0.02, -0.08, 0, 0.23, 0.22, 0.25, 0x7e9a48]),
+      ['armL', 0, -0.25, 0.1, 0.08, 0.1, 0.012, BLOOD],
+    ],
+  },
+
+  bloater: {
+    skin: PALE, shirt: PALE, sleeve: PALE, pants: 0x4a3a2c, boots: 0x2c241c, noFace: true, arms: 'reach',
+    extras: [
+      ...face(0xff3020),
+      // cinto de dinamite (frente, lados e costas) com fita
+      ...[-0.2, -0.07, 0.07, 0.2].map((x) => ['torso', x, 0.17, 0.205, 0.11, 0.3, 0.1, 0xc02a1e]),
+      ...[-0.2, -0.07, 0.07, 0.2].map((x) => ['torso', x, 0.17, -0.205, 0.11, 0.3, 0.1, 0xb02418]),
+      ...mirror(['torso', 0.31, 0.17, 0.06, 0.1, 0.3, 0.1, 0xb02418], ['torso', 0.31, 0.17, -0.06, 0.1, 0.3, 0.1, 0xc02a1e]),
+      ['torso', 0, 0.21, 0, 0.66, 0.05, 0.44, 0x3a2a1a],
+      ['torso', 0, 0.1, 0, 0.66, 0.04, 0.44, 0x3a2a1a],
+      // alças cruzadas
+      ['torso', 0, 0.37, 0.168, 0.07, 0.5, 0.015, 0x5a3a20, 0, 0.62],
+      ['torso', 0, 0.37, 0.168, 0.07, 0.5, 0.015, 0x5a3a20, 0, -0.62],
+      // pavio aceso no ombro
+      ['armL', 0.02, 0.07, 0.04, 0.05, 0.14, 0.05, 0x2a2a2a],
+      ['armL', 0.02, 0.17, 0.04, 0.1, 0.1, 0.1, 0xffa020, 0.6, 0.6, GLOW],
+      ['torso', 0.17, 0.42, 0.166, 0.1, 0.1, 0.012, BLOOD],
+      ['armR', 0, -0.25, 0.096, 0.08, 0.12, 0.012, BLOOD],
+    ],
+  },
+
+  armored: {
+    skin: 0x8a8a80, shirt: ARMOR, sleeve: ARMOR, hands: ARMOR_D, pants: 0x2e3034, boots: 0x1c1d20, noFace: true, arms: 'shield',
+    extras: [
+      // capacete fechado com visor e olhos vermelhos
+      ['head', 0, 0.3, 0, 0.62, 0.62, 0.62, ARMOR_L],
+      ['head', 0, 0.63, 0, 0.12, 0.06, 0.52, ARMOR],
+      ['head', 0, 0.33, 0.312, 0.48, 0.13, 0.02, 0x0e0e10],
+      ...mirror(['head', 0.11, 0.33, 0.32, 0.1, 0.055, 0.015, 0xff2a2a, 0, 0.2, GLOW]),
+      ['head', 0, 0.17, 0.313, 0.42, 0.03, 0.02, ARMOR_D],
+      ['head', 0, 0.1, 0.313, 0.42, 0.03, 0.02, ARMOR_D],
+      // peitoral, ombreiras e joelheiras
+      ['torso', 0, 0.3, 0.18, 0.5, 0.38, 0.05, ARMOR_L],
+      ['torso', 0, 0.3, 0.206, 0.04, 0.3, 0.01, ARMOR_D],
+      ['torso', 0, 0.03, 0, 0.58, 0.08, 0.36, ARMOR_D],
+      ...mirror(['armL', 0.03, -0.05, 0, 0.27, 0.18, 0.28, ARMOR_L], ['legL', 0, -0.26, 0.13, 0.2, 0.14, 0.04, ARMOR_L]),
+      // escudo antimotim no braço esquerdo (eixo z local = para cima com o braço erguido)
+      ['armL', -0.04, -0.5, -0.2, 0.64, 0.08, 0.9, 0x55595f],
+      ['armL', -0.04, -0.545, -0.2, 0.68, 0.02, 0.94, 0x3a3d42],
+      ['armL', -0.04, -0.552, 0.08, 0.34, 0.015, 0.11, 0x9aa4ac],
+      ['armL', -0.04, -0.553, 0.08, 0.27, 0.016, 0.05, 0x2a3036],
+      ['armL', -0.04, -0.556, -0.5, 0.6, 0.014, 0.2, 0x1a1a1a],
+      ...[-0.24, -0.08, 0.08, 0.24].map((x) => ['armL', -0.04 + x, -0.558, -0.5, 0.08, 0.015, 0.2, 0xf0c020]),
+    ],
+  },
+
+  summoner: {
+    skin: 0x24182c, shirt: ROBE, sleeve: ROBE, hands: 0x9a8aa8, pants: ROBE_D, boots: 0x1e1424, noFace: true, arms: 'staff',
+    extras: [
+      ...mirror(['head', 0.12, 0.3, 0.276, 0.11, 0.06, 0.02, 0xd060ff, 0, 0.22, GLOW]),
+      // capuz
+      ['head', 0, 0.58, -0.02, 0.66, 0.1, 0.66, ROBE],
+      ...mirror(['head', 0.31, 0.27, -0.02, 0.06, 0.62, 0.64, ROBE]),
+      ['head', 0, 0.27, -0.32, 0.66, 0.62, 0.06, ROBE],
+      ['head', 0, 0.52, 0.31, 0.62, 0.1, 0.04, ROBE_D],
+      ['head', 0, 0.62, -0.26, 0.3, 0.14, 0.22, ROBE],
+      // manto até os pés, cinto e barra
+      ['torso', 0, -0.25, 0, 0.62, 0.52, 0.4, 0x44265a],
+      ['torso', 0, -0.49, 0, 0.66, 0.06, 0.44, 0x5e3a78],
+      ['torso', 0, 0.04, 0, 0.6, 0.07, 0.38, 0x5a3a20],
+      ['torso', 0, 0.04, 0.2, 0.1, 0.08, 0.02, 0xc8a040],
+      ['torso', 0, 0.3, 0.166, 0.08, 0.5, 0.012, 0x5e3a78],
+      ...mirror(['armL', 0, -0.38, 0, 0.22, 0.12, 0.24, 0x5e3a78]),
+      // cajado com cristal roxo (com o braço erguido, o eixo z local aponta para cima)
+      ['armR', -0.06, -0.46, 0.15, 0.065, 0.065, 1.75, 0x6a4a2a],
+      ['armR', -0.06, -0.46, 0.98, 0.24, 0.05, 0.05, 0x6a4a2a],
+      ['armR', -0.06, -0.46, 1.16, 0.16, 0.16, 0.3, 0xc070ff, 0, 0, GLOW],
+      ['armR', -0.06, -0.46, 1.16, 0.13, 0.13, 0.13, 0xf0c0ff, 0.785, 0.785, GLOW],
+    ],
+  },
+
+  reaper: {
+    skin: 0xb8b0a0, shirt: 0x2e2438, sleeve: 0x2e2438, hands: 0x9a9284, pants: 0x241c2e, boots: 0x140f18, noFace: true, arms: 'reach',
+    extras: [
+      ...face(0xff3020, { brow: 0x1a121e, mouth: 0x1a0608, open: 0.1, fangs: false }),
+      // capuz pontudo com abertura no rosto
+      ['head', 0, 0.58, -0.02, 0.64, 0.12, 0.64, 0x2e2438],
+      ...mirror(['head', 0.31, 0.27, -0.02, 0.06, 0.64, 0.64, 0x2e2438]),
+      ['head', 0, 0.27, -0.32, 0.64, 0.64, 0.06, 0x2e2438],
+      ['head', 0, 0.52, 0.31, 0.6, 0.1, 0.04, 0x3e3050],
+      ['head', 0, 0.66, -0.26, 0.3, 0.14, 0.22, 0x2e2438],
+      ['head', 0, 0.1, 0.286, 0.24, 0.08, 0.03, 0x1a121e],
+      // manto esfarrapado e cinto
+      ['torso', 0, -0.24, 0, 0.62, 0.5, 0.42, 0x342840],
+      ['torso', 0, -0.48, 0, 0.66, 0.08, 0.46, 0x3e2e4a],
+      ...[-0.22, 0, 0.22].map((x, i) => ['torso', x, -0.36 - (i % 2) * 0.04, 0.21, 0.14, 0.2, 0.02, 0x241a2e]),
+      ['torso', 0, 0.02, 0, 0.62, 0.08, 0.4, 0x1a1220],
+      ['torso', 0, 0.3, 0.166, 0.06, 0.5, 0.012, 0x6a2438],
+      ['torso', 0, 0.32, 0.172, 0.1, 0.06, 0.015, 0x9a9284],
+      // ombreiras e duas lâminas presas aos braços
+      ...mirror(
+        ['armL', 0.03, -0.02, 0, 0.28, 0.16, 0.3, 0x3e3050],
+        ['armL', 0, -0.28, 0, 0.2, 0.24, 0.22, 0x342840],
+        ['armL', 0, -0.44, 0, 0.11, 0.08, 0.2, 0x8a1a2a, 0, 0, GLOW],
+        ['armL', 0, -0.68, 0, 0.06, 0.5, 0.16, 0xb8bcc4],
+        ['armL', 0, -0.92, 0, 0.04, 0.18, 0.1, 0xe8eef4],
+        ['armL', 0, -0.7, 0.09, 0.07, 0.4, 0.015, 0xffffff],
+        ['armL', 0, -0.6, -0.09, 0.07, 0.3, 0.015, 0x7a8088],
+      ),
+    ],
+  },
+
+  boss: {
+    skin: STONE, shirt: 0x5e4e46, sleeve: STONE, hands: 0x6a3a2c, pants: STONE_D, boots: 0x3a302a, noFace: true, arms: 'brawl',
+    extras: [
+      ...face(0xff3a1a, { brow: STONE_D, open: 0.16 }),
+      // chifres vermelhos
+      ...mirror(
+        ['head', 0.3, 0.6, 0, 0.13, 0.32, 0.13, 0xb01c1c, 0, -0.55],
+        ['head', 0.42, 0.8, 0, 0.09, 0.22, 0.09, 0xd83030, 0, -0.15],
+      ),
+      ['head', 0, 0.44, 0.285, 0.5, 0.07, 0.04, STONE_D],
+      ['head', -0.15, 0.5, 0.277, 0.025, 0.12, 0.01, LAVA, 0, 0.4, GLOW],
+      // rachaduras de lava no corpo
+      ['torso', 0.06, 0.3, 0.166, 0.03, 0.3, 0.012, LAVA, 0, 0.35, GLOW],
+      ['torso', -0.1, 0.17, 0.166, 0.03, 0.22, 0.012, LAVA, 0, -0.5, GLOW],
+      ['torso', 0.13, 0.12, 0.166, 0.15, 0.03, 0.012, LAVA, 0, 0, GLOW],
+      ['torso', -0.15, 0.4, 0.166, 0.12, 0.025, 0.012, LAVA, 0, 0.3, GLOW],
+      ['torso', 0, 0.36, 0.172, 0.5, 0.18, 0.03, 0x655449],
+      ['torso', 0, 0.03, 0, 0.6, 0.09, 0.38, 0x3a2e28],
+      ['torso', 0, 0.03, 0.195, 0.14, 0.1, 0.02, 0x8a8078],
+      ...[0.4, 0.2].map((y) => ['torso', 0, y, -0.2, 0.09, 0.2, 0.09, 0xc02020, -0.6, 0]),
+      // ombros de pedra com espinhos e punhos gigantes com lava
+      ...mirror(
+        ['armL', 0.04, -0.03, 0, 0.32, 0.24, 0.32, 0x5e504a],
+        ['armL', 0.1, 0.15, 0.07, 0.08, 0.2, 0.08, 0xc02020, 0, -0.5],
+        ['armL', 0.14, 0.08, -0.08, 0.08, 0.18, 0.08, 0xc02020, 0.4, -0.95],
+        ['armL', 0.096, -0.22, 0.02, 0.01, 0.14, 0.03, LAVA, 0, 0.3, GLOW],
+        ['armL', 0, -0.52, 0, 0.34, 0.28, 0.36, 0x6a3a2c],
+        ['armL', 0.172, -0.52, 0, 0.01, 0.2, 0.04, LAVA, 0, 0.3, GLOW],
+        ['armL', 0, -0.52, 0.182, 0.22, 0.03, 0.01, LAVA, 0, 0, GLOW],
+        ['legL', 0.106, -0.2, 0.02, 0.01, 0.16, 0.03, LAVA, 0, -0.3, GLOW],
+      ),
+    ],
+  },
+};
+
+const OTHER_COLORS = {
+  spider: [0x3e2436, 0xb81c1c],
+  bat: [0x4a2a44, 0xa01c2a],
+  dog: [0x6a3a24, 0xb82a2a],
+  spore: [0x7a3ab0, 0x5a6a30],
+  wasp: [0xc8b020, 0x3a3020],
+  specter: [0x70e8ff, 0x2a4a5a],
+};
+
+// Chefes das arenas reconstruídas: variantes do corpo do Colosso com cor e detalhes próprios.
+const BOSS_VARIANTS = {
+  devourer: { skin: 0x7a8a4a, shirt: 0x3a2a22, sleeve: 0x6a7a3a, hands: 0x5a3a2a, pants: 0x2a221c, boots: 0x1e1a14, eye: 0xb4ff3a, accent: 0x8a1a12, shade: 0x2a1a14 },
+  mechworker: { skin: 0x7a8088, shirt: 0x2e4a6a, sleeve: 0x5a6068, hands: 0x9aa0a8, pants: 0x3a3e44, boots: 0x22262a, eye: 0x3fe0ff, accent: 0xe8a020, shade: 0x1a1e22 },
+  guardian: { skin: 0x5a3a22, shirt: 0x3a5a2a, sleeve: 0x4a3020, hands: 0x6a4a2a, pants: 0x2e2a1a, boots: 0x1e1a12, eye: 0xc070ff, accent: 0x8a1a2a, shade: 0x1a2a14 },
+  general: { skin: 0xc9b090, shirt: 0x4a5a2a, sleeve: 0x4a5a2a, hands: 0xb09a7a, pants: 0x2e3420, boots: 0x1e1e18, eye: 0xff3a1a, accent: 0xb01c1c, shade: 0x141a10 },
+};
+function bossVariant(v) {
+  return {
+    zombie: true, skin: v.skin, shirt: v.shirt, sleeve: v.sleeve, hands: v.hands, pants: v.pants, boots: v.boots, noFace: true, arms: 'brawl',
+    extras: [
+      ...face(v.eye, { brow: v.shade, open: 0.14 }),
+      // capacete/placas de ombro com detalhe luminoso
+      ['head', 0, 0.5, 0, 0.62, 0.18, 0.62, v.shade],
+      ['head', 0, 0.42, 0.29, 0.5, 0.05, 0.02, v.accent, 0, 0, GLOW],
+      ...mirror(
+        ['armL', 0.04, -0.03, 0, 0.34, 0.26, 0.34, v.shade],
+        ['armL', 0.1, 0.14, 0.05, 0.07, 0.2, 0.07, v.accent, 0, -0.4],
+        ['armL', 0.096, -0.22, 0.02, 0.012, 0.16, 0.03, v.eye, 0, 0.3, GLOW],
+        ['armL', 0, -0.52, 0, 0.36, 0.3, 0.38, v.hands],
+        ['armL', 0.18, -0.52, 0, 0.012, 0.22, 0.05, v.eye, 0, 0.3, GLOW],
+      ),
+      ['torso', 0.06, 0.3, 0.166, 0.03, 0.3, 0.012, v.eye, 0, 0.35, GLOW],
+      ['torso', -0.1, 0.17, 0.166, 0.03, 0.22, 0.012, v.accent, 0, -0.5, GLOW],
+      ['torso', 0, 0.36, 0.172, 0.5, 0.18, 0.03, v.skin],
+      ['torso', 0, 0.03, 0.195, 0.14, 0.1, 0.02, v.accent],
+    ],
+  };
+}
+Object.assign(HUMANS, Object.fromEntries(Object.entries(BOSS_VARIANTS).map(([k, v]) => [k, bossVariant(v)])));
+
+// aparência de cada tipo (objeto compartilhado; o jogo só lê)
+const LOOKS = {};
+export function enemyLook(type) {
+  if (LOOKS[type]) return LOOKS[type];
+  const h = HUMANS[type];
+  const NAVAL_PALETTE = {
+    nv_pirate:    [0x4a7a74, 0x2c3c4c],
+    nv_harpooner: [0x3c6c7c, 0x1e3848],
+    nv_mimic:     [0x8a5828, 0xd4a040],
+    nv_crab:      [0xc84830, 0x7a2c1e],
+    nv_ghost:     [0x70e8ff, 0x286a84],
+    nv_octopus:   [0x3c4468, 0x1e2438],
+    nv_angler:    [0x286274, 0x40e8ff],
+    nv_brute:     [0x3a5a52, 0x222c34],
+    nv_shark:     [0x3a6a84, 0x1e3a4c],
+    nv_serpent:   [0x1e7a64, 0x30d890],
+  };
+  const oc = OTHER_COLORS[type] || NAVAL_PALETTE[type] || [0x6a7a72, 0x2e3a44]; // tipos sem aparência própria (ex.: laboratório)
+  const look = h ? { zombie: true, ...h } : { zombie: true, skin: oc[0], shirt: oc[1] };
+  LOOKS[type] = look;
+  return look;
+}
+
+// ------------------------------------------------------------------ esqueletos próprios
+const _v1 = new THREE.Vector3();
+const _v2 = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+const _up = new THREE.Vector3(0, 1, 0);
+const _q = new THREE.Quaternion();
+const _sc = new THREE.Vector3();
+const _mm = new THREE.Matrix4();
+const _e = new THREE.Euler();
+const _one = new THREE.Vector3(1, 1, 1);
+const _jl = new THREE.Matrix4();
+const POOL = Array.from({ length: 16 }, () => new THREE.Matrix4());
+let pi = 0;
+const _base = new THREE.Matrix4();
+
+// articulação: matriz do pai · translação · rotação (YXZ)
+function joint(parent, px, py, pz, rx = 0, ry = 0, rz = 0) {
+  const out = POOL[pi++ % POOL.length];
+  _e.set(rx, ry, rz, 'YXZ');
+  _q.setFromEuler(_e);
+  _jl.compose(_v1.set(px, py, pz), _q, _one);
+  return out.multiplyMatrices(parent, _jl);
+}
+
+// segmento de caixa entre dois pontos locais (patas)
+function seg(B, base, scale, ax, ay, az, bx, by, bz, t, color) {
+  _v1.set(ax, ay, az).applyMatrix4(base);
+  _v2.set(bx, by, bz).applyMatrix4(base);
+  _dir.subVectors(_v2, _v1);
+  const len = _dir.length();
+  if (len < 1e-4) return;
+  _dir.divideScalar(len);
+  _q.setFromUnitVectors(_up, _dir);
+  _mm.compose(_v1.add(_v2).multiplyScalar(0.5), _q, _sc.set(t * scale, len + t * scale * 0.5, t * scale));
+  B.mat(_mm, color);
+}
+
+function drawSpider(B, G, base, z, col, t) {
+  const sc = z.scale;
+  const P = (cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (cx, cy, cz, sx, sy, sz, c, rz = 0) => G.part(base, cx, cy, cz, 0, rz, 0, 0, 0, sx, sy, sz, c);
+  const bob = Math.sin(z.walk * 2) * 0.03;
+  // abdômen com marca vermelha
+  P(0, 0.66 + bob, -0.45, 0.86, 0.62, 0.86, 0x3e2436);
+  P(0, 0.98 + bob, -0.45, 0.18, 0.02, 0.56, 0xb81c1c);
+  P(0, 0.98 + bob, -0.38, 0.5, 0.02, 0.15, 0xb81c1c);
+  P(0.22, 0.98 + bob, -0.66, 0.12, 0.02, 0.12, 0xb81c1c);
+  P(-0.22, 0.98 + bob, -0.66, 0.12, 0.02, 0.12, 0xb81c1c);
+  P(0, 0.8 + bob, -0.89, 0.4, 0.3, 0.02, 0x2e1a28);
+  // tórax e cabeça
+  P(0, 0.52, 0.16, 0.62, 0.42, 0.56, 0x4a2a40);
+  P(0, 0.74, 0.16, 0.3, 0.03, 0.3, 0xa01818);
+  P(0, 0.5, 0.5, 0.46, 0.36, 0.2, 0x3a2030);
+  // aglomerado de olhos vermelhos
+  for (const [x, y, s] of [[0.09, 0.56, 0.1], [-0.09, 0.56, 0.1], [0.17, 0.46, 0.06], [-0.17, 0.46, 0.06], [0.05, 0.44, 0.06], [-0.05, 0.44, 0.06], [0.13, 0.64, 0.05], [-0.13, 0.64, 0.05]])
+    L(x, y, 0.605, s, s, 0.02, 0xff2020);
+  // presas
+  const bite = (z.attackT > 0 ? 0.4 : 0) + Math.sin(t * 6) * 0.05;
+  P(0.1, 0.28, 0.56, 0.07, 0.2, 0.07, TEETH, 0.3 + bite, 0.15);
+  P(-0.1, 0.28, 0.56, 0.07, 0.2, 0.07, TEETH, 0.3 + bite, -0.15);
+  P(0, 0.34, 0.6, 0.18, 0.06, 0.02, 0x7a1010);
+  // 8 patas em grupos alternados
+  const zs = [0.36, 0.16, -0.04, -0.24];
+  for (let i = 0; i < 4; i++)
+    for (const sg of [1, -1]) {
+      const ph = z.walk * 1.4 + (i % 2 ? Math.PI : 0) + (sg > 0 ? Math.PI : 0);
+      const hx = sg * 0.28;
+      const hz = zs[i];
+      const spread = (i - 1.5) * 0.42;
+      const fx = sg * (0.95 + (i === 0 || i === 3 ? -0.1 : 0.05));
+      const fz = hz + spread + Math.sin(ph) * 0.16;
+      const fy = Math.max(0, Math.cos(ph)) * 0.14;
+      const kx = hx + (fx - hx) * 0.45;
+      const kz = hz + (fz - hz) * 0.45;
+      seg(B, base, sc, hx, 0.52, hz, kx, 0.95 + fy, kz, 0.1, col(0x3a2236));
+      seg(B, base, sc, kx, 0.95 + fy, kz, fx, fy + 0.18, fz, 0.08, col(0x2e1a2a));
+      seg(B, base, sc, fx, fy + 0.2, fz, fx * 1.04, fy, fz, 0.07, col(0xb01c1c));
+      B.part(base, kx, 0.95 + fy, kz, 0, 0, 0, 0, 0, 0.12, 0.1, 0.12, col(0xa01818));
+    }
+}
+
+function drawBat(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0, -0.04, 0.36, 0.42, 0.32, 0x4a2a44);
+  P(base, 0, -0.04, 0.12, 0.24, 0.26, 0.02, 0x5e3456);
+  P(base, 0, 0.38, 0.05, 0.44, 0.38, 0.42, 0x5a3050);
+  for (const sg of [1, -1]) {
+    P(base, sg * 0.15, 0.64, 0.02, 0.11, 0.2, 0.08, 0x4a2a44, 0, -sg * 0.3);
+    P(base, sg * 0.15, 0.63, 0.06, 0.05, 0.12, 0.01, 0xa01c2a, 0, -sg * 0.3);
+    G.part(base, sg * 0.1, 0.42, 0.265, 0, sg * 0.3, 0, 0, 0, 0.11, 0.06, 0.02, 0xff2a2a);
+    P(base, sg * 0.06, 0.24, 0.272, 0.04, 0.07, 0.012, TEETH);
+    P(base, sg * 0.08, -0.28, 0.02, 0.07, 0.14, 0.07, 0x2e1a2a);
+  }
+  P(base, 0, 0.27, 0.268, 0.2, 0.06, 0.02, 0x2a0a10);
+  // asas batendo: membrana vermelha + osso escuro, duas partes
+  const flap = Math.sin(t * 15 + z.walk * 0.2) * 0.75 + 0.1;
+  for (const sg of [1, -1]) {
+    const w1 = joint(base, sg * 0.17, 0.1, -0.05, 0, 0, sg * flap);
+    P(w1, sg * 0.36, 0, -0.06, 0.72, 0.03, 0.44, 0xa01c2a);
+    P(w1, sg * 0.36, 0.015, 0.16, 0.74, 0.06, 0.06, 0x4a2a44);
+    const w2 = joint(w1, sg * 0.72, 0, 0.13, 0, sg * 0.35, sg * flap * 0.6);
+    P(w2, sg * 0.3, 0, -0.2, 0.6, 0.03, 0.5, 0xb02030);
+    P(w2, sg * 0.3, 0.015, 0.02, 0.62, 0.06, 0.06, 0x4a2a44);
+    P(w2, sg * 0.62, 0.015, 0.06, 0.08, 0.06, 0.14, 0x2e1a2a);
+    for (const k of [0.12, 0.34, 0.54]) P(w2, sg * k, 0, -0.46, 0.08, 0.03, 0.1, 0xb02030);
+  }
+}
+
+function drawDog(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const fur = 0x6a3a24;
+  const furD = 0x52281a;
+  const gait = z.walk * 1.3;
+  const bob = Math.abs(Math.sin(gait)) * 0.04;
+  // corpo, peito e espinhos
+  P(base, 0, 0.64 + bob, -0.1, 0.42, 0.36, 0.88, fur);
+  P(base, 0, 0.62 + bob, 0.26, 0.46, 0.46, 0.38, furD);
+  P(base, 0, 0.47 + bob, -0.1, 0.34, 0.06, 0.6, 0x7a4a30);
+  for (const [zz, hh] of [[0.3, 0.22], [0.12, 0.2], [-0.08, 0.18], [-0.28, 0.14]]) P(base, 0, 0.86 + bob + hh * 0.35, zz, 0.08, hh, 0.12, 0xc03030, -0.55);
+  // cauda
+  const tail = joint(base, 0, 0.72 + bob, -0.52, -0.9 + Math.sin(t * 9) * 0.2, 0, Math.sin(t * 7) * 0.3);
+  P(tail, 0, 0.2, 0, 0.08, 0.4, 0.08, furD);
+  // cabeça com focinho, mandíbula aberta, olhos vermelhos
+  const head = joint(base, 0, 0.8 + bob, 0.44, -0.1 + (z.state === 'lunge' ? -0.3 : 0), 0, Math.sin(gait * 0.5) * 0.05);
+  P(head, 0, 0.06, 0.12, 0.38, 0.34, 0.36, fur);
+  P(head, 0, -0.02, 0.38, 0.26, 0.17, 0.24, furD);
+  P(head, 0, 0.06, 0.5, 0.1, 0.06, 0.03, 0x1a1010);
+  const jaw = 0.3 + (z.attackT > 0 || z.state === 'lunge' ? 0.35 : 0);
+  P(head, 0, -0.14, 0.32, 0.24, 0.06, 0.24, 0x4a2418, jaw);
+  P(head, 0, -0.1, 0.34, 0.2, 0.04, 0.2, 0x8a1a1a, jaw * 0.5);
+  for (const sg of [1, -1]) {
+    G.part(head, sg * 0.11, 0.12, 0.305, 0, sg * 0.3, 0, 0, 0, 0.09, 0.05, 0.02, 0xff2a2a);
+    P(head, sg * 0.14, 0.28, 0.02, 0.08, 0.18, 0.08, furD, -0.35, -sg * 0.2);
+    P(head, sg * 0.09, -0.11, 0.48, 0.035, 0.07, 0.03, TEETH);
+    P(head, sg * 0.09, -0.16, 0.41, 0.035, 0.06, 0.03, TEETH, jaw);
+  }
+  // patas (trote: diagonais juntas)
+  const legs = [[0.15, 0.3, 0], [-0.15, 0.3, Math.PI], [0.15, -0.42, Math.PI], [-0.15, -0.42, 0]];
+  for (const [x, zz, ph] of legs) {
+    const a = z.state === 'lunge' ? (zz > 0 ? -1.1 : 0.9) : Math.sin(gait + ph) * 0.65;
+    const leg = joint(base, x, 0.52 + bob, zz, a, 0, 0);
+    P(leg, 0, -0.23, 0, 0.13, 0.5, 0.15, furD);
+    P(leg, 0, -0.48, 0.04, 0.15, 0.07, 0.21, 0x3a1e14);
+  }
+}
+
+function drawSpore(B, G, base, z, col, t) {
+  const sc = z.scale;
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const pulse = 1 + Math.sin(t * 3.2 + z.walk) * 0.05 + (z.attackT > 0 ? 0.12 : 0);
+  // raízes
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2 + 0.3;
+    const r = 0.5 + Math.sin(z.walk * 1.5 + k) * 0.05;
+    seg(B, base, sc, Math.sin(a) * 0.12, 0.2, Math.cos(a) * 0.12, Math.sin(a) * r, 0.03, Math.cos(a) * r, 0.1, col(k % 2 ? 0x4a5a28 : 0x3e4c22));
+  }
+  // caule com anéis
+  const stem = joint(base, 0, 0, 0, Math.sin(t * 1.3) * 0.06, 0, Math.sin(t * 1.7 + 1) * 0.06);
+  P(stem, 0, 0.4, 0, 0.44, 0.72, 0.44, 0x5a6a30);
+  P(stem, 0, 0.3, 0, 0.47, 0.06, 0.47, 0x46542a);
+  P(stem, 0, 0.55, 0, 0.47, 0.06, 0.47, 0x46542a);
+  P(stem, 0.12, 0.42, 0.225, 0.08, 0.2, 0.012, 0x6e8040);
+  // cacho de bolhas roxas com espinhos rosa
+  const bulbs = [[0, 1.0, 0, 0.6], [0.34, 0.9, 0.1, 0.46], [-0.32, 0.92, 0.08, 0.46], [0.08, 0.94, 0.34, 0.44], [-0.1, 0.92, -0.32, 0.46], [0.24, 1.24, -0.1, 0.42], [-0.22, 1.26, 0.14, 0.42], [0.04, 1.44, 0.02, 0.38], [0.3, 1.0, -0.3, 0.36]];
+  for (const [x, y, zz, s] of bulbs) {
+    const ss = s * pulse;
+    P(stem, x, y, zz, ss, ss, ss, 0x7a3ab0);
+    P(stem, x - s * 0.15, y + ss * 0.5, zz + s * 0.15, s * 0.36, 0.02, s * 0.36, 0xb070e0);
+  }
+  for (const [x, y, zz, rx, rz] of [[0.3, 1.36, 0, 0.1, -0.5], [-0.3, 1.4, 0.05, 0, 0.5], [0, 1.68, 0, 0, 0], [0.05, 1.3, 0.3, 0.6, 0], [0, 1.28, -0.3, -0.6, 0], [0.48, 1.0, 0.1, 0, -1.1], [-0.46, 1.0, 0.1, 0, 1.1]])
+    P(stem, x, y, zz, 0.08, 0.28, 0.08, 0xe070c8, rx, rz);
+  // esporos brilhando
+  for (let k = 0; k < 3; k++) {
+    const a = t * 1.2 + k * 2.1;
+    G.part(stem, Math.sin(a) * 0.55, 1.2 + Math.sin(t * 2 + k) * 0.25, Math.cos(a) * 0.55, 0, 0, 0, 0, 0, 0.07, 0.07, 0.07, 0xd080ff);
+  }
+}
+
+function drawWasp(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const bob = Math.sin(t * 7 + z.walk * 0.4) * 0.04;
+  // abdômen listrado, inclinado para trás
+  const ab = joint(base, 0, 0.04 + bob, -0.18, -0.22 + Math.sin(t * 2.5) * 0.05, 0, 0);
+  P(ab, 0, -0.02, -0.3, 0.44, 0.42, 0.7, 0xd8b820);
+  P(ab, 0, -0.02, -0.1, 0.46, 0.44, 0.08, 0x2a2418);
+  P(ab, 0, -0.02, -0.32, 0.46, 0.44, 0.08, 0x2a2418);
+  P(ab, 0, -0.02, -0.52, 0.42, 0.38, 0.08, 0x2a2418);
+  P(ab, 0, -0.02, -0.7, 0.12, 0.12, 0.22, 0x3a3020);
+  P(ab, 0, -0.02, -0.83, 0.05, 0.05, 0.12, 0x1a1410);
+  // tórax e faixa amarela
+  P(base, 0, 0.08 + bob, 0.1, 0.5, 0.46, 0.52, 0x3a3020);
+  P(base, 0, 0.22 + bob, 0.1, 0.38, 0.1, 0.38, 0xd8b820);
+  P(base, 0, 0.02 + bob, 0.1, 0.42, 0.06, 0.44, 0x2a2418);
+  // cabeça com olhos compostos, mandíbulas e antenas
+  const head = joint(base, 0, 0.12 + bob, 0.36, -0.08 + (z.attackT > 0 ? 0.25 : 0), 0, 0);
+  P(head, 0, 0, 0.08, 0.4, 0.36, 0.36, 0x2e281a);
+  P(head, 0, -0.06, 0.2, 0.34, 0.22, 0.2, 0x1a1410);
+  for (const sg of [1, -1]) {
+    G.part(head, sg * 0.15, 0.05, 0.25, 0, sg * 0.25, 0, 0, 0, 0.18, 0.2, 0.07, 0xc8e020);
+    P(head, sg * 0.12, -0.13, 0.28, 0.06, 0.14, 0.06, 0x1a1410, 0.45, sg * 0.25);
+    const ant = joint(head, sg * 0.1, 0.16, 0.16, -0.55, 0, sg * 0.55);
+    P(ant, 0, 0.14, 0, 0.03, 0.3, 0.03, 0x1a1410);
+    P(ant, 0, 0.3, 0, 0.06, 0.08, 0.06, 0xd8b820);
+  }
+  // asas membranosas batendo
+  const flap = 0.35 + Math.sin(t * 28 + z.walk * 0.2) * 0.45;
+  for (const sg of [1, -1]) {
+    const w1 = joint(base, sg * 0.18, 0.26 + bob, 0.04, 0, sg * 0.35, sg * flap);
+    P(w1, sg * 0.42, 0.02, 0.02, 0.86, 0.025, 0.36, 0xb8d8e8);
+    P(w1, sg * 0.4, 0.035, 0.02, 0.8, 0.02, 0.05, 0x7a9aaa);
+    const w2 = joint(w1, sg * 0.82, 0, 0.03, 0, sg * 0.2, sg * flap * 0.5);
+    P(w2, sg * 0.28, 0.01, 0.06, 0.56, 0.02, 0.3, 0xa8c8d8);
+    P(w2, sg * 0.28, 0.025, 0.06, 0.5, 0.015, 0.04, 0x7a9aaa);
+  }
+  // seis patas encolhidas sob o corpo
+  for (let k = 0; k < 3; k++)
+    for (const sg of [1, -1]) {
+      const leg = joint(base, sg * 0.2, -0.14 + bob, 0.22 - k * 0.18, 0, 0, sg * (0.55 + k * 0.12));
+      P(leg, 0, -0.16, 0.04, 0.07, 0.32, 0.07, 0x2e281a);
+      P(leg, 0, -0.3, 0.1, 0.06, 0.08, 0.18, 0x1a1410);
+    }
+}
+
+function drawSpecter(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const bob = Math.sin(t * 2.4 + z.walk * 0.3) * 0.07;
+  const sway = Math.sin(t * 1.7) * 0.05;
+  // cauda espectral em segmentos
+  const tail = joint(base, 0, -0.1 + bob, 0, 0, 0, sway);
+  P(tail, 0, -0.12, 0, 0.42, 0.34, 0.36, 0x2a4a5a);
+  P(tail, 0, -0.38, -0.02, 0.32, 0.3, 0.3, 0x223e4c);
+  P(tail, 0, -0.6, 0.02, 0.22, 0.22, 0.22, 0x1a303c);
+  P(tail, 0, -0.76, 0.06, 0.1, 0.16, 0.12, 0x142830);
+  // farrapos do manto
+  for (const [x, zz, ph] of [[-0.24, 0.14, 0], [0.24, -0.08, 1.7], [0.04, 0.2, 3.1]]) {
+    const s = joint(base, x, -0.22 + bob, zz, 0, 0, Math.sin(t * 2 + ph) * 0.18);
+    P(s, 0, -0.2, 0, 0.12, 0.38, 0.09, 0x223e4c);
+  }
+  // torso e peito
+  P(base, 0, 0.12 + bob, 0, 0.54, 0.52, 0.42, 0x2e5262);
+  P(base, 0, 0.2 + bob, 0.2, 0.38, 0.36, 0.04, 0x3a6474);
+  P(base, 0, 0.02 + bob, 0, 0.5, 0.06, 0.4, 0x1e3a46);
+  // braços com garras
+  for (const sg of [1, -1]) {
+    const arm = joint(base, sg * 0.31, 0.3 + bob, 0, -0.55 + Math.sin(t * 3 + sg) * 0.08, 0, sg * 0.5);
+    P(arm, 0, -0.2, 0, 0.12, 0.42, 0.14, 0x2e5262);
+    P(arm, 0, -0.44, 0.02, 0.1, 0.14, 0.16, 0x9ad8d8);
+    for (let k = 0; k < 3; k++) P(arm, (k - 1) * 0.045, -0.54, 0.04, 0.03, 0.16, 0.03, 0xd8f8ff);
+  }
+  // capuz e rosto
+  P(base, 0, 0.56 + bob, -0.02, 0.52, 0.44, 0.48, 0x244452);
+  P(base, 0, 0.55 + bob, 0.2, 0.36, 0.32, 0.1, 0x142830);
+  G.part(base, 0.1, 0.59 + bob, 0.256, 0, 0.25, 0, 0, 0, 0.08, 0.05, 0.02, 0x8af8ff);
+  G.part(base, -0.1, 0.59 + bob, 0.256, 0, -0.25, 0, 0, 0, 0.08, 0.05, 0.02, 0x8af8ff);
+  P(base, 0, 0.8 + bob, -0.04, 0.42, 0.1, 0.42, 0x1e3a46);
+  P(base, 0, 0.52 + bob, -0.25, 0.48, 0.36, 0.08, 0x1e3a46);
+  // aura de energia
+  for (let k = 0; k < 3; k++) {
+    const a = t * 1.4 + k * 2.1;
+    G.part(base, Math.sin(a) * 0.5, 0.25 + Math.cos(a * 1.3) * 0.3 + bob, Math.cos(a) * 0.35, 0, 0, 0, 0, 0, 0.06, 0.06, 0.06, 0x70e8ff);
+  }
+  if (z.attackT > 0) {
+    G.part(base, 0.1, 0.59 + bob, 0.27, 0, 0.25, 0, 0, 0, 0.12, 0.08, 0.02, 0xffffff);
+    G.part(base, -0.1, 0.59 + bob, 0.27, 0, -0.25, 0, 0, 0, 0.12, 0.08, 0.02, 0xffffff);
+  }
+}
+
+const BODIES = { spider: drawSpider, bat: drawBat, dog: drawDog, spore: drawSpore, wasp: drawWasp, specter: drawSpecter, nv_crab: drawNvCrab, nv_octopus: drawNvOctopus, nv_angler: drawNvAngler, nv_shark: drawNvShark, nv_serpent: drawNvSerpent, nv_mimic: drawNvMimic, nv_pirate: drawNvPirate };
+
+// ------------------------------------------------------------------ Egito Antigo (só no Templo Antigo)
+const GOLD = 0xd4a020;
+const GOLD_L = 0xf0c840;
+const IMPERIAL = 0x2a4aa0;
+const BANDAGE = 0xd8cba0;
+const BANDAGE_D = 0xb3a57a;
+const JACKAL = 0x22222a;
+// toucado de faraó (nemes) listrado azul e dourado, com abas caindo sobre o peito
+const nemes = (c1 = IMPERIAL, c2 = GOLD) => [
+  ['head', 0, 0.56, -0.02, 0.64, 0.12, 0.64, c2],
+  ['head', 0, 0.49, 0.3, 0.62, 0.07, 0.02, c2],
+  ['head', 0, 0.66, 0.26, 0.08, 0.14, 0.06, c2],
+  ['head', 0, 0.3, -0.31, 0.62, 0.52, 0.06, c1],
+  ...[0.44, 0.28, 0.12].map((y) => ['head', 0, y, -0.345, 0.62, 0.05, 0.012, c2]),
+  ...mirror(
+    ['head', 0.31, 0.3, -0.04, 0.06, 0.52, 0.52, c1],
+    ['head', 0.345, 0.4, -0.04, 0.012, 0.05, 0.52, c2],
+    ['head', 0.345, 0.24, -0.04, 0.012, 0.05, 0.52, c2],
+    ['torso', 0.2, 0.36, 0.17, 0.13, 0.34, 0.03, c1],
+    ['torso', 0.2, 0.42, 0.188, 0.13, 0.04, 0.012, c2],
+    ['torso', 0.2, 0.28, 0.188, 0.13, 0.04, 0.012, c2],
+  ),
+];
+// rosto de criatura: olhos vermelhos brilhando, boca aberta com presas
+const fiend = (brow = 0x1a1210) => face(0xff2a1a, { brow, mouth: 0x3a0606, open: 0.17, fangs: true });
+const bandStripes = (c = BANDAGE_D) => [
+  ['head', 0, 0.42, 0.278, 0.58, 0.035, 0.02, c, 0, 0.1],
+  ['torso', 0, 0.14, 0.166, 0.56, 0.04, 0.012, c, 0, 0.2],
+  ['torso', 0, 0.3, 0.166, 0.56, 0.04, 0.012, c, 0, -0.18],
+  ...mirror(['legL', 0, -0.15, 0.121, 0.2, 0.04, 0.012, c, 0, 0.25], ['legL', 0, -0.32, 0.121, 0.2, 0.04, 0.012, c, 0, -0.2], ['armL', 0, -0.2, 0.096, 0.18, 0.035, 0.012, c, 0, 0.3]),
+];
+Object.assign(HUMANS, {
+  // Múmia Guerreira: bandagens, toucado listrado, boca aberta, braceletes azul e dourado
+  mummy: {
+    skin: BANDAGE, shirt: BANDAGE, sleeve: BANDAGE, hands: BANDAGE_D, pants: BANDAGE, boots: 0x8a7a5a, noFace: true, arms: 'reach',
+    extras: [
+      ...fiend(BANDAGE_D),
+      ...nemes(),
+      ...bandStripes(),
+      ['torso', 0, 0.5, 0.12, 0.6, 0.1, 0.14, GOLD],
+      ['torso', 0, 0.44, 0.19, 0.34, 0.04, 0.012, IMPERIAL],
+      ['torso', 0, 0.02, 0, 0.6, 0.08, 0.36, GOLD],
+      ['torso', 0, 0.02, 0.185, 0.14, 0.12, 0.012, IMPERIAL],
+      ...mirror(['armL', 0, -0.36, 0, 0.22, 0.08, 0.22, IMPERIAL], ['armL', 0, -0.44, 0, 0.22, 0.05, 0.22, GOLD]),
+      ['armR', -0.02, -0.66, 0.02, 0.05, 0.26, 0.02, BANDAGE, 0, 0.2],
+    ],
+  },
+  // Guardião Anúbis: chacal preto rosnando, armadura azul e dourada, machado dourado
+  anubis: {
+    skin: JACKAL, shirt: IMPERIAL, sleeve: JACKAL, hands: JACKAL, pants: GOLD, boots: GOLD, noFace: true, arms: 'brawl',
+    extras: [
+      // focinho com boca aberta vermelha e presas
+      ['head', 0, 0.24, 0.38, 0.26, 0.12, 0.28, JACKAL],
+      ['head', 0, 0.3, 0.53, 0.1, 0.06, 0.04, 0x0a0a0a],
+      ['head', 0, 0.1, 0.36, 0.22, 0.08, 0.24, JACKAL, 0.25],
+      ['head', 0, 0.16, 0.42, 0.2, 0.05, 0.2, 0x8a1010],
+      ...mirror(['head', 0.08, 0.19, 0.5, 0.03, 0.06, 0.03, TEETH], ['head', 0.08, 0.12, 0.47, 0.03, 0.05, 0.03, TEETH]),
+      ...mirror(['head', 0.17, 0.74, -0.02, 0.11, 0.38, 0.08, JACKAL, 0, -0.1], ['head', 0.17, 0.72, 0.03, 0.05, 0.24, 0.012, GOLD, 0, -0.1]),
+      ...mirror(['head', 0.13, 0.38, 0.276, 0.13, 0.05, 0.02, 0xff2a1a, 0, 0.3, GLOW]),
+      ...mirror(['head', 0.29, 0.2, -0.05, 0.04, 0.4, 0.4, IMPERIAL], ['head', 0.3, 0.26, -0.05, 0.02, 0.05, 0.4, GOLD], ['head', 0.3, 0.12, -0.05, 0.02, 0.05, 0.4, GOLD]),
+      ['head', 0, 0.2, -0.29, 0.56, 0.42, 0.04, IMPERIAL],
+      ['torso', 0, 0.48, 0.12, 0.64, 0.16, 0.16, GOLD],
+      ['torso', 0, 0.48, 0.2, 0.5, 0.05, 0.012, IMPERIAL],
+      ['torso', 0, 0.32, 0.172, 0.22, 0.12, 0.012, GOLD_L, 0, 0, GLOW],
+      ['torso', 0, 0.02, 0, 0.62, 0.08, 0.38, GOLD],
+      ...mirror(['armL', 0.04, -0.02, 0, 0.32, 0.18, 0.32, GOLD], ['armL', 0.04, 0.06, 0, 0.34, 0.04, 0.34, IMPERIAL], ['armL', 0, -0.45, 0, 0.22, 0.08, 0.22, GOLD]),
+      // machado cerimonial grande
+      ['armR', 0, -0.55, 0.08, 0.06, 1.1, 0.06, 0x3a2414],
+      ['armR', 0, -0.12, 0.32, 0.05, 0.5, 0.36, GOLD],
+      ['armR', 0, -0.12, 0.5, 0.06, 0.56, 0.04, GOLD_L],
+      ['armR', 0, -0.12, 0.2, 0.06, 0.14, 0.06, IMPERIAL],
+    ],
+  },
+  // Arqueiro do Deserto: múmia encapuzada, arco dourado com flecha em chamas
+  archer: {
+    skin: BANDAGE, shirt: 0xc8b890, sleeve: BANDAGE, hands: BANDAGE_D, pants: 0xc8b890, boots: 0x7a5a32, noFace: true, arms: 'reach',
+    extras: [
+      ...fiend(BANDAGE_D),
+      // capuz de faixas caindo nas costas
+      ['head', 0, 0.54, -0.04, 0.66, 0.16, 0.66, BANDAGE_D],
+      ['head', 0, 0.3, -0.31, 0.64, 0.56, 0.06, BANDAGE_D],
+      ...mirror(['head', 0.31, 0.32, -0.06, 0.05, 0.5, 0.5, BANDAGE_D]),
+      ['torso', 0, 0.4, -0.2, 0.5, 0.4, 0.04, BANDAGE_D],
+      ...bandStripes(0xa89a70),
+      ['torso', 0, 0.5, 0.15, 0.5, 0.07, 0.06, GOLD],
+      ['torso', 0, 0.02, 0, 0.58, 0.07, 0.36, GOLD],
+      ['torso', 0.12, 0.34, -0.25, 0.14, 0.44, 0.12, 0x6a4a28, 0, 0.35],
+      // arco dourado e flecha em chamas
+      ['armL', 0, -0.55, 0.16, 0.06, 1.05, 0.06, GOLD],
+      ['armL', 0, -0.55, 0.08, 0.012, 1.0, 0.012, 0xeeeeee],
+      ...[-0.06, -1.04].map((y) => ['armL', 0, y, 0.16, 0.07, 0.1, 0.07, GOLD_L]),
+      ['armL', 0, -0.55, 0.36, 0.03, 0.03, 0.5, 0x6a4a28],
+      ['armL', 0, -0.55, 0.64, 0.08, 0.08, 0.1, 0xff8a1a, 0, 0, GLOW],
+    ],
+  },
+});
+
+// Faraó Renegado (chefão): faraó-múmia gigante, toucado listrado, armadura azul e dourada, olhos vermelhos
+HUMANS.pharaoh = {
+  zombie: true, skin: BANDAGE, shirt: IMPERIAL, sleeve: BANDAGE, hands: BANDAGE_D, pants: GOLD, boots: GOLD, noFace: true, arms: 'brawl',
+  extras: [
+    ...fiend(BANDAGE_D),
+    ...nemes(),
+    ['head', 0, 0.74, 0.02, 0.3, 0.2, 0.3, GOLD_L],
+    ['head', 0, 0.86, 0.02, 0.14, 0.12, 0.14, 0xff2a1a, 0, 0, GLOW],
+    ...bandStripes(),
+    ['torso', 0, 0.5, 0.1, 0.7, 0.18, 0.22, GOLD],
+    ['torso', 0, 0.46, 0.21, 0.5, 0.05, 0.012, IMPERIAL],
+    ['torso', 0, 0.3, 0.172, 0.3, 0.16, 0.012, GOLD_L, 0, 0, GLOW],
+    ['torso', 0, 0.02, 0, 0.66, 0.1, 0.4, GOLD],
+    ['torso', 0, -0.1, 0.19, 0.24, 0.2, 0.02, IMPERIAL],
+    ...mirror(
+      ['armL', 0.04, -0.02, 0, 0.36, 0.24, 0.36, GOLD],
+      ['armL', 0.04, 0.08, 0, 0.38, 0.05, 0.38, IMPERIAL],
+      ['armL', 0, -0.4, 0, 0.24, 0.1, 0.24, IMPERIAL],
+      ['armL', 0, -0.48, 0, 0.24, 0.05, 0.24, GOLD],
+      ['legL', 0, -0.12, 0.12, 0.24, 0.1, 0.04, IMPERIAL],
+    ),
+  ],
+};
+
+// Sobek, o Devorador (chefão): crocodilo humanoide, escamas verdes, armadura dourada, mandíbula aberta
+const CROC = 0x4a7a3a;
+const CROC_D = 0x35602a;
+HUMANS.sobek = {
+  zombie: true, skin: CROC, shirt: 0x2a2a30, sleeve: CROC, hands: CROC_D, pants: GOLD, boots: CROC_D, noFace: true, arms: 'brawl',
+  extras: [
+    // focinho comprido com mandíbula aberta, dentes e olhos vermelhos
+    ['head', 0, 0.28, 0.52, 0.44, 0.16, 0.56, CROC],
+    ['head', 0, 0.36, 0.3, 0.46, 0.08, 0.2, CROC_D],
+    ['head', 0, 0.06, 0.48, 0.4, 0.1, 0.5, CROC, 0.35],
+    ['head', 0, 0.16, 0.48, 0.36, 0.06, 0.46, 0x8a1010, 0.18],
+    ...[0.32, 0.46, 0.6, 0.74].flatMap((zz) => mirror(['head', 0.17, 0.19, zz, 0.04, 0.08, 0.04, TEETH])),
+    ...[0.36, 0.5, 0.64].flatMap((zz) => mirror(['head', 0.15, 0.12, zz - 0.02, 0.04, 0.07, 0.04, TEETH, 0.35])),
+    ...mirror(['head', 0.15, 0.44, 0.24, 0.12, 0.08, 0.06, 0xff2a1a, 0, 0.2, GLOW]),
+    // escamas no topo da cabeça e toucado listrado
+    ...[0.12, 0.3, 0.48].map((zz) => ['head', 0, 0.38, zz, 0.08, 0.06, 0.1, CROC_D]),
+    ['head', 0, 0.56, -0.08, 0.6, 0.1, 0.5, GOLD],
+    ['head', 0, 0.3, -0.31, 0.6, 0.5, 0.06, IMPERIAL],
+    ...[0.42, 0.26, 0.1].map((y) => ['head', 0, y, -0.345, 0.6, 0.05, 0.012, GOLD]),
+    ...mirror(['head', 0.3, 0.28, -0.1, 0.05, 0.46, 0.4, IMPERIAL], ['head', 0.33, 0.36, -0.1, 0.012, 0.05, 0.4, GOLD]),
+    // armadura dourada e azul no peito, ombros e braços; escamas nas costas
+    ['torso', 0, 0.48, 0.12, 0.72, 0.18, 0.2, GOLD],
+    ['torso', 0, 0.48, 0.225, 0.5, 0.05, 0.012, IMPERIAL],
+    ['torso', 0, 0.26, 0.172, 0.34, 0.2, 0.012, GOLD_L],
+    ['torso', 0, 0.02, 0, 0.66, 0.1, 0.4, GOLD],
+    ...[0.1, 0.3, 0.5].map((y) => ['torso', 0, y, -0.2, 0.2, 0.08, 0.08, CROC_D]),
+    ...mirror(
+      ['armL', 0.04, -0.02, 0, 0.38, 0.26, 0.38, GOLD],
+      ['armL', 0.04, 0.08, 0, 0.4, 0.05, 0.4, IMPERIAL],
+      ['armL', 0, -0.42, 0, 0.26, 0.1, 0.26, GOLD],
+      ['armL', 0.06, -0.7, 0.1, 0.05, 0.14, 0.05, TEETH, 0.4],
+      ['legL', 0, -0.14, 0.12, 0.26, 0.12, 0.04, IMPERIAL],
+    ),
+    // cauda grossa
+    ['torso', 0, -0.05, -0.36, 0.26, 0.24, 0.5, CROC],
+    ['torso', 0, -0.18, -0.72, 0.16, 0.16, 0.4, CROC_D],
+  ],
+};
+
+// Crocodilo do Nilo (filhote de Sobek): baixo, comprido, boca grande
+function drawCroc(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const sway = Math.sin(z.walk * 2) * 0.12;
+  P(base, 0, 0.3, 0, 0.5, 0.28, 0.9, CROC);
+  for (const zz of [-0.3, -0.05, 0.2]) P(base, 0, 0.46, zz, 0.12, 0.06, 0.12, CROC_D);
+  const tail = joint(base, 0, 0.3, -0.45, 0, sway, 0);
+  P(tail, 0, -0.02, -0.3, 0.3, 0.2, 0.6, CROC_D);
+  P(tail, 0, -0.04, -0.7, 0.16, 0.14, 0.4, CROC_D);
+  const jaw = z.attackT > 0 || z.state === 'lunge' ? 0.5 : 0.2;
+  const hd = joint(base, 0, 0.32, 0.45, 0, -sway * 0.5, 0);
+  P(hd, 0, 0.04, 0.3, 0.36, 0.14, 0.6, CROC);
+  P(hd, 0, -0.1, 0.26, 0.32, 0.08, 0.52, CROC_D, jaw);
+  P(hd, 0, -0.04, 0.28, 0.28, 0.04, 0.48, 0x8a1010, jaw * 0.5);
+  for (const sg of [1, -1]) {
+    G.part(hd, sg * 0.12, 0.14, 0.12, 0, 0, 0, 0, 0, 0.07, 0.05, 0.06, 0xff2a1a);
+    for (const zz of [0.2, 0.36, 0.52]) P(hd, sg * 0.15, -0.04, zz, 0.03, 0.06, 0.03, TEETH);
+  }
+  P(base, 0, 0.42, 0.42, 0.4, 0.06, 0.1, GOLD);
+  for (const [x, zz, ph] of [[0.28, 0.28, 0], [-0.28, 0.28, Math.PI], [0.28, -0.28, Math.PI], [-0.28, -0.28, 0]]) {
+    const a = Math.sin(z.walk * 2.4 + ph) * 0.5;
+    const leg = joint(base, x, 0.25, zz, a, 0, 0);
+    P(leg, 0, -0.12, 0, 0.12, 0.26, 0.14, CROC_D);
+  }
+}
+BODIES.crocling = drawCroc;
+OTHER_COLORS.crocling = [CROC, GOLD];
+
+// Bastet Sombria (chefão): felina humanoide preta, armadura roxa e dourada, olhos roxos, cajado-ankh
+const CAT = 0x1a1a22;
+const VIOLET = 0x5a2a8a;
+HUMANS.bastet = {
+  zombie: true, skin: CAT, shirt: VIOLET, sleeve: CAT, hands: CAT, pants: 0x2a1640, boots: GOLD, noFace: true, arms: 'brawl',
+  extras: [
+    // focinho felino, nariz, presas e olhos roxos brilhando
+    ['head', 0, 0.18, 0.32, 0.26, 0.14, 0.12, CAT],
+    ['head', 0, 0.24, 0.39, 0.08, 0.05, 0.02, 0x4a2a4a],
+    ['head', 0, 0.12, 0.385, 0.18, 0.04, 0.012, 0x3a0a3a],
+    ...mirror(['head', 0.06, 0.1, 0.39, 0.03, 0.06, 0.02, TEETH]),
+    ...mirror(['head', 0.13, 0.36, 0.276, 0.14, 0.07, 0.02, 0xd080ff, 0, 0.3, GLOW]),
+    // orelhas pontudas de gato com miolo roxo
+    ...mirror(['head', 0.18, 0.7, 0, 0.16, 0.3, 0.1, CAT, 0, -0.25], ['head', 0.17, 0.68, 0.055, 0.08, 0.18, 0.012, 0x8a3ad0, 0, -0.25]),
+    // toucado roxo e dourado
+    ['head', 0, 0.52, 0.29, 0.6, 0.06, 0.02, GOLD],
+    ['head', 0, 0.3, -0.31, 0.6, 0.5, 0.06, VIOLET],
+    ...[0.42, 0.26, 0.1].map((y) => ['head', 0, y, -0.345, 0.6, 0.05, 0.012, GOLD]),
+    ...mirror(['head', 0.3, 0.26, -0.05, 0.05, 0.42, 0.42, VIOLET], ['head', 0.33, 0.34, -0.05, 0.012, 0.05, 0.42, GOLD]),
+    // armadura: colar largo dourado, joia roxa, saia e ombreiras
+    ['torso', 0, 0.48, 0.12, 0.64, 0.16, 0.18, GOLD],
+    ['torso', 0, 0.48, 0.215, 0.44, 0.05, 0.012, VIOLET],
+    ['torso', 0, 0.3, 0.172, 0.16, 0.16, 0.012, 0xd080ff, 0, 0.785, GLOW],
+    ['torso', 0, 0.02, 0, 0.62, 0.1, 0.38, GOLD],
+    ...mirror(['armL', 0.04, -0.02, 0, 0.34, 0.2, 0.34, GOLD], ['armL', 0, -0.42, 0, 0.24, 0.08, 0.24, GOLD], ['armL', 0.06, -0.68, 0.1, 0.04, 0.14, 0.04, TEETH, 0.5]),
+    // cauda
+    ['torso', 0, -0.05, -0.3, 0.1, 0.1, 0.4, CAT, -0.4],
+    // cajado em forma de ankh com brilho roxo
+    ['armR', 0, -0.55, 0.12, 0.06, 1.3, 0.06, GOLD],
+    ['armR', 0, 0.2, 0.12, 0.34, 0.06, 0.06, GOLD],
+    ['armR', 0, 0.42, 0.12, 0.3, 0.06, 0.06, GOLD],
+    ...mirror(['armR', 0.15, 0.36, 0.12, 0.06, 0.22, 0.06, GOLD]),
+    ['armR', 0, 0.36, 0.12, 0.2, 0.14, 0.04, 0xd080ff, 0, 0, GLOW],
+  ],
+};
+HUMANS.bastetclone = HUMANS.bastet; // a ilusão tem a mesma aparência (menor)
+
+// Escaravelho Gigante: carapaça azul e dourada, patas reforçadas, olhos vermelhos
+function drawScarab(B, G, base, z, col, t) {
+  const P = (cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (cx, cy, cz, sx, sy, sz, c) => G.part(base, cx, cy, cz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const bob = Math.abs(Math.sin(z.walk * 3)) * 0.04;
+  // carapaça em duas metades com faixa dourada
+  P(0.2, 0.5 + bob, -0.15, 0.38, 0.4, 0.9, 0x1e4a8a);
+  P(-0.2, 0.5 + bob, -0.15, 0.38, 0.4, 0.9, 0x1e4a8a);
+  P(0, 0.72 + bob, -0.15, 0.06, 0.02, 0.88, GOLD);
+  P(0, 0.71 + bob, -0.15, 0.7, 0.02, 0.06, GOLD);
+  P(0, 0.42 + bob, -0.62, 0.62, 0.24, 0.12, 0x163a6a);
+  // cabeça com chifre e olhos vermelhos
+  P(0, 0.42, 0.42, 0.5, 0.3, 0.3, 0x14305a);
+  P(0, 0.62, 0.52, 0.08, 0.26, 0.08, GOLD, -0.5);
+  L(0.14, 0.48, 0.575, 0.08, 0.06, 0.02, 0xff2a1a);
+  L(-0.14, 0.48, 0.575, 0.08, 0.06, 0.02, 0xff2a1a);
+  const bite = z.attackT > 0 ? 0.35 : 0;
+  P(0.12, 0.28, 0.6, 0.06, 0.06, 0.18, GOLD, 0, 0.4 + bite);
+  P(-0.12, 0.28, 0.6, 0.06, 0.06, 0.18, GOLD, 0, -0.4 - bite);
+  // 6 patas reforçadas
+  const zs = [0.25, -0.1, -0.45];
+  for (let i = 0; i < 3; i++)
+    for (const sg of [1, -1]) {
+      const ph = z.walk * 2.2 + (i % 2 ? Math.PI : 0) + (sg > 0 ? Math.PI : 0);
+      const hx = sg * 0.36;
+      const hz = zs[i];
+      const fx = sg * 0.78;
+      const fz = hz + (i - 1) * 0.3 + Math.sin(ph) * 0.14;
+      const fy = Math.max(0, Math.cos(ph)) * 0.12;
+      seg(B, base, z.scale, hx, 0.4, hz, sg * 0.62, 0.62 + fy, hz, 0.1, col(0x163a6a));
+      seg(B, base, z.scale, sg * 0.62, 0.62 + fy, hz, fx, fy, fz, 0.08, col(GOLD));
+    }
+}
+BODIES.scarab = drawScarab;
+OTHER_COLORS.scarab = [0x1e4a8a, GOLD];
+
+Object.assign(HUMANS, {
+  // Sacerdote Profano: capuz roxo com bordas douradas, rosto de múmia, cajado com orbe roxo
+  priest: {
+    skin: BANDAGE_D, shirt: 0x5a2a8a, sleeve: 0x5a2a8a, hands: BANDAGE_D, pants: 0x4a2272, boots: 0x2a1640, noFace: true, arms: 'reach',
+    extras: [
+      ...fiend(0x8a7a50),
+      ['head', 0, 0.56, -0.04, 0.68, 0.16, 0.68, 0x4a2272],
+      ['head', 0, 0.3, -0.33, 0.68, 0.6, 0.06, 0x4a2272],
+      ...mirror(['head', 0.33, 0.32, -0.04, 0.06, 0.56, 0.6, 0x4a2272], ['head', 0.365, 0.32, 0.25, 0.012, 0.56, 0.06, GOLD]),
+      ['head', 0, 0.63, 0.27, 0.68, 0.05, 0.03, GOLD],
+      ['head', 0, 0.72, 0.24, 0.1, 0.12, 0.05, GOLD],
+      ['torso', 0, 0.02, 0, 0.62, 0.3, 0.4, 0x4a2272],
+      ['torso', 0, 0.48, 0.15, 0.6, 0.1, 0.08, GOLD],
+      ['torso', 0, 0.3, 0.172, 0.1, 0.5, 0.012, GOLD],
+      ...mirror(['torso', 0.16, 0.24, 0.172, 0.05, 0.05, 0.012, 0xc070ff, 0, 0, GLOW]),
+      ...mirror(['legL', 0, -0.2, 0, 0.26, 0.44, 0.28, 0x4a2272], ['armL', 0, -0.4, 0, 0.22, 0.06, 0.22, GOLD]),
+      ['armR', 0, -0.5, 0.12, 0.06, 1.3, 0.06, GOLD],
+      ['armR', 0, 0.22, 0.12, 0.24, 0.24, 0.24, 0xc070ff, 0.6, 0.6, GLOW],
+      ['armR', 0, 0.22, 0.12, 0.3, 0.06, 0.06, GOLD],
+    ],
+  },
+  // Construto de Areia: blocos de arenito dourado, olhos vermelhos, punhos enormes
+  construct: {
+    skin: 0xd8a848, shirt: 0xc89838, sleeve: 0xd8a848, hands: 0xb88a38, pants: 0xb8883a, boots: 0x8a6a30, noFace: true, arms: 'brawl',
+    extras: [
+      ...face(0xff2a1a, { brow: 0x8a6a30, mouth: 0x5a3a14, open: 0.1, fangs: false }),
+      ['head', 0, 0.52, 0, 0.66, 0.14, 0.66, 0xb88a38],
+      ['head', 0.2, 0.22, 0.25, 0.16, 0.14, 0.08, 0xe8c068],
+      ['head', -0.22, 0.46, 0.2, 0.14, 0.1, 0.16, 0xe8c068],
+      ['torso', 0, 0.3, 0.17, 0.44, 0.44, 0.04, 0xb88a38],
+      ['torso', -0.2, 0.1, 0.18, 0.18, 0.14, 0.05, 0xe8c068],
+      ['torso', 0.24, 0.48, 0.18, 0.12, 0.12, 0.05, 0xe8c068],
+      ['torso', 0, 0.62, 0, 0.8, 0.16, 0.5, 0xc89838],
+      ...mirror(
+        ['armL', 0.04, -0.02, 0, 0.4, 0.3, 0.4, 0xb88a38],
+        ['armL', 0, -0.56, 0, 0.5, 0.42, 0.5, 0xd8a848],
+        ['armL', 0.1, -0.46, 0.16, 0.14, 0.12, 0.2, 0xe8c068],
+      ),
+      ...mirror(['legL', 0, -0.3, 0.12, 0.26, 0.2, 0.04, 0xb88a38]),
+    ],
+  },
+});
+// Serpente Sagrada: corpo em segmentos dourados com faixas vermelhas, cabeça erguida
+function drawSerpent(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const n = 7;
+  for (let i = 0; i < n; i++) {
+    const zz = -0.1 - i * 0.24;
+    const xx = Math.sin(z.walk * 1.6 - i * 0.9) * 0.18 * (i / n + 0.3);
+    const s = 0.34 - i * 0.03;
+    P(base, xx, s / 2, zz, s, s, 0.26, i % 2 ? 0xd4a020 : 0xb88818);
+    if (i % 2 === 0) P(base, xx, s + 0.005, zz, s * 0.6, 0.02, 0.1, 0xa01a14);
+  }
+  // pescoço e cabeça erguidos (sobe mais no bote)
+  const up = z.state === 'lunge' ? 0.2 : z.attackT > 0 ? 0.12 : 0;
+  // naja erguida: pescoço alto quase vertical
+  const neck = joint(base, 0, 0.3, 0.12, -0.12 - up, 0, Math.sin(t * 2) * 0.08);
+  P(neck, 0, 0.45, 0, 0.3, 0.95, 0.28, 0xd4a020);
+  for (const y of [0.15, 0.45, 0.75]) P(neck, 0, y, 0.145, 0.22, 0.12, 0.012, 0xf0d070);
+  const head = joint(neck, 0, 0.95, 0.06, 0.12 + up, 0, 0); // cabeça na horizontal, olhando para frente
+  P(head, 0, 0.04, 0.12, 0.44, 0.26, 0.52, 0xd4a020);
+  P(head, 0, 0.18, 0.1, 0.36, 0.02, 0.4, 0xa01a14);
+  G.part(head, 0.13, 0.1, 0.39, 0, 0, 0, 0, 0, 0.1, 0.07, 0.02, 0xff3a1a);
+  G.part(head, -0.13, 0.1, 0.39, 0, 0, 0, 0, 0, 0.1, 0.07, 0.02, 0xff3a1a);
+  const bite = z.attackT > 0 || z.state === 'lunge' ? 0.5 : 0.3;
+  P(head, 0, -0.1, 0.12, 0.32, 0.08, 0.42, 0xb88818, bite);
+  P(head, 0, -0.06, 0.14, 0.26, 0.04, 0.36, 0x8a1010, bite * 0.5);
+  for (const sg of [1, -1]) P(head, sg * 0.1, -0.1, 0.4, 0.04, 0.14, 0.03, TEETH);
+  // capuz de naja
+  // capuz largo atrás da cabeça
+  P(neck, 0, 0.72, -0.08, 0.86, 0.7, 0.06, 0xb88818);
+  for (const y of [0.5, 0.68, 0.86]) P(neck, 0, y, -0.045, 0.62, 0.05, 0.02, 0xa01a14);
+}
+
+// Fantasma do Faraó: corpo translúcido ciano, toucado de faraó, cauda espectral
+function drawPhantom(B, G, base, z, col, t) {
+  base = joint(base, 0, -0.4, 0); // corpo mais baixo: cabeça na altura dos outros inimigos
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => G.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, c);
+  const bob = Math.sin(t * 2.2 + z.walk * 0.3) * 0.07;
+  const sway = Math.sin(t * 1.6) * 0.06;
+  // cauda que some no ar
+  const tail = joint(base, 0, -0.1 + bob, 0, 0, 0, sway);
+  L(tail, 0, -0.14, 0, 0.4, 0.3, 0.34, 0x2a8aa8);
+  L(tail, 0, -0.4, -0.02, 0.28, 0.26, 0.26, 0x1e6a88);
+  L(tail, 0, -0.62, 0.02, 0.16, 0.2, 0.16, 0x145068);
+  // tronco com vestes de faraó
+  L(base, 0, 0.32 + bob, 0, 0.56, 0.6, 0.36, 0x3ac8e8);
+  P(base, 0, 0.5 + bob, 0.16, 0.6, 0.12, 0.08, GOLD);
+  P(base, 0, 0.36 + bob, 0.19, 0.26, 0.1, 0.02, IMPERIAL);
+  // braços estendidos
+  const reach = z.attackT > 0 ? -1.2 : -0.6;
+  for (const sg of [1, -1]) {
+    const a = joint(base, sg * 0.36, 0.56 + bob, 0, reach, 0, sg * 0.15);
+    L(a, 0, -0.26, 0, 0.16, 0.5, 0.16, 0x3ac8e8);
+    P(a, 0, -0.1, 0, 0.18, 0.08, 0.18, GOLD);
+  }
+  // cabeça com toucado (nemes) e olhos luminosos
+  const hd = joint(base, 0, 0.94 + bob, 0, 0, 0, sway);
+  L(hd, 0, 0, 0, 0.44, 0.44, 0.44, 0x6ae0ff);
+  P(hd, 0, 0.2, -0.02, 0.5, 0.12, 0.5, GOLD);
+  P(hd, 0.24, -0.04, -0.04, 0.06, 0.42, 0.42, IMPERIAL);
+  P(hd, -0.24, -0.04, -0.04, 0.06, 0.42, 0.42, IMPERIAL);
+  P(hd, 0, 0.3, 0.18, 0.08, 0.14, 0.06, GOLD);
+  for (const sg of [1, -1]) {
+    P(hd, sg * 0.1, 0.03, 0.222, 0.13, 0.1, 0.02, 0x0a2a3a);
+    L(hd, sg * 0.1, 0.03, 0.232, 0.06, 0.05, 0.02, 0xff2a1a);
+    P(hd, sg * 0.245, 0.08, -0.04, 0.012, 0.05, 0.42, GOLD);
+    P(hd, sg * 0.245, -0.12, -0.04, 0.012, 0.05, 0.42, GOLD);
+  }
+  P(hd, 0, -0.13, 0.222, 0.24, 0.1, 0.02, 0x0a2a3a);
+  P(hd, 0, -0.12, 0.232, 0.2, 0.04, 0.012, TEETH);
+}
+BODIES.serpent = drawSerpent;
+BODIES.phantom = drawPhantom;
+OTHER_COLORS.serpent = [0xd4a020, 0xa01a14];
+OTHER_COLORS.phantom = [0x3ac8e8, GOLD];
+
+const BONE = 0xe8e0c8;
+const BONE_D = 0xb8ae90;
+Object.assign(HUMANS, {
+  // Esqueleto de Faraó: ossos, toucado e armadura dourada, espada cerimonial
+  skeleton: {
+    skin: BONE, shirt: BONE_D, sleeve: BONE, hands: BONE, pants: BONE_D, boots: BONE_D, noFace: true, arms: 'brawl',
+    extras: [
+      // crânio: órbitas escuras com olhos vermelhos, dentes
+      ...mirror(['head', 0.13, 0.33, 0.276, 0.14, 0.12, 0.02, 0x1a1210], ['head', 0.13, 0.33, 0.284, 0.06, 0.05, 0.012, 0xff2a1a, 0, 0, GLOW]),
+      ['head', 0, 0.12, 0.278, 0.3, 0.08, 0.02, 0x1a1210],
+      ['head', 0, 0.12, 0.284, 0.26, 0.04, 0.012, TEETH],
+      // toucado listrado de faraó
+      ['head', 0, 0.52, -0.02, 0.62, 0.12, 0.62, GOLD],
+      ...mirror(['head', 0.29, 0.24, -0.06, 0.04, 0.42, 0.4, IMPERIAL], ['head', 0.3, 0.24, -0.06, 0.02, 0.06, 0.4, GOLD]),
+      ['head', 0, 0.62, 0.22, 0.08, 0.16, 0.06, GOLD],
+      // costelas aparentes e armadura dourada
+      ...[0.18, 0.28, 0.38].map((y) => ['torso', 0, y, 0.166, 0.44, 0.04, 0.012, 0x1a1210]),
+      ['torso', 0, 0.5, 0.15, 0.56, 0.08, 0.06, GOLD],
+      ['torso', 0, 0.02, 0, 0.58, 0.08, 0.36, GOLD],
+      ...mirror(['armL', 0.04, -0.02, 0, 0.26, 0.14, 0.26, GOLD]),
+      // espada cerimonial curva (khopesh)
+      ['armR', 0, -0.62, 0.1, 0.05, 0.12, 0.05, 0x5a3a20],
+      ['armR', 0, -0.66, 0.36, 0.04, 0.08, 0.46, GOLD_L],
+      ['armR', 0, -0.56, 0.6, 0.04, 0.22, 0.12, GOLD_L, 0.6],
+    ],
+  },
+});
+
+// Escorpião Imperial: armadura preta e dourada, pinças robustas, ferrão roxo
+function drawScorpion(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const bob = Math.abs(Math.sin(z.walk * 2.5)) * 0.03;
+  // corpo segmentado
+  P(base, 0, 0.42 + bob, 0.1, 0.62, 0.3, 0.6, 0x1a1a20);
+  P(base, 0, 0.58 + bob, 0.1, 0.4, 0.03, 0.5, GOLD);
+  P(base, 0, 0.4 + bob, -0.32, 0.5, 0.26, 0.3, 0x22222a);
+  G.part(base, 0.12, 0.5, 0.42, 0, 0, 0, 0, 0, 0.07, 0.05, 0.02, 0xff2a1a);
+  G.part(base, -0.12, 0.5, 0.42, 0, 0, 0, 0, 0, 0.07, 0.05, 0.02, 0xff2a1a);
+  // cauda curvada sobre o corpo, ferrão roxo (golpeia no ataque)
+  const strike = z.attackT > 0 ? 0.7 : 0;
+  let m = joint(base, 0, 0.45, -0.45, 0.9 - strike * 0.3, 0, Math.sin(t * 2) * 0.05);
+  for (let i = 0; i < 4; i++) {
+    P(m, 0, 0.13, 0, 0.22 - i * 0.02, 0.26, 0.22 - i * 0.02, i % 2 ? GOLD : 0x1a1a20);
+    m = joint(m, 0, 0.24, 0, 0.45 + strike * 0.35, 0, 0);
+  }
+  P(m, 0, 0.08, 0, 0.14, 0.18, 0.14, 0x7a2ab0);
+  G.part(m, 0, 0.2, 0.05, 0.5, 0, 0, 0, 0, 0.05, 0.16, 0.05, 0xc070ff);
+  // pinças
+  const pinch = z.attackT > 0 ? 0.5 : Math.sin(t * 3) * 0.1;
+  for (const sg of [1, -1]) {
+    const arm = joint(base, sg * 0.3, 0.42, 0.36, 0, sg * -0.3, 0);
+    P(arm, 0, 0, 0.18, 0.12, 0.12, 0.36, 0x1a1a20);
+    const claw = joint(arm, 0, 0, 0.4, 0, sg * (0.2 + pinch), 0);
+    P(claw, 0, 0, 0.1, 0.22, 0.16, 0.26, GOLD);
+    P(claw, sg * -0.08, 0, 0.3, 0.06, 0.1, 0.2, 0x1a1a20);
+  }
+  // 8 patas
+  for (let i = 0; i < 4; i++)
+    for (const sg of [1, -1]) {
+      const ph = z.walk * 2 + (i % 2 ? Math.PI : 0) + (sg > 0 ? Math.PI : 0);
+      const hz = 0.2 - i * 0.18;
+      const fz = hz + (i - 1.5) * 0.2 + Math.sin(ph) * 0.1;
+      const fy = Math.max(0, Math.cos(ph)) * 0.1;
+      seg(B, base, z.scale, sg * 0.3, 0.38, hz, sg * 0.56, 0.52 + fy, hz, 0.07, col(0x1a1a20));
+      seg(B, base, z.scale, sg * 0.56, 0.52 + fy, hz, sg * 0.72, fy, fz, 0.06, col(GOLD));
+    }
+}
+
+// Híbrido Chacal: fera de quatro patas, pelo preto com faixas de múmia, colar dourado, olhos vermelhos
+function drawJackal(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const fur = 0x1e1e24;
+  const gait = z.walk * 1.4;
+  const bob = Math.abs(Math.sin(gait)) * 0.05;
+  P(base, 0, 0.68 + bob, -0.1, 0.46, 0.4, 0.92, fur);
+  P(base, 0, 0.68 + bob, 0.28, 0.5, 0.5, 0.4, fur);
+  // faixas de múmia no corpo e pelos espetados no dorso
+  for (const zz of [-0.4, -0.15, 0.1]) P(base, 0, 0.68 + bob, zz, 0.48, 0.42, 0.06, BANDAGE_D, 0.3);
+  for (const [zz, hh] of [[0.3, 0.24], [0.1, 0.22], [-0.1, 0.18], [-0.3, 0.14]]) P(base, 0, 0.9 + bob + hh * 0.35, zz, 0.1, hh, 0.12, 0x3a2a1a, -0.55);
+  P(base, 0, 0.82 + bob, 0.46, 0.54, 0.1, 0.14, GOLD);
+  P(base, 0, 0.8 + bob, 0.54, 0.2, 0.08, 0.02, IMPERIAL);
+  const tail = joint(base, 0, 0.76 + bob, -0.56, -0.9 + Math.sin(t * 8) * 0.2, 0, Math.sin(t * 6) * 0.3);
+  P(tail, 0, 0.2, 0, 0.1, 0.42, 0.1, fur);
+  // cabeça de chacal: orelhas altas, focinho longo, boca aberta
+  const lunge = z.state === 'lunge';
+  const head = joint(base, 0, 0.92 + bob, 0.5, -0.15 + (lunge ? -0.3 : 0), 0, Math.sin(gait * 0.5) * 0.05);
+  P(head, 0, 0.08, 0.1, 0.4, 0.34, 0.36, fur);
+  P(head, 0, 0.02, 0.4, 0.24, 0.16, 0.3, fur);
+  P(head, 0, 0.08, 0.56, 0.1, 0.06, 0.03, 0x0a0a0a);
+  const jaw = 0.35 + (z.attackT > 0 || lunge ? 0.35 : 0);
+  P(head, 0, -0.12, 0.34, 0.22, 0.06, 0.28, fur, jaw);
+  P(head, 0, -0.08, 0.36, 0.18, 0.04, 0.24, 0x8a1010, jaw * 0.5);
+  for (const sg of [1, -1]) {
+    G.part(head, sg * 0.12, 0.14, 0.285, 0, sg * 0.3, 0, 0, 0, 0.1, 0.05, 0.02, 0xff2a1a);
+    P(head, sg * 0.13, 0.4, 0.02, 0.1, 0.32, 0.08, fur, -0.15, -sg * 0.1);
+    P(head, sg * 0.13, 0.38, 0.06, 0.05, 0.22, 0.012, GOLD, -0.15, -sg * 0.1);
+    P(head, sg * 0.08, -0.08, 0.53, 0.035, 0.08, 0.03, TEETH);
+    P(head, sg * 0.08, -0.15, 0.46, 0.035, 0.06, 0.03, TEETH, jaw);
+  }
+  const legs = [[0.16, 0.32, 0], [-0.16, 0.32, Math.PI], [0.16, -0.44, Math.PI], [-0.16, -0.44, 0]];
+  for (const [x, zz, ph] of legs) {
+    const a = lunge ? (zz > 0 ? -1.1 : 0.9) : Math.sin(gait + ph) * 0.7;
+    const leg = joint(base, x, 0.56 + bob, zz, a, 0, 0);
+    P(leg, 0, -0.25, 0, 0.14, 0.54, 0.16, fur);
+    P(leg, 0, -0.2, 0, 0.15, 0.08, 0.17, BANDAGE_D);
+    P(leg, 0, -0.52, 0.05, 0.16, 0.07, 0.22, 0x0e0e12);
+  }
+}
+
+// Portal das Almas: obelisco único de arenito com portal roxo oval na frente, runas e cubos flutuantes
+function drawPortal(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const charge = z.state === 'cast' ? 1 : 0;
+  const pulse = 0.5 + 0.5 * Math.sin(t * (charge ? 14 : 3));
+  P(base, 0, 0.12, 0, 1.3, 0.24, 1.0, 0x8a7a5a);
+  P(base, 0, 0.3, 0, 1.1, 0.14, 0.86, 0xa8946a);
+  // obelisco afinando para cima com ponta dourada
+  P(base, 0, 1.1, 0, 0.9, 1.5, 0.7, 0xc8b080);
+  P(base, 0, 2.15, 0, 0.74, 0.6, 0.56, 0xc8b080);
+  P(base, 0, 2.6, 0, 0.5, 0.3, 0.4, GOLD, 0, 0);
+  P(base, 0, 2.8, 0, 0.24, 0.14, 0.2, GOLD_L);
+  // moldura e portal roxo oval
+  P(base, 0, 1.05, 0.36, 0.7, 1.2, 0.04, 0x6a5a40);
+  const s = 0.9 + pulse * 0.1 + charge * 0.2;
+  G.part(base, 0, 1.05, 0.39, 0, 0, 0, 0, 0, 0.5 * s, 1.0 * s, 0.02, charge ? 0xe0a0ff : 0x9a4ae0);
+  G.part(base, 0, 1.05, 0.4, 0, t * 2, 0, 0, 0, 0.3 * s, 0.6 * s, 0.02, 0x3a0a6a);
+  G.part(base, 0, 1.05, 0.41, 0, 0, 0, 0, 0, 0.12, 0.24, 0.02, 0xffffff);
+  // runas roxas nas laterais
+  for (const sg of [1, -1]) for (let k = 0; k < 4; k++) G.part(base, sg * 0.46, 0.55 + k * 0.42, 0.2, 0, 0, 0, 0, 0, 0.02, 0.12, 0.1, pulse > 0.5 || charge ? 0xc070ff : 0x7a3ab0);
+  // cubos roxos flutuando ao redor
+  for (let k = 0; k < 5; k++) {
+    const a = t * (0.8 + charge * 2) + k * 1.26;
+    G.part(base, Math.sin(a) * 1.0, 1.0 + Math.sin(t * 2 + k) * 0.4 + k * 0.15, Math.cos(a) * 0.7, a, a, 0, 0, 0, 0.14, 0.14, 0.14, 0x9a4ae0);
+  }
+}
+
+BODIES.jackal = drawJackal;
+BODIES.scorpion = drawScorpion;
+BODIES.portal = drawPortal;
+OTHER_COLORS.scorpion = [0x1a1a20, GOLD];
+OTHER_COLORS.jackal = [0x1e1e24, GOLD];
+OTHER_COLORS.portal = [0x6a5e52, 0x8a3ad0];
+
+// Carruagem Maldita: carruagem dourada, rodas grandes, dois cavalos esqueletos e condutor infectado
+function drawChariot(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const wind = z.state === 'wind';
+  const roll = z.walk * 2;
+  // caixa da carruagem
+  P(base, 0, 0.7, -0.55, 1.1, 0.5, 0.9, GOLD);
+  P(base, 0, 0.98, -0.55, 1.14, 0.08, 0.94, GOLD_L);
+  P(base, 0, 0.7, -0.09, 1.0, 0.36, 0.04, IMPERIAL);
+  P(base, 0, 0.5, 0.3, 0.08, 0.08, 1.0, 0x5a3a20);
+  // rodas grandes girando
+  for (const sg of [1, -1]) {
+    const w = joint(base, sg * 0.62, 0.5, -0.55, roll, 0, 0);
+    P(w, 0, 0, 0, 0.08, 0.9, 0.9, 0x3a2a1a);
+    P(w, 0, 0, 0, 0.1, 0.12, 0.94, GOLD);
+    P(w, 0, 0, 0, 0.1, 0.94, 0.12, GOLD);
+    P(w, 0, 0, 0, 0.12, 0.2, 0.2, GOLD_L);
+  }
+  // condutor múmia com toucado listrado e arco
+  P(base, 0, 1.25, -0.5, 0.38, 0.5, 0.3, BANDAGE);
+  P(base, 0, 1.3, -0.34, 0.38, 0.04, 0.012, BANDAGE_D);
+  P(base, 0, 1.68, -0.5, 0.34, 0.34, 0.34, BANDAGE);
+  P(base, 0, 1.88, -0.52, 0.38, 0.08, 0.38, GOLD);
+  P(base, 0, 1.68, -0.69, 0.38, 0.36, 0.04, IMPERIAL);
+  for (const sg of [1, -1]) P(base, sg * 0.19, 1.62, -0.52, 0.04, 0.34, 0.34, IMPERIAL);
+  P(base, 0, 1.58, -0.33, 0.14, 0.06, 0.02, 0x3a0606);
+  P(base, 0.3, 1.3, -0.3, 0.05, 0.7, 0.05, GOLD);
+  G.part(base, 0.08, 1.7, -0.335, 0, 0, 0, 0, 0, 0.06, 0.04, 0.02, 0xff2a1a);
+  G.part(base, -0.08, 1.7, -0.335, 0, 0, 0, 0, 0, 0.06, 0.04, 0.02, 0xff2a1a);
+  // dois cavalos esqueletos à frente
+  for (const sg of [1, -1]) {
+    const hx = sg * 0.32;
+    const gal = Math.sin(z.walk * 2.4 + (sg > 0 ? 0 : 1.2));
+    P(base, hx, 0.95 + gal * 0.03, 0.85, 0.3, 0.32, 0.8, BONE);
+    for (let r = 0; r < 3; r++) P(base, hx, 0.95, 0.65 + r * 0.2, 0.32, 0.04, 0.04, 0x2a2018);
+    const nk = joint(base, hx, 1.1, 1.22, -0.7 + (wind ? -0.3 : 0), 0, 0);
+    P(nk, 0, 0.2, 0, 0.16, 0.4, 0.18, BONE);
+    P(nk, 0, 0.42, 0.14, 0.18, 0.18, 0.36, BONE);
+    G.part(nk, 0.06, 0.48, 0.26, 0, 0, 0, 0, 0, 0.05, 0.04, 0.04, wind ? 0xffd040 : 0xff2a1a);
+    for (const [lx, lz, ph] of [[0.1, 1.1, 0], [-0.1, 1.1, 1.5], [0.1, 0.6, 3], [-0.1, 0.6, 4.5]]) {
+      const a = Math.sin(z.walk * 2.4 + ph) * 0.5;
+      const leg = joint(base, hx + lx, 0.8, lz, a, 0, 0);
+      P(leg, 0, -0.38, 0, 0.07, 0.76, 0.07, BONE_D);
+    }
+  }
+  // aviso da investida: brilho dourado no chão à frente
+  if (wind) G.part(base, 0, 0.03, 1.6, 0, 0, 0, 0, 0, 0.9, 0.02, 1.6 + Math.sin(t * 20) * 0.2, 0xffd040);
+}
+
+// Hórus Corrompido: falcão inteiro de asas douradas listradas de azul, olhos vermelhos
+function drawHorus(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const flap = Math.sin(t * 8 + z.walk) * 0.5;
+  const dive = z.state === 'lunge' ? 0.55 : z.state === 'wind' ? -0.35 : 0.1;
+  const body = joint(base, 0, -0.1, 0, dive, 0, 0);
+  // corpo horizontal
+  P(body, 0, 0, 0, 0.42, 0.38, 0.8, GOLD);
+  P(body, 0, -0.12, 0.08, 0.36, 0.16, 0.6, 0xe8d8a0);
+  P(body, 0, 0.12, -0.05, 0.3, 0.06, 0.6, IMPERIAL);
+  // cauda em leque
+  P(body, 0, 0.02, -0.56, 0.44, 0.06, 0.36, IMPERIAL);
+  P(body, 0, 0.04, -0.6, 0.3, 0.06, 0.3, GOLD);
+  // cabeça de falcão com bico curvo
+  const hd = joint(body, 0, 0.22, 0.46, -dive * 0.4, 0, 0);
+  P(hd, 0, 0, 0, 0.32, 0.32, 0.32, GOLD);
+  P(hd, 0, 0.1, -0.02, 0.34, 0.08, 0.34, IMPERIAL);
+  P(hd, 0, -0.04, 0.2, 0.14, 0.12, 0.12, 0x2a2018);
+  P(hd, 0, -0.1, 0.26, 0.08, 0.08, 0.06, 0x2a2018, 0.6);
+  G.part(hd, 0.12, 0.02, 0.15, 0, 0, 0, 0, 0, 0.06, 0.06, 0.04, 0xff2a1a);
+  G.part(hd, -0.12, 0.02, 0.15, 0, 0, 0, 0, 0, 0.06, 0.06, 0.04, 0xff2a1a);
+  // asas grandes batendo, com penas azuis nas pontas
+  for (const sg of [1, -1]) {
+    const wg = joint(body, sg * 0.2, 0.1, 0.05, 0, 0, sg * (0.15 + flap));
+    P(wg, sg * 0.5, 0, 0, 1.0, 0.07, 0.6, GOLD);
+    for (let k = 0; k < 3; k++) P(wg, sg * (0.3 + k * 0.3), -0.01, -0.28, 0.24, 0.05, 0.16, IMPERIAL);
+    const tip = joint(wg, sg * 1.0, 0, 0, 0, 0, sg * flap * 0.6);
+    P(tip, sg * 0.32, 0, -0.06, 0.64, 0.05, 0.46, GOLD_L);
+    P(tip, sg * 0.4, -0.01, -0.28, 0.5, 0.04, 0.12, IMPERIAL);
+  }
+  // garras
+  for (const sg of [1, -1]) P(body, sg * 0.12, -0.28, 0.12, 0.08, 0.16, 0.08, 0x2a2018);
+  if (z.attackT > 0) G.part(hd, 0, -0.04, 0.36, 0, 0, 0, 0, 0, 0.16, 0.16, 0.16, 0x3fe0ff);
+}
+BODIES.chariot = drawChariot;
+BODIES.horus = drawHorus;
+OTHER_COLORS.chariot = [GOLD, IMPERIAL];
+OTHER_COLORS.horus = [IMPERIAL, GOLD];
+
+// A Esfinge Eterna (chefão final): leão de pedra e ouro com cabeça de faraó, inscrições e olhos vermelhos
+function drawSphinx(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const STONE_S = 0xd8b070;
+  const STONE_SD = 0xb08a50;
+  const step = Math.sin(z.walk * 1.2) * 0.25;
+  const slam = z.state === 'slam' ? 0.4 : 0;
+  // corpo de leão deitado/andando
+  P(base, 0, 0.75, -0.3, 1.1, 0.8, 1.7, STONE_S);
+  P(base, 0, 1.18, -0.3, 1.0, 0.08, 1.5, STONE_SD);
+  for (const zz of [-0.8, -0.3, 0.2]) P(base, 0.56, 0.8, zz, 0.02, 0.3, 0.3, STONE_SD);
+  for (const zz of [-0.8, -0.3, 0.2]) P(base, -0.56, 0.8, zz, 0.02, 0.3, 0.3, STONE_SD);
+  // rachaduras brilhando
+  G.part(base, 0.565, 0.6, -0.55, 0, 0, 0, 0, 0, 0.02, 0.3, 0.04, 0xff8a1a);
+  G.part(base, -0.565, 0.9, 0.05, 0, 0, 0, 0, 0, 0.02, 0.04, 0.3, 0xff8a1a);
+  // cauda
+  P(base, 0, 0.5, -1.2, 0.14, 0.14, 0.5, STONE_SD, -0.5);
+  // patas dianteiras enormes (levantam na pancada)
+  for (const sg of [1, -1]) {
+    const leg = joint(base, sg * 0.42, 0.7, 0.5, step * sg - slam, 0, 0);
+    P(leg, 0, -0.3, 0.1, 0.36, 0.7, 0.4, STONE_S);
+    P(leg, 0, -0.62, 0.3, 0.42, 0.18, 0.6, STONE_SD);
+    for (const x of [-0.12, 0, 0.12]) P(leg, x, -0.62, 0.62, 0.08, 0.1, 0.06, 0xe8c888);
+    const back = joint(base, sg * 0.42, 0.6, -0.95, -step * sg, 0, 0);
+    P(back, 0, -0.28, 0, 0.36, 0.6, 0.4, STONE_S);
+  }
+  // peito e cabeça de faraó com toucado, barba, olhos vermelhos
+  P(base, 0, 1.15, 0.45, 0.9, 0.7, 0.5, STONE_S);
+  const hd = joint(base, 0, 1.6, 0.55, 0, Math.sin(t * 0.6) * 0.08, 0);
+  P(hd, 0, 0.1, 0, 0.62, 0.62, 0.56, STONE_S);
+  P(hd, 0, 0.44, -0.02, 0.7, 0.12, 0.62, GOLD);
+  P(hd, 0, 0.12, -0.3, 0.72, 0.62, 0.06, IMPERIAL);
+  for (const y of [0.28, 0.08, -0.12]) P(hd, 0, y, -0.335, 0.72, 0.05, 0.02, GOLD);
+  for (const sg of [1, -1]) {
+    P(hd, sg * 0.36, 0, -0.02, 0.06, 0.72, 0.56, IMPERIAL);
+    P(hd, sg * 0.395, 0.12, -0.02, 0.012, 0.06, 0.56, GOLD);
+    P(hd, sg * 0.395, -0.12, -0.02, 0.012, 0.06, 0.56, GOLD);
+    G.part(hd, sg * 0.15, 0.16, 0.285, 0, 0, sg * 0.3, 0, 0, 0.14, 0.07, 0.02, 0xff2a1a);
+    P(hd, sg * 0.15, 0.25, 0.285, 0.18, 0.04, 0.02, STONE_SD, 0, sg * 0.35);
+  }
+  P(hd, 0, 0.62, 0.22, 0.12, 0.2, 0.1, GOLD);
+  P(hd, 0, -0.08, 0.285, 0.3, 0.08, 0.02, 0x3a2a14);
+  P(hd, 0, -0.32, 0.22, 0.14, 0.34, 0.12, GOLD);
+  // brilho do raio carregando nos olhos e na boca
+  if (z.state === 'beam') G.part(hd, 0, -0.08, 0.32, 0, 0, 0, 0, 0, 0.36, 0.14, 0.06, 0x3fe0ff);
+}
+BODIES.sphinx = drawSphinx;
+OTHER_COLORS.sphinx = [0xd8b070, GOLD];
+
+// ------------------------------------------------------------------ Roma Antiga (só no Coliseu da Arena)
+const RM_RED = 0xc01e1e;
+const RM_RED_D = 0x861212;
+const RM_STEEL = 0xb4b8c0;
+const RM_STEEL_D = 0x767a84;
+const RM_LEATHER = 0x6a4426;
+const RM_SKIN = 0x9aa486; // pele zumbi acinzentada (diferente do verde do zumbi comum e da bandagem do Egito)
+const RM_SKIN_D = 0x7a8468;
+const RM_WOOD = 0x7a4a24;
+const rmEyes = (brow = RM_SKIN_D) => face(0xff2a1a, { brow, mouth: 0x3a0606, open: 0.15, fangs: true });
+// elmo romano (galea): calota, aba dourada, protetores de bochecha e de nuca
+const galea = (c = RM_STEEL, trim = GOLD) => [
+  ['head', 0, 0.56, -0.02, 0.62, 0.14, 0.62, c],
+  ['head', 0, 0.5, 0.3, 0.62, 0.06, 0.04, trim],
+  ['head', 0, 0.36, -0.31, 0.64, 0.26, 0.06, c],
+  ['head', 0, 0.24, -0.35, 0.7, 0.05, 0.12, trim],
+  ...mirror(['head', 0.3, 0.3, 0.1, 0.05, 0.36, 0.26, c], ['head', 0.32, 0.36, 0.1, 0.012, 0.05, 0.2, trim]),
+];
+// crista: longitudinal (soldado) ou transversal (centurião)
+const crestLong = (c = RM_RED) => [
+  ['head', 0, 0.66, -0.02, 0.08, 0.08, 0.5, GOLD],
+  ['head', 0, 0.8, -0.04, 0.14, 0.22, 0.66, c],
+  ['head', 0, 0.74, -0.38, 0.14, 0.2, 0.12, c],
+  ['head', 0, 0.92, 0.02, 0.1, 0.06, 0.5, RM_RED_D],
+];
+const crestCross = (c = RM_RED) => [
+  ['head', 0, 0.66, 0, 0.5, 0.08, 0.08, GOLD],
+  ['head', 0, 0.82, 0, 0.92, 0.26, 0.16, c],
+  ...mirror(['head', 0.42, 0.72, 0, 0.12, 0.2, 0.16, c]),
+  ['head', 0, 0.97, 0, 0.7, 0.06, 0.12, RM_RED_D],
+];
+// saia de tiras de couro (pteruges) sobre a túnica vermelha
+const pteruges = (strip = RM_LEATHER, tunic = RM_RED) => [
+  ['torso', 0, 0.02, 0, 0.6, 0.12, 0.38, tunic],
+  ...[-0.21, -0.07, 0.07, 0.21].map((x) => ['torso', x, -0.1, 0.17, 0.1, 0.2, 0.02, strip]),
+  ...[-0.14, 0, 0.14].map((x) => ['torso', x, -0.1, -0.17, 0.1, 0.2, 0.02, strip]),
+];
+Object.assign(HUMANS, {
+  // Legionário Zumbi: lorica segmentada de aço, elmo com crista vermelha, escudo retangular vermelho e gladius
+  rm_legion: {
+    skin: RM_SKIN, shirt: RM_STEEL, sleeve: RM_RED, hands: RM_SKIN_D, pants: RM_SKIN, boots: RM_LEATHER, noFace: true, arms: 'shield',
+    extras: [
+      ...rmEyes(),
+      ...galea(),
+      ...crestLong(),
+      // lorica segmentata: faixas horizontais e alças de couro
+      ...[0.14, 0.24, 0.34].map((y) => ['torso', 0, y, 0.166, 0.56, 0.025, 0.012, RM_STEEL_D]),
+      ...mirror(['torso', 0.13, 0.42, 0.168, 0.07, 0.2, 0.012, RM_LEATHER], ['armL', 0.03, -0.03, 0, 0.26, 0.15, 0.26, RM_STEEL], ['armL', 0.03, 0.03, 0, 0.27, 0.03, 0.27, RM_STEEL_D]),
+      ...pteruges(),
+      ['torso', 0, 0.08, 0.186, 0.12, 0.08, 0.012, GOLD],
+      ['torso', -0.12, 0.28, 0.168, 0.12, 0.1, 0.012, BLOOD],
+      // sandálias com tiras subindo a canela
+      ...mirror(['legL', 0, -0.26, 0.121, 0.22, 0.03, 0.012, RM_LEATHER], ['legL', 0, -0.18, 0.121, 0.22, 0.03, 0.012, RM_LEATHER]),
+      // escudo retangular (scutum) vermelho com borda, umbo e emblema dourados
+      ['armL', -0.1, -0.5, 0, 0.6, 0.06, 0.82, RM_RED],
+      ['armL', -0.1, -0.535, 0.39, 0.6, 0.02, 0.05, GOLD],
+      ['armL', -0.1, -0.535, -0.39, 0.6, 0.02, 0.05, GOLD],
+      ...[0.18, -0.38].map((x) => ['armL', x, -0.535, 0, 0.04, 0.02, 0.82, GOLD]),
+      ['armL', -0.1, -0.545, 0, 0.16, 0.03, 0.16, GOLD_L],
+      ['armL', -0.1, -0.54, 0, 0.04, 0.02, 0.6, GOLD],
+      ['armL', -0.1, -0.54, 0.16, 0.36, 0.02, 0.04, GOLD],
+      // gladius: lâmina curta e larga, guarda e pomo dourados
+      ['armR', 0, -0.46, 0.04, 0.07, 0.1, 0.1, RM_LEATHER],
+      ['armR', 0, -0.46, 0.12, 0.16, 0.05, 0.04, GOLD],
+      ['armR', 0, -0.46, 0.38, 0.1, 0.03, 0.48, 0xdfe3ea],
+      ['armR', 0, -0.46, 0.64, 0.06, 0.03, 0.06, 0xdfe3ea],
+      ['armR', 0, -0.46, -0.04, 0.07, 0.07, 0.06, GOLD],
+    ],
+  },
+  // Centurião Infectado: couraça dourada musculada, crista transversal, capa vermelha, espada longa
+  rm_centurion: {
+    skin: RM_SKIN, shirt: GOLD, sleeve: RM_RED, hands: RM_SKIN_D, pants: RM_SKIN, boots: GOLD, noFace: true, arms: 'brawl',
+    extras: [
+      ...rmEyes(),
+      ...galea(RM_STEEL, GOLD_L),
+      ...crestCross(),
+      // couraça musculada: peitorais e abdômen em relevo, medalhão vermelho
+      ...mirror(['torso', 0.12, 0.38, 0.172, 0.2, 0.14, 0.02, GOLD_L]),
+      ...[0.2, 0.1].map((y) => ['torso', 0, y, 0.172, 0.3, 0.06, 0.02, GOLD_L]),
+      ['torso', 0, 0.3, 0.184, 0.1, 0.1, 0.012, RM_RED],
+      ['torso', 0, 0.5, 0.12, 0.62, 0.08, 0.14, GOLD_L],
+      // ombreiras douradas grandes em camadas
+      ...mirror(['armL', 0.05, -0.0, 0, 0.34, 0.18, 0.34, GOLD], ['armL', 0.05, -0.1, 0, 0.3, 0.06, 0.3, RM_RED], ['armL', 0, -0.4, 0, 0.21, 0.1, 0.23, GOLD]),
+      ...pteruges(RM_RED_D, RM_RED),
+      ...[-0.21, -0.07, 0.07, 0.21].map((x) => ['torso', x, -0.2, 0.17, 0.1, 0.03, 0.025, GOLD]),
+      // capa vermelha caindo nas costas
+      ['torso', 0, 0.12, -0.2, 0.62, 0.84, 0.04, RM_RED],
+      ['torso', 0, 0.5, -0.19, 0.66, 0.08, 0.06, RM_RED_D],
+      // grevas douradas
+      ...mirror(['legL', 0, -0.24, 0.07, 0.23, 0.26, 0.12, GOLD]),
+      // espada longa (spatha) com guarda dourada
+      ['armR', 0, -0.46, 0.04, 0.08, 0.1, 0.1, RM_LEATHER],
+      ['armR', 0, -0.46, 0.13, 0.22, 0.06, 0.05, GOLD_L],
+      ['armR', 0, -0.46, 0.5, 0.11, 0.035, 0.7, 0xdfe3ea],
+      ['armR', 0, -0.46, 0.5, 0.03, 0.04, 0.66, RM_STEEL_D],
+      ['armR', 0, -0.46, -0.05, 0.08, 0.08, 0.07, GOLD_L],
+      // bastão de vinha (vitis) preso ao cinto, símbolo de comando
+      ['torso', 0.3, 0.02, 0.1, 0.04, 0.5, 0.04, RM_WOOD, 0.3],
+    ],
+  },
+  // Arqueiro Romano: elmo com pequena crista, túnica vermelha e couro, arco de madeira com flecha flamejante, aljava
+  rm_archer: {
+    skin: RM_SKIN, shirt: RM_RED, sleeve: RM_SKIN, hands: RM_SKIN_D, pants: RM_SKIN, boots: RM_LEATHER, noFace: true, arms: 'reach',
+    extras: [
+      ...rmEyes(),
+      ...galea(RM_STEEL, GOLD),
+      ['head', 0, 0.7, -0.04, 0.1, 0.12, 0.44, RM_RED],
+      // colete de couro com cinto transversal da aljava
+      ['torso', 0, 0.3, 0.166, 0.36, 0.3, 0.012, RM_LEATHER],
+      ['torso', 0, 0.27, 0.18, 0.08, 0.66, 0.012, 0x4a2a14, 0, -0.6],
+      ...pteruges(RM_LEATHER, RM_RED_D),
+      ...mirror(['armL', 0, -0.35, 0, 0.2, 0.1, 0.22, RM_LEATHER]),
+      // aljava nas costas com penas vermelhas
+      ['torso', 0.1, 0.32, -0.24, 0.16, 0.56, 0.14, RM_LEATHER, 0, 0.35],
+      ['torso', 0.22, 0.64, -0.24, 0.12, 0.1, 0.1, RM_RED, 0, 0.35],
+      ['torso', 0.16, 0.66, -0.26, 0.04, 0.14, 0.04, 0xeeeeee, 0, 0.35],
+      // arco recurvo de madeira em pé, pontas douradas, corda puxada e flecha em brasa apontando à frente
+      ['armL', 0, -0.5, 0, 0.07, 0.07, 1.1, RM_WOOD],
+      ...[0.52, -0.52].map((zz) => ['armL', 0, -0.47, zz, 0.1, 0.1, 0.08, GOLD]),
+      ['armL', 0, -0.3, 0, 0.012, 0.012, 1.0, 0xeeeeee],
+      ['armL', 0, -0.62, 0, 0.03, 0.66, 0.03, 0x8a5a30],
+      ['armL', 0, -0.98, 0, 0.06, 0.1, 0.06, 0xdfe3ea],
+      ['armL', 0, -1.02, 0, 0.08, 0.08, 0.08, 0xff8a1a, 0, 0, GLOW],
+    ],
+  },
+  // Gladiador Corrompido: elmo fechado dourado com grade, tronco nu, braço direito blindado (manica), maça com espinhos; curvado para a frente
+  rm_gladiator: {
+    skin: RM_SKIN, shirt: RM_SKIN, sleeve: RM_SKIN, hands: RM_LEATHER, pants: RM_LEATHER, boots: RM_LEATHER, noFace: true, arms: 'brawl', lean: 0.32,
+    extras: [
+      // elmo fechado: viseira dourada com grade e olhos vermelhos brilhando atrás
+      ['head', 0, 0.27, 0.285, 0.58, 0.56, 0.03, GOLD],
+      ['head', 0, 0.3, 0.3, 0.4, 0.26, 0.012, 0x1a1210],
+      ...[-0.12, 0, 0.12].map((x) => ['head', x, 0.3, 0.31, 0.03, 0.28, 0.02, GOLD_L]),
+      ...[0.36, 0.24].map((y) => ['head', 0, y, 0.31, 0.42, 0.025, 0.02, GOLD_L]),
+      ...mirror(['head', 0.1, 0.31, 0.302, 0.09, 0.05, 0.012, 0xff2a1a, 0, 0.25, GLOW]),
+      ['head', 0, 0.56, -0.02, 0.62, 0.14, 0.62, GOLD],
+      ['head', 0, 0.48, -0.02, 0.84, 0.05, 0.84, GOLD_L],
+      ['head', 0, 0.74, -0.04, 0.1, 0.22, 0.5, GOLD],
+      ['head', 0, 0.76, -0.04, 0.14, 0.12, 0.4, RM_RED],
+      // tronco nu musculoso com cicatrizes e cinto largo
+      ...mirror(['torso', 0.12, 0.38, 0.166, 0.2, 0.12, 0.012, RM_SKIN_D]),
+      ...[0.22, 0.12].map((y) => ['torso', 0, y, 0.166, 0.24, 0.04, 0.012, RM_SKIN_D]),
+      ['torso', -0.1, 0.3, 0.17, 0.14, 0.1, 0.012, BLOOD],
+      ['torso', 0, 0.04, 0, 0.62, 0.14, 0.38, RM_LEATHER],
+      ['torso', 0, 0.04, 0.195, 0.18, 0.12, 0.012, GOLD],
+      ['torso', 0, -0.1, 0.18, 0.3, 0.22, 0.02, RM_RED],
+      // ombreira (galerus) no braço esquerdo
+      ['armL', 0.06, 0.02, 0, 0.34, 0.24, 0.34, RM_STEEL],
+      ['armL', 0.06, 0.12, 0, 0.36, 0.04, 0.36, GOLD],
+      // braço direito blindado em segmentos
+      ...[-0.04, -0.14, -0.24, -0.34].map((y) => ['armR', 0, y, 0, 0.22, 0.08, 0.24, RM_STEEL]),
+      ...[-0.09, -0.19, -0.29].map((y) => ['armR', 0, y, 0, 0.23, 0.02, 0.25, RM_STEEL_D]),
+      // caneleiras douradas
+      ...mirror(['legL', 0, -0.26, 0.07, 0.23, 0.24, 0.12, GOLD]),
+      // maça: cabo de madeira e bola de ferro com espinhos
+      ['armR', 0, -0.48, 0.2, 0.06, 0.06, 0.46, RM_WOOD],
+      ['armR', 0, -0.48, 0.52, 0.26, 0.26, 0.26, 0x3a3a40],
+      ...[[0.17, 0, 0], [-0.17, 0, 0], [0, 0.17, 0], [0, -0.17, 0], [0, 0, 0.17]].map(([x, y, zz]) => ['armR', x, -0.48 + y, 0.52 + zz, x ? 0.1 : 0.06, y ? 0.1 : 0.06, zz ? 0.1 : 0.06, RM_STEEL]),
+    ],
+  },
+  // Pretor Sombrio: toga e armadura roxas com dourado, capuz, olhos roxos e cajado com orbe de corrupção
+  rm_engineer: {
+    skin: RM_SKIN, shirt: RM_LEATHER, sleeve: RM_RED, hands: RM_SKIN_D, pants: 0x4a3420, boots: RM_LEATHER, noFace: true, arms: 'brawl',
+    extras: [
+      ...rmEyes(),
+      // elmo simples de aço com borda de couro
+      ['head', 0, 0.52, -0.02, 0.62, 0.16, 0.62, RM_STEEL],
+      ['head', 0, 0.62, -0.02, 0.52, 0.1, 0.52, RM_STEEL_D],
+      ['head', 0, 0.44, 0.3, 0.58, 0.05, 0.05, GOLD],
+      // capa vermelha nas costas e avental de ferramentas
+      ['torso', 0, 0.16, -0.2, 0.58, 0.72, 0.04, RM_RED],
+      ['torso', 0, 0.24, 0.17, 0.46, 0.38, 0.02, 0x5a3a1e],
+      ['torso', 0, 0.06, 0.18, 0.56, 0.1, 0.03, RM_LEATHER],
+      ['torso', 0, 0.06, 0.195, 0.12, 0.09, 0.02, GOLD],
+      // martelo de ferro pesado na mão direita
+      ['armR', 0, -0.46, 0.22, 0.07, 0.07, 0.58, RM_WOOD],
+      ['armR', 0, -0.46, 0.52, 0.26, 0.16, 0.16, RM_STEEL],
+      ['armR', 0, -0.46, 0.52, 0.28, 0.05, 0.18, RM_STEEL_D],
+      // barril de madeira com aros de ferro na mão esquerda
+      ['armL', -0.06, -0.48, 0.14, 0.34, 0.42, 0.34, RM_WOOD],
+      ['armL', -0.06, -0.36, 0.14, 0.36, 0.05, 0.36, RM_STEEL_D],
+      ['armL', -0.06, -0.58, 0.14, 0.36, 0.05, 0.36, RM_STEEL_D],
+    ],
+  },
+  rm_praetor: {
+    skin: 0x7a5a9a, shirt: 0x5a2a8a, sleeve: 0x4a2272, hands: 0x6a4a8a, pants: 0x3a1a5e, boots: 0x2a1640, noFace: true, arms: 'staff',
+    extras: [
+      // olhos roxos brilhantes, sobrancelha e faixa cobrindo a boca
+      // rosto: placa clara, órbitas escuras com olhos roxos, sobrancelha e máscara com borda dourada
+      ['head', 0, 0.22, 0.278, 0.46, 0.44, 0.02, 0x8a6aa8],
+      ...mirror(['head', 0.12, 0.31, 0.288, 0.15, 0.1, 0.02, 0x2a1640], ['head', 0.12, 0.31, 0.296, 0.1, 0.06, 0.02, 0xd080ff, 0, 0.26, GLOW]),
+      ...mirror(['head', 0.12, 0.39, 0.292, 0.17, 0.045, 0.02, 0x3a1a5e, 0, 0.3]),
+      ['head', 0, 0.08, 0.288, 0.42, 0.16, 0.02, 0x3a1a5e],
+      ['head', 0, 0.16, 0.29, 0.44, 0.025, 0.02, GOLD],
+      // capuz roxo com borda dourada e abas laterais
+      ['head', 0, 0.58, -0.04, 0.68, 0.14, 0.68, 0x4a2272],
+      ['head', 0, 0.65, 0.22, 0.62, 0.05, 0.06, GOLD],
+      ...mirror(['head', 0.33, 0.3, -0.04, 0.06, 0.54, 0.62, 0x4a2272], ['head', 0.365, 0.42, 0.2, 0.012, 0.42, 0.06, GOLD]),
+      ['head', 0, 0.3, -0.34, 0.68, 0.6, 0.06, 0x3a1a5e],
+      ['head', 0, 0.72, -0.24, 0.26, 0.2, 0.18, 0x5a2a8a],
+      // peitoral dourado, gema roxa no centro e ombreiras roxas
+      ['torso', 0, 0.34, 0.172, 0.5, 0.3, 0.02, GOLD],
+      ['torso', 0, 0.34, 0.186, 0.16, 0.16, 0.02, 0x7a2ab0],
+      ['torso', 0, 0.34, 0.198, 0.1, 0.1, 0.012, 0xe0a0ff, 0, 0, GLOW],
+      ['torso', 0, 0.48, 0.15, 0.56, 0.08, 0.07, GOLD_L],
+      ['torso', 0, 0.06, 0.186, 0.28, 0.06, 0.02, GOLD],
+      // toga roxa atravessada no peito e cinto
+      ['torso', 0.02, 0.2, 0.178, 0.2, 0.5, 0.02, 0x6a3aa0, 0, -0.5],
+      ['torso', 0, -0.02, 0, 0.62, 0.1, 0.38, 0x3a1a5e],
+      ['torso', 0, -0.02, 0.195, 0.14, 0.1, 0.02, GOLD],
+      ...mirror(['armL', 0.05, 0.02, 0, 0.36, 0.2, 0.36, 0x4a2272], ['armL', 0.05, 0.12, 0, 0.38, 0.05, 0.38, GOLD]),
+      ...pteruges(0x4a2272, 0x3a1a5e),
+      ...mirror(['legL', 0, -0.16, 0.128, 0.24, 0.34, 0.02, 0x3a1a5e]),
+      // cajado: haste dourada, garras segurando o orbe roxo
+      ['armR', -0.06, -0.46, 0.2, 0.06, 0.06, 1.75, 0x6a4a2a],
+      ['armR', -0.06, -0.46, 0.5, 0.075, 0.075, 0.08, GOLD],
+      ['armR', -0.06, -0.46, 1.02, 0.2, 0.05, 0.05, GOLD],
+      ...[[0.1, 0], [-0.1, 0], [0, 0.1], [0, -0.1]].map(([x, y]) => ['armR', -0.06 + x, -0.46 + y, 1.14, 0.05, 0.05, 0.26, GOLD]),
+      ['armR', -0.06, -0.46, 1.3, 0.26, 0.26, 0.26, 0xb050ff, 0, 0, GLOW],
+      ['armR', -0.06, -0.46, 1.3, 0.14, 0.14, 0.14, 0xf0d0ff, 0, 0, GLOW],
+      ['armR', -0.06, -0.46, 1.3, 0.32, 0.32, 0.06, 0xd080ff, 0.785, 0.785, GLOW],
+      // motas roxas de corrupção girando junto ao corpo
+      ...[[0.34, 0.42, 0.2, 0xc070ff, 0], [-0.3, 0.16, 0.26, 0x9a4ae0, 0.5], [0.26, -0.1, -0.24, 0x9a4ae0, 1]].map(([x, y, zz, c, r]) => ['torso', x, y, zz, 0.09, 0.09, 0.09, c, r, r * 0.8, GLOW]),
+    ],
+  },
+});
+
+// Cão de Caça Infectado: cão magro de pelo cinza, crina vermelha eriçada, coleira de cravos dourados, olhos vermelhos
+function drawHound(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const fur = 0x8a8478;
+  const furD = 0x625c52;
+  const gait = z.walk * 1.4;
+  const bob = Math.abs(Math.sin(gait)) * 0.05;
+  const lunge = z.state === 'lunge';
+  // corpo fino e comprido, costelas aparentes e barriga recolhida
+  P(base, 0, 0.66 + bob, -0.12, 0.32, 0.3, 0.92, fur);
+  P(base, 0, 0.66 + bob, 0.26, 0.38, 0.4, 0.34, furD);
+  for (const zz of [0.06, -0.06, -0.18]) for (const sg of [1, -1]) P(base, sg * 0.165, 0.64 + bob, zz, 0.012, 0.16, 0.04, 0x4a2a24);
+  P(base, 0, 0.5 + bob, -0.2, 0.22, 0.04, 0.5, 0x8a1a1a);
+  // crina vermelha eriçada ao longo do dorso
+  for (const [zz, hh] of [[0.36, 0.26], [0.2, 0.24], [0.02, 0.2], [-0.16, 0.16], [-0.34, 0.12]]) P(base, 0, 0.84 + bob + hh * 0.35, zz, 0.1, hh, 0.12, RM_RED, -0.6);
+  // coleira de couro com cravos dourados
+  P(base, 0, 0.8 + bob, 0.42, 0.36, 0.1, 0.16, RM_LEATHER, -0.4);
+  for (const sg of [1, -1, 0]) P(base, sg * 0.16, 0.82 + bob, 0.46 + (sg ? 0 : 0.06), 0.05, 0.05, 0.05, GOLD_L);
+  // cauda fina
+  const tail = joint(base, 0, 0.72 + bob, -0.56, -0.7 + Math.sin(t * 9) * 0.2, 0, Math.sin(t * 7) * 0.3);
+  P(tail, 0, 0.22, 0, 0.06, 0.44, 0.06, furD);
+  // cabeça alongada, focinho fino e boca aberta
+  const head = joint(base, 0, 0.86 + bob, 0.48, -0.12 + (lunge ? -0.3 : 0), 0, Math.sin(gait * 0.5) * 0.05);
+  P(head, 0, 0.06, 0.1, 0.34, 0.3, 0.32, fur);
+  P(head, 0, 0.0, 0.38, 0.2, 0.14, 0.32, furD);
+  P(head, 0, 0.05, 0.55, 0.09, 0.06, 0.03, 0x1a1010);
+  const jaw = 0.32 + (z.attackT > 0 || lunge ? 0.4 : 0);
+  P(head, 0, -0.12, 0.34, 0.18, 0.05, 0.28, 0x4a3a30, jaw);
+  P(head, 0, -0.09, 0.36, 0.15, 0.04, 0.24, 0x8a1010, jaw * 0.5);
+  for (const sg of [1, -1]) {
+    G.part(head, sg * 0.1, 0.12, 0.265, 0, sg * 0.3, 0, 0, 0, 0.1, 0.05, 0.02, 0xff2a1a);
+    P(head, sg * 0.12, 0.3, -0.02, 0.08, 0.22, 0.07, furD, -0.45, -sg * 0.25);
+    P(head, sg * 0.07, -0.08, 0.52, 0.03, 0.08, 0.03, TEETH);
+    P(head, sg * 0.07, -0.15, 0.44, 0.03, 0.06, 0.03, TEETH, jaw);
+  }
+  // patas longas e finas
+  const legs = [[0.12, 0.3, 0], [-0.12, 0.3, Math.PI], [0.12, -0.44, Math.PI], [-0.12, -0.44, 0]];
+  for (const [x, zz, ph] of legs) {
+    const a = lunge ? (zz > 0 ? -1.1 : 0.9) : Math.sin(gait + ph) * 0.7;
+    const leg = joint(base, x, 0.56 + bob, zz, a, 0, 0);
+    P(leg, 0, -0.25, 0, 0.1, 0.54, 0.11, furD);
+    P(leg, 0, -0.52, 0.04, 0.12, 0.06, 0.18, 0x2a2420);
+  }
+}
+BODIES.rm_hound = drawHound;
+OTHER_COLORS.rm_hound = [0x8a8478, RM_RED];
+
+// Besta de Arena: leão de arena grande e baixo, juba vermelha com pontas douradas, olhos vermelhos e presas
+function drawBeast(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => G.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, c);
+  const fur = 0xc08a3a;
+  const furD = 0x966424;
+  const mane = 0xa82020;
+  const maneD = 0x741414;
+  const gait = z.walk * 1.5;
+  const bob = Math.abs(Math.sin(gait)) * 0.05;
+  const lunge = z.state === 'lunge';
+  // tronco largo e comprido, mais baixo que o cão de caça
+  P(base, 0, 0.72 + bob, -0.2, 0.54, 0.52, 1.0, fur);
+  P(base, 0, 0.74 + bob, 0.28, 0.62, 0.56, 0.42, fur);
+  P(base, 0, 0.56 + bob, 0.1, 0.44, 0.16, 0.72, furD);
+  // arreios de arena: tira de couro no dorso e placa dourada no peito
+  P(base, 0, 0.98 + bob, -0.14, 0.56, 0.06, 0.42, 0x6a4426);
+  P(base, 0, 0.86 + bob, 0.5, 0.2, 0.16, 0.08, GOLD);
+  P(base, 0, 0.86 + bob, 0.54, 0.1, 0.08, 0.04, GOLD_L);
+  // costelas marcadas
+  for (const zz of [-0.06, -0.2]) for (const sg of [1, -1]) P(base, sg * 0.275, 0.74 + bob, zz, 0.012, 0.2, 0.06, 0x8a5a1e);
+  // cauda com tufo vermelho
+  const tail = joint(base, 0, 0.82 + bob, -0.7, -0.5 + Math.sin(t * 4) * 0.14, 0, Math.sin(t * 5) * 0.22);
+  P(tail, 0, -0.24, 0, 0.09, 0.5, 0.09, furD);
+  P(tail, 0, -0.52, 0, 0.17, 0.18, 0.17, mane);
+  P(tail, 0, -0.64, 0, 0.1, 0.1, 0.1, maneD);
+  // quatro patas grossas com garras douradas
+  for (const [x, zz, ph] of [[0.21, 0.34, 0], [-0.21, 0.34, Math.PI], [0.22, -0.42, Math.PI], [-0.22, -0.42, 0]]) {
+    const a = lunge ? (zz > 0 ? -1.0 : 0.85) : Math.sin(gait + ph) * 0.6;
+    const leg = joint(base, x, 0.6 + bob, zz, a, 0, 0);
+    P(leg, 0, -0.27, 0.02, 0.18, 0.52, 0.2, furD);
+    P(leg, 0, -0.52, 0.06, 0.23, 0.1, 0.3, 0x9a6420);
+    P(leg, 0, -0.55, 0.2, 0.22, 0.06, 0.09, 0x2a2018);
+    for (const gx of [-0.07, 0.07]) P(leg, gx, -0.53, 0.25, 0.05, 0.04, 0.08, GOLD_L);
+  }
+  // cabeça alta e à frente do peito, com juba espinhosa em volta
+  const hd = joint(base, 0, 0.98 + bob, 0.58, -0.08 + (lunge ? -0.3 : 0), 0, Math.sin(gait * 0.5) * 0.05);
+  P(hd, 0, 0.02, -0.04, 0.68, 0.66, 0.2, maneD);
+  for (let k = 0; k < 10; k++) {
+    const a = (k / 10) * Math.PI * 2;
+    P(hd, Math.sin(a) * 0.36, Math.cos(a) * 0.36, -0.04, 0.16, 0.24, 0.24, k % 2 ? mane : 0x8a1a1a, 0, a);
+    if (k % 2 === 0) P(hd, Math.sin(a) * 0.46, Math.cos(a) * 0.46, -0.04, 0.07, 0.09, 0.09, GOLD_L, 0, a);
+  }
+  // crânio, focinho comprido e claro, nariz e orelhas
+  P(hd, 0, 0.04, 0.14, 0.44, 0.4, 0.4, fur);
+  P(hd, 0, 0.24, 0.12, 0.44, 0.08, 0.38, furD);
+  P(hd, 0, -0.02, 0.42, 0.3, 0.22, 0.26, 0xd8a850);
+  P(hd, 0, 0.08, 0.57, 0.14, 0.09, 0.04, 0x2a1810);
+  P(hd, 0, -0.11, 0.556, 0.24, 0.04, 0.02, 0x4a1010);
+  for (const sg of [1, -1]) {
+    P(hd, sg * 0.17, 0.28, 0.06, 0.12, 0.14, 0.1, furD, 0, -sg * 0.3);
+    // olhos vermelhos e sobrancelha
+    L(hd, sg * 0.1, 0.14, 0.346, 0.11, 0.06, 0.02, 0xff2a1a);
+    P(hd, sg * 0.1, 0.21, 0.342, 0.16, 0.05, 0.02, maneD);
+    // presas superiores
+    P(hd, sg * 0.09, -0.1, 0.53, 0.045, 0.11, 0.045, TEETH);
+  }
+  // goela aberta e mandíbula
+  P(hd, 0, -0.18, 0.44, 0.26, 0.1, 0.26, 0x6a1a1a);
+  const jaw = 0.3 + (z.attackT > 0 || lunge ? 0.4 : 0);
+  P(hd, 0, -0.24, 0.42, 0.24, 0.07, 0.3, furD, jaw);
+  P(hd, 0, -0.2, 0.46, 0.2, 0.05, 0.24, 0x9a1620, jaw * 0.5);
+  for (const sg of [1, -1]) P(hd, sg * 0.08, -0.25, 0.52, 0.04, 0.08, 0.04, TEETH, jaw);
+}
+BODIES.rm_beast = drawBeast;
+OTHER_COLORS.rm_beast = [0xc08a3a, 0xa82020];
+
+// Espírito do Imperador: imperador espectral azul/ciano, coroa de louros, corpo luminoso sem pernas
+function drawSpirit(B, G, base, z, col, t) {
+  base = joint(base, 0, -0.45, 0); // sobe o conjunto para flutuar acima do chão
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => G.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, c);
+  const bob = Math.sin(t * 2.2 + z.walk * 0.3) * 0.06;
+  const sway = Math.sin(t * 1.5) * 0.05;
+  // manto espectral afinando para baixo, em vez de pernas
+  const low = joint(base, 0, -0.04 + bob, 0, 0, 0, sway);
+  L(low, 0, -0.18, 0, 0.6, 0.4, 0.44, 0x3ab0d0);
+  L(low, 0, -0.44, 0.02, 0.46, 0.22, 0.36, 0x2a90b0);
+  L(low, 0, -0.6, 0.04, 0.32, 0.14, 0.28, 0x1a7494);
+  // barra rasgada: rastro espectral atrás, sem parecer pernas
+  const trail = joint(low, 0, -0.5, -0.2, 0, 0, Math.sin(t * 1.6) * 0.18);
+  L(trail, 0, -0.24, 0, 0.14, 0.48, 0.1, 0x1f86a8);
+  L(trail, 0, -0.48, 0.04, 0.08, 0.18, 0.06, 0x146a8c);
+  // tronco com couraça imperial e brilho interno
+  L(base, 0, 0.2 + bob, 0, 0.62, 0.52, 0.42, 0x4ac8e8);
+  L(base, 0, 0.14 + bob, 0.21, 0.34, 0.3, 0.02, 0x9af0ff);
+  P(base, 0, 0.34 + bob, 0.21, 0.5, 0.32, 0.03, 0xc8a850);
+  P(base, 0, 0.34 + bob, 0.23, 0.3, 0.12, 0.02, GOLD_L);
+  P(base, 0, 0.03 + bob, 0.215, 0.24, 0.12, 0.02, GOLD);
+  // faixa da toga e contorno luminoso nas laterais
+  L(base, 0.02, 0.18 + bob, 0.212, 0.14, 0.44, 0.02, 0x2a90b0, 0, -0.45);
+  for (const sg of [1, -1]) L(base, sg * 0.315, 0.2 + bob, 0, 0.025, 0.48, 0.4, 0x9af0ff);
+  // medalhão de louros no peito, luminoso
+  L(base, 0, 0.34 + bob, 0.235, 0.08, 0.08, 0.02, 0xe8fff8);
+  // braços flutuantes com punhos brilhantes
+  for (const sg of [1, -1]) {
+    const a = joint(base, sg * 0.35, 0.42 + bob, 0, -0.5 + Math.sin(t * 2.6 + sg) * 0.08, 0, sg * 0.22);
+    L(a, 0, -0.24, 0, 0.16, 0.48, 0.16, 0x46c0e0);
+    P(a, 0, -0.08, 0, 0.18, 0.08, 0.18, GOLD);
+    L(a, 0, -0.5, 0.02, 0.14, 0.14, 0.16, 0xa8f8ff);
+  }
+  // cabeça serena, olhos claros e coroa de louros
+  const hd = joint(base, 0, 0.86 + bob, 0, 0, 0, sway);
+  L(hd, 0, -0.1, 0, 0.22, 0.2, 0.24, 0x2a90b0);
+  L(hd, 0, 0.06, 0, 0.44, 0.44, 0.44, 0x5ad4ee);
+  L(hd, 0, 0.06, 0.225, 0.34, 0.32, 0.02, 0x9af4ff);
+  for (const sg of [1, -1]) {
+    P(hd, sg * 0.1, 0.11, 0.24, 0.16, 0.09, 0.02, 0x1a7494);
+    L(hd, sg * 0.1, 0.11, 0.252, 0.1, 0.055, 0.02, 0xf0ffff);
+    P(hd, sg * 0.1, 0.17, 0.246, 0.16, 0.035, 0.02, 0x2a90b0);
+  }
+  P(hd, 0, -0.05, 0.248, 0.16, 0.03, 0.02, 0x2a90b0);
+  P(hd, 0, -0.21, 0.18, 0.36, 0.05, 0.32, 0x1a7494);
+  // diadema e coroa de louros: aro fino com folhas nas laterais
+  P(hd, 0, 0.24, 0.23, 0.4, 0.04, 0.02, GOLD);
+  P(hd, 0, 0.31, -0.02, 0.48, 0.06, 0.46, GOLD);
+  for (const sg of [1, -1]) {
+    for (let k = 0; k < 4; k++) P(hd, sg * 0.23, 0.34, 0.15 - k * 0.11, 0.08, 0.12, 0.05, k % 2 ? GOLD : GOLD_L, 0, sg * 0.7);
+    P(hd, sg * 0.24, 0.27, 0, 0.06, 0.1, 0.42, GOLD, 0, sg * 0.1);
+  }
+  // contorno luminoso: ombros, barra do manto e halo atrás da cabeça
+  for (const sg of [1, -1]) L(base, sg * 0.34, 0.52 + bob, 0.02, 0.24, 0.06, 0.34, 0xb8f8ff);
+  L(low, 0, -0.62, 0.04, 0.22, 0.05, 0.2, 0x9af0ff);
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2 + t * 0.4;
+    L(hd, Math.sin(a) * 0.4, 0.02 + Math.cos(a) * 0.36, -0.12, 0.05, 0.05, 0.05, 0x9af0ff);
+  }
+  // faíscas de blink ao redor
+  for (let k = 0; k < 4; k++) {
+    const a = t * 1.3 + k * 1.57;
+    L(base, Math.sin(a) * 0.5, 0.3 + Math.cos(a * 1.3) * 0.3 + bob, Math.cos(a) * 0.4, 0.06, 0.06, 0.06, 0x70e8ff);
+  }
+}
+BODIES.rm_spirit = drawSpirit;
+OTHER_COLORS.rm_spirit = [0x4ac8e8, GOLD];
+
+// Estandarte Legionário: mastro com águia dourada, pano vermelho com SPQR, base de pedra e corrupção roxa
+function drawStandard(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => G.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, c);
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3);
+  // base de pedra com entulho
+  P(base, 0, 0.08, 0, 0.95, 0.16, 0.8, 0x8a8478);
+  P(base, 0, 0.2, 0, 0.7, 0.12, 0.6, 0x9a9488);
+  P(base, 0.36, 0.19, 0.26, 0.18, 0.14, 0.16, 0x7a7468);
+  P(base, -0.36, 0.17, -0.22, 0.16, 0.1, 0.14, 0x7a7468);
+  // mastro de madeira com aros dourados
+  P(base, 0, 1.35, 0, 0.08, 2.4, 0.08, RM_WOOD);
+  for (const y of [0.42, 1.0, 1.62, 2.24]) P(base, 0, y, 0, 0.11, 0.06, 0.11, GOLD);
+  // travessa do estandarte
+  P(base, 0, 2.36, 0, 1.0, 0.07, 0.07, GOLD);
+  for (const sg of [1, -1]) P(base, sg * 0.51, 2.36, 0, 0.1, 0.14, 0.1, GOLD_L);
+  // pano vermelho com moldura dourada
+  P(base, 0, 1.8, 0.05, 0.74, 0.96, 0.03, RM_RED);
+  P(base, 0, 2.3, 0.05, 0.82, 0.08, 0.05, GOLD);
+  P(base, 0, 1.3, 0.05, 0.82, 0.09, 0.05, GOLD);
+  for (const sg of [1, -1]) P(base, sg * 0.38, 1.8, 0.05, 0.04, 0.94, 0.05, GOLD);
+  // águia dourada no pano
+  for (const sg of [1, -1]) P(base, sg * 0.16, 1.98, 0.075, 0.22, 0.07, 0.02, GOLD_L, 0, -sg * 0.55);
+  P(base, 0, 1.98, 0.075, 0.09, 0.22, 0.02, GOLD_L);
+  P(base, 0, 2.1, 0.075, 0.1, 0.08, 0.02, GOLD);
+  // quatro cravos dourados: leitura de SPQR a distância
+  for (const x of [-0.21, -0.07, 0.07, 0.21]) P(base, x, 1.52, 0.075, 0.075, 0.075, 0.02, GOLD);
+  // águia imperial no topo, asas abertas e bico
+  P(base, 0, 2.62, 0, 0.16, 0.22, 0.14, GOLD_L);
+  for (const sg of [1, -1]) {
+    P(base, sg * 0.22, 2.68, 0, 0.3, 0.1, 0.05, GOLD, 0, -sg * 0.45);
+    P(base, sg * 0.34, 2.72, 0, 0.14, 0.07, 0.05, GOLD_L, 0, -sg * 0.45);
+  }
+  P(base, 0, 2.76, 0.09, 0.08, 0.08, 0.06, GOLD_L);
+  P(base, 0, 2.74, 0.14, 0.05, 0.04, 0.05, 0xd4a020);
+  // corrupção roxa: cristal na base e cubos flutuando devagar
+  L(base, 0, 0.3, 0.3, 0.14, 0.16, 0.14, 0xa050e0);
+  L(base, -0.32, 0.26, -0.24, 0.1, 0.12, 0.1, 0x8a3ac0);
+  for (let k = 0; k < 5; k++) {
+    const a = t * 0.9 + k * 1.26;
+    L(base, Math.sin(a) * 0.62, 1.05 + Math.sin(t * 2 + k) * 0.32 + k * 0.16, Math.cos(a) * 0.45, 0.08, 0.08, 0.08, pulse > 0.5 ? 0xc070ff : 0x8a3ac0);
+  }
+}
+BODIES.rm_standard = drawStandard;
+OTHER_COLORS.rm_standard = [0x8a8478, RM_RED];
+
+// Catapulta de Cerco: estrutura pesada de madeira sobre 4 rodas com braço articulado e rocha em chamas
+function drawCatapult(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => G.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, c);
+  const throwing = z.state === 'throw';
+  const snap = z.attackT > 0 ? Math.min(1, z.attackT / 0.45) : 0;
+  // base de vigas paralelas e travessas
+  for (const sg of [1, -1]) {
+    P(base, sg * 0.52, 0.38, 0, 0.16, 0.18, 1.55, RM_WOOD);
+    // cavalete em A nas laterais
+    P(base, sg * 0.52, 0.9, 0.16, 0.14, 1.05, 0.16, 0x5c3618, 0.22);
+    P(base, sg * 0.52, 0.9, -0.26, 0.14, 1.05, 0.16, 0x5c3618, -0.22);
+  }
+  P(base, 0, 0.38, 0.62, 1.2, 0.16, 0.18, 0x5c3618);
+  P(base, 0, 0.38, -0.62, 1.2, 0.16, 0.18, 0x5c3618);
+  // travessa superior de impacto (com reforço de ferro e detalhes dourados)
+  P(base, 0, 1.32, -0.05, 1.22, 0.18, 0.2, RM_WOOD);
+  P(base, 0, 1.32, -0.05, 1.26, 0.08, 0.24, RM_STEEL_D);
+  P(base, 0, 1.44, -0.05, 0.36, 0.08, 0.12, GOLD);
+  // 4 rodas de madeira com aro metálico
+  for (const sx of [-0.66, 0.66]) {
+    for (const sz of [-0.54, 0.54]) {
+      P(base, sx, 0.3, sz, 0.12, 0.56, 0.56, 0x4a2c14);
+      P(base, sx, 0.3, sz, 0.14, 0.44, 0.44, RM_STEEL_D);
+      P(base, sx, 0.3, sz, 0.16, 0.14, 0.14, GOLD);
+    }
+  }
+  // braço lançador articulado: puxa para trás na preparação e dispara para frente
+  const armAng = throwing ? -0.95 - Math.sin(t * 14) * 0.05 : snap > 0 ? 0.55 * snap : -0.35;
+  const arm = joint(base, 0, 0.46, 0.22, armAng, 0, 0);
+  P(arm, 0, 0.62, -0.2, 0.14, 1.35, 0.14, RM_WOOD);
+  P(arm, 0, 1.26, -0.24, 0.42, 0.16, 0.42, 0x5c3618);
+  P(arm, 0, 1.32, -0.24, 0.46, 0.06, 0.46, RM_STEEL_D);
+  // rocha em chamas carregada na colher (some brevemente logo após disparar)
+  if (snap < 0.25) {
+    const glow = throwing ? 0xffa020 : 0xff5a1a;
+    P(arm, 0, 1.5, -0.24, 0.42, 0.38, 0.42, 0x3e3632);
+    L(arm, 0, 1.54, -0.24, 0.32, 0.44, 0.14, glow);
+    L(arm, 0, 1.54, -0.24, 0.14, 0.44, 0.32, 0xffd040);
+  }
+}
+BODIES.rm_catapult = drawCatapult;
+OTHER_COLORS.rm_catapult = [RM_WOOD, 0xff6a1a];
+
+// Elefante de Guerra: corpo massivo blindado, presas de marfim, tromba animada e manto vermelho/dourado
+function drawElephant(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => G.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, c);
+  const sw = Math.sin(z.walk * 1.4);
+  const atk = z.attackT > 0 ? Math.sin((z.attackT / 0.35) * Math.PI) : 0;
+  const wind = z.state === 'wind' ? 1 : 0;
+  const lunge = z.state === 'lunge' ? 1 : 0;
+  const hide = 0x6e6a64;
+  const hideD = 0x524e48;
+  // 4 patas em pilar
+  for (const [sx, sz, ph] of [[-0.44, 0.5, 0], [0.44, 0.5, Math.PI], [-0.44, -0.52, Math.PI], [0.44, -0.52, 0]]) {
+    const leg = joint(base, sx, 0.62, sz, Math.sin(z.walk * 1.4 + ph) * 0.28, 0, 0);
+    P(leg, 0, -0.32, 0, 0.36, 0.68, 0.36, hide);
+    P(leg, 0, -0.62, 0.04, 0.38, 0.1, 0.38, hideD);
+    P(leg, 0, -0.18, 0, 0.4, 0.1, 0.4, GOLD);
+  }
+  // tronco largo + manto de guerra vermelho com borda dourada
+  const bob = Math.abs(sw) * 0.04;
+  P(base, 0, 1.12 + bob, 0, 1.12, 0.88, 1.48, hide);
+  P(base, 0, 1.24 + bob, -0.04, 1.18, 0.62, 1.0, RM_RED);
+  P(base, 0, 0.92 + bob, -0.04, 1.2, 0.08, 1.04, GOLD);
+  P(base, 0, 1.56 + bob, -0.04, 0.92, 0.1, 0.88, GOLD);
+  for (const sg of [1, -1]) P(base, sg * 0.6, 1.24 + bob, -0.04, 0.03, 0.26, 0.32, GOLD_L);
+  // cauda
+  P(base, 0, 1.02 + bob, -0.82, 0.1, 0.42, 0.1, hideD, 0.35);
+  // cabeça maciça com placa dourada na testa, orelhas grandes, olhos vermelhos, presas e tromba
+  const hd = joint(base, 0, 1.26 + bob, 0.86, -0.15 * wind + 0.2 * lunge - atk * 0.25, 0, 0);
+  P(hd, 0, 0.05, 0, 0.78, 0.74, 0.66, hide);
+  P(hd, 0, 0.24, 0.26, 0.44, 0.42, 0.16, GOLD);
+  P(hd, 0, 0.3, 0.35, 0.16, 0.22, 0.04, RM_RED);
+  for (const sg of [1, -1]) {
+    const ear = joint(hd, sg * 0.42, 0.1, -0.08, 0, 0, sg * (0.18 + Math.sin(t * 4) * 0.08 + wind * 0.25));
+    P(ear, sg * 0.24, -0.04, 0, 0.46, 0.56, 0.09, hideD);
+    P(ear, sg * 0.24, -0.04, 0.05, 0.34, 0.42, 0.03, 0x8a5850);
+    // olhos vermelhos brilhantes
+    L(hd, sg * 0.24, 0.12, 0.34, 0.12, 0.09, 0.03, 0xff2a1a);
+    // presas grandes de marfim com aro dourado
+    const tusk = joint(hd, sg * 0.28, -0.22, 0.28, -0.35, sg * 0.2, 0);
+    P(tusk, 0, 0, 0.28, 0.14, 0.14, 0.56, 0xf2ebd8);
+    P(tusk, 0, 0.06, 0.58, 0.1, 0.1, 0.24, 0xfff8e8, -0.45);
+    P(tusk, 0, 0, 0.16, 0.17, 0.17, 0.08, GOLD);
+  }
+  // tromba articulada
+  const trunk = joint(hd, 0, -0.14, 0.34, -0.35 - wind * 0.65 - atk * 0.5 + Math.sin(t * 3) * 0.12, 0, 0);
+  P(trunk, 0, -0.22, 0.1, 0.22, 0.48, 0.22, hide);
+  P(trunk, 0, -0.52, 0.2, 0.18, 0.32, 0.18, hideD, -0.4);
+}
+BODIES.rm_elephant = drawElephant;
+OTHER_COLORS.rm_elephant = [0x6e6a64, RM_RED];
+
+// Torre de Cerco (Balista romana montada pelo Engenheiro)
+function drawRmTurret(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => G.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, c);
+  const aim = z.aimT > 0 ? 1 : 0;
+  // base de madeira/pedra em tripé
+  P(base, 0, 0.12, 0, 0.9, 0.22, 0.9, 0x7a7468);
+  P(base, 0, 0.62, 0, 0.22, 0.85, 0.22, RM_WOOD);
+  P(base, 0, 0.45, 0, 0.64, 0.14, 0.64, 0x5c3618);
+  // trilho da balista e arco metálico
+  P(base, 0, 1.12, 0.12, 0.22, 0.16, 1.05, RM_WOOD);
+  P(base, 0, 1.12, 0.56, 0.28, 0.22, 0.16, RM_STEEL_D);
+  for (const sg of [1, -1]) {
+    P(base, sg * 0.48, 1.14, 0.44, 0.72, 0.08, 0.1, RM_STEEL, 0, sg * 0.12);
+    P(base, sg * 0.84, 1.14, 0.4, 0.1, 0.14, 0.12, GOLD);
+  }
+  // escudo frontal vermelho com detalhe dourado
+  P(base, 0, 0.85, 0.52, 0.62, 0.48, 0.06, RM_RED);
+  P(base, 0, 0.85, 0.56, 0.14, 0.36, 0.02, GOLD);
+  // virote pronto (brilha durante a mira)
+  P(base, 0, 1.24, 0.18, 0.06, 0.06, 0.96, 0xd8c49a);
+  if (aim) L(base, 0, 1.24, 0.7, 0.14, 0.14, 0.18, 0xffe060);
+  else P(base, 0, 1.24, 0.68, 0.1, 0.08, 0.16, RM_STEEL);
+}
+BODIES.rm_turret = drawRmTurret;
+OTHER_COLORS.rm_turret = [RM_WOOD, GOLD];
+
+// Carruagem de Guerra Romana: caixa dourada/vermelha, condutor legionário e dois cavalos blindados
+function drawRmChariot(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => G.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, c);
+  const wind = z.state === 'wind';
+  const roll = z.walk * 2.2;
+  // caixa da carruagem (madeira + vermelho imperial + moldura dourada)
+  P(base, 0, 0.68, -0.56, 1.1, 0.52, 0.88, RM_WOOD);
+  P(base, 0, 0.7, -0.1, 1.04, 0.44, 0.06, RM_RED);
+  P(base, 0, 0.96, -0.56, 1.16, 0.09, 0.94, GOLD);
+  P(base, 0, 0.72, -0.06, 0.3, 0.24, 0.03, GOLD_L);
+  P(base, 0, 0.5, 0.3, 0.08, 0.08, 1.05, RM_WOOD);
+  // rodas grandes com raios dourados
+  for (const sg of [1, -1]) {
+    const w = joint(base, sg * 0.62, 0.5, -0.56, roll, 0, 0);
+    P(w, 0, 0, 0, 0.09, 0.92, 0.92, 0x4a2c14);
+    P(w, 0, 0, 0, 0.11, 0.12, 0.96, GOLD);
+    P(w, 0, 0, 0, 0.11, 0.96, 0.12, GOLD);
+    P(w, 0, 0, 0, 0.13, 0.22, 0.22, RM_STEEL);
+  }
+  // condutor romano com elmo de crista vermelha, capa e lança
+  P(base, 0, 1.24, -0.5, 0.4, 0.5, 0.3, RM_STEEL);
+  P(base, 0, 1.24, -0.68, 0.44, 0.52, 0.04, RM_RED);
+  P(base, 0, 1.66, -0.5, 0.34, 0.34, 0.34, RM_SKIN);
+  P(base, 0, 1.84, -0.5, 0.38, 0.14, 0.38, RM_STEEL);
+  P(base, 0, 2.0, -0.5, 0.1, 0.2, 0.44, RM_RED);
+  L(base, 0.08, 1.68, -0.32, 0.06, 0.04, 0.02, 0xff2a1a);
+  L(base, -0.08, 1.68, -0.32, 0.06, 0.04, 0.02, 0xff2a1a);
+  // lança romana pronta para arremesso
+  P(base, 0.32, 1.38, -0.15, 0.05, 0.05, 1.2, RM_WOOD, -0.25);
+  P(base, 0.32, 1.54, 0.44, 0.08, 0.06, 0.24, RM_STEEL, -0.25);
+  // dois cavalos de guerra blindados puxando à frente
+  for (const sg of [1, -1]) {
+    const hx = sg * 0.34;
+    const gal = Math.sin(z.walk * 2.5 + (sg > 0 ? 0 : 1.2));
+    P(base, hx, 0.94 + gal * 0.03, 0.86, 0.32, 0.36, 0.84, 0x7c6e5c);
+    P(base, hx, 1.0 + gal * 0.03, 0.86, 0.35, 0.2, 0.52, RM_RED);
+    P(base, hx, 1.0 + gal * 0.03, 1.16, 0.35, 0.24, 0.16, GOLD);
+    const nk = joint(base, hx, 1.12, 1.24, -0.65 + (wind ? -0.35 : 0), 0, 0);
+    P(nk, 0, 0.2, 0, 0.18, 0.42, 0.2, 0x7c6e5c);
+    P(nk, 0, 0.42, 0.14, 0.2, 0.2, 0.36, 0x6c5e4c);
+    P(nk, 0, 0.48, 0.16, 0.22, 0.1, 0.24, GOLD);
+    L(nk, 0.08, 0.44, 0.26, 0.04, 0.04, 0.04, 0xff2a1a);
+    L(nk, -0.08, 0.44, 0.26, 0.04, 0.04, 0.04, 0xff2a1a);
+    for (const [lx, lz, ph] of [[-0.09, 0.28, 0], [0.09, 0.28, Math.PI], [-0.09, -0.28, Math.PI], [0.09, -0.28, 0]]) {
+      const lg = joint(base, hx + lx, 0.72, 0.86 + lz, Math.sin(z.walk * 2.5 + ph + (sg > 0 ? 0 : 1.2)) * 0.55, 0, 0);
+      P(lg, 0, -0.34, 0, 0.09, 0.68, 0.09, 0x5c4e3e);
+    }
+  }
+}
+BODIES.rm_chariot = drawRmChariot;
+OTHER_COLORS.rm_chariot = [RM_RED, GOLD];
+
+// Águia Imperial Corrompida: asas roxas/carmesim grandes, peitoral dourado, bico curvo e energia roxa
+function drawRmEagle(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => G.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, c);
+  const flap = Math.sin(t * 8.5 + z.walk) * 0.52;
+  const dive = z.state === 'lunge' ? 0.6 : z.state === 'wind' ? -0.38 : 0.1;
+  const body = joint(base, 0, -0.08, 0, dive, 0, 0);
+  const purp = 0x5a1a8a;
+  const purpL = 0x9a30d0;
+  // tronco blindado dourado e roxo
+  P(body, 0, 0, 0, 0.44, 0.38, 0.82, purp);
+  P(body, 0, -0.1, 0.14, 0.42, 0.22, 0.56, GOLD);
+  P(body, 0, 0.14, -0.04, 0.32, 0.08, 0.62, RM_RED);
+  // cauda em leque roxa/dourada
+  P(body, 0, 0.02, -0.58, 0.52, 0.06, 0.38, purp);
+  P(body, 0, 0.04, -0.62, 0.34, 0.06, 0.32, GOLD);
+  // cabeça de águia com colar dourado, bico curvo e olhos roxos brilhantes
+  const hd = joint(body, 0, 0.22, 0.48, -dive * 0.4, 0, 0);
+  P(hd, 0, 0, 0, 0.34, 0.32, 0.34, 0xe8e0d0);
+  P(hd, 0, 0.12, -0.04, 0.36, 0.09, 0.36, purp);
+  P(hd, 0, -0.04, 0.22, 0.14, 0.12, 0.16, GOLD_L);
+  P(hd, 0, -0.11, 0.28, 0.08, 0.09, 0.07, GOLD, 0.65);
+  L(hd, 0.13, 0.03, 0.16, 0.07, 0.06, 0.04, 0xe060ff);
+  L(hd, -0.13, 0.03, 0.16, 0.07, 0.06, 0.04, 0xe060ff);
+  // asas grandes batendo (roxo escuro + penas carmesim e brilho roxo nas pontas)
+  for (const sg of [1, -1]) {
+    const wg = joint(body, sg * 0.22, 0.1, 0.05, 0, 0, sg * (0.16 + flap));
+    P(wg, sg * 0.52, 0, 0, 1.04, 0.08, 0.62, purp);
+    P(wg, sg * 0.42, 0.02, 0.26, 0.82, 0.06, 0.12, GOLD);
+    for (let k = 0; k < 3; k++) P(wg, sg * (0.3 + k * 0.3), -0.01, -0.3, 0.24, 0.05, 0.18, RM_RED);
+    const tip = joint(wg, sg * 1.04, 0, 0, 0, 0, sg * flap * 0.6);
+    P(tip, sg * 0.34, 0, -0.06, 0.68, 0.05, 0.46, purpL);
+    L(tip, sg * 0.44, -0.01, -0.26, 0.46, 0.04, 0.12, 0xc040ff);
+  }
+  // garras douradas
+  for (const sg of [1, -1]) P(body, sg * 0.13, -0.28, 0.12, 0.09, 0.18, 0.09, GOLD);
+  if (z.attackT > 0 || z.state === 'wind') L(hd, 0, -0.04, 0.38, 0.18, 0.18, 0.18, 0xd060ff);
+}
+BODIES.rm_eagle = drawRmEagle;
+OTHER_COLORS.rm_eagle = [0x9a30d0, GOLD];
+
+// Desenha um inimigo. z = { type, def, look, pos, facing, scale, walk, hurtT, attackT, state, alive, deadT, fallDir, rise, flyY }
+// ------------------------------------------------------------------ Cemitério Naval — criaturas marinhas com anatomia própria
+function drawNvCrab(B, G, base, z, col, t) {
+  const m = base;
+  // carapaça
+  B.part(m, 0, 0.5, 0, 0, 0, 0, 0, 0, 1.6, 0.7, 2.0, col(0xc84830));
+  // pinças
+  B.part(m, -1.1, 0.7, 0.6, 0, 0.3, 0, 0, 0, 0, 0.7, 0.5, 0.9, col(0x7a2c1e));
+  B.part(m, 1.1, 0.7, 0.6, 0, -0.3, 0, 0, 0, 0, 0.7, 0.5, 0.9, col(0x7a2c1e));
+  // patas (6)
+  for (let i = 0; i < 3; i++) {
+    const x = -1.2 + i * 0.6;
+    B.part(m, x, 0.15, 0.9, 0, 0, 0, 0, 0, 0, 0.25, 0.3, 0.25, col(0x7a2c1e));
+    B.part(m, x, 0.15, -0.9, 0, 0, 0, 0, 0, 0, 0.25, 0.3, 0.25, col(0x7a2c1e));
+  }
+  // olhos
+  G.part(m, -0.3, 0.85, 1.0, 0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.12, 0xffe060);
+  G.part(m, 0.3, 0.85, 1.0, 0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.12, 0xffe060);
+}
+function drawNvOctopus(B, G, base, z, col, t) {
+  const m = base;
+  // cabeça
+  B.part(m, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 1.4, 1.2, 1.4, col(0x3c4468));
+  // tentáculos (8)
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const x = Math.sin(a) * 1.0;
+    const zp = Math.cos(a) * 1.0;
+    B.part(m, x, 0.3, zp, 0, a, 0, 0, 0, 0, 0.22, 0.6, 0.22, col(0x1e2438));
+  }
+  // olhos
+  G.part(m, -0.35, 1.1, 0.7, 0, 0, 0, 0, 0, 0, 0.2, 0.2, 0.12, 0xff2a1a);
+  G.part(m, 0.35, 1.1, 0.7, 0, 0, 0, 0, 0, 0, 0.2, 0.2, 0.12, 0xff2a1a);
+}
+function drawNvAngler(B, G, base, z, col, t) {
+  const m = base;
+  // corpo de peixe
+  B.part(m, 0, 0.6, 0, 0, 0, 0, 0, 0, 0, 0.9, 0.7, 1.8, col(0x286274));
+  // boca
+  B.part(m, 0, 0.5, 1.0, 0, 0, 0, 0, 0, 0, 0.7, 0.4, 0.4, col(0x1a3a44));
+  // dente
+  B.part(m, 0, 0.35, 1.2, 0, 0, 0, 0, 0, 0, 0.12, 0.25, 0.12, 0xeeeecc);
+  // lanterna
+  G.part(m, 0, 1.3, 0.6, 0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.18, 0x40e8ff);
+  // cauda
+  B.part(m, 0, 0.6, -1.1, 0, 0, 0, 0, 0, 0, 0.15, 0.4, 0.6, col(0x286274));
+}
+function drawNvShark(B, G, base, z, col, t) {
+  const m = base;
+  // corpo hidrodinâmico
+  B.part(m, 0, 0.6, 0, 0, 0, 0, 0, 0, 0, 0.7, 0.6, 2.4, col(0x3a6a84));
+  // nadadeira dorsal
+  B.part(m, 0, 1.1, 0, 0, 0, 0, 0, 0, 0, 0.12, 0.5, 0.6, col(0x1e3a4c));
+  // cauda
+  B.part(m, 0, 0.6, -1.4, 0, 0, 0, 0, 0, 0, 0.4, 0.5, 0.6, col(0x3a6a84));
+  // mandíbula
+  B.part(m, 0, 0.35, 1.1, 0, 0, 0, 0, 0, 0, 0.6, 0.25, 0.5, col(0x1e3a4c));
+  // olho
+  G.part(m, 0.3, 0.75, 0.9, 0, 0, 0, 0, 0, 0, 0.1, 0.1, 0.06, 0xff2a1a);
+}
+function drawNvSerpent(B, G, base, z, col, t) {
+  const m = base;
+  // segmentos
+  for (let i = 0; i < 6; i++) {
+    const x = (i - 2.5) * 0.7;
+    B.part(m, x, 0.5 + Math.sin(t*2 + i)*0.1, 0, 0, 0, 0, 0, 0, 0, 0.45, 0.45, 0.5, col(0x1e7a64));
+  }
+  // cabeça
+  B.part(m, 3.0, 0.7, 0, 0, 0.3, 0, 0, 0, 0, 0.7, 0.6, 0.8, col(0x30d890));
+  // mandíbula
+  B.part(m, 3.4, 0.5, 0, 0, 0, 0, 0, 0, 0, 0.5, 0.3, 0.4, col(0x1a5a44));
+}
+function drawNvMimic(B, G, base, z, col, t) {
+  const m = base;
+  // baú
+  B.part(m, 0, 0.4, 0, 0, 0, 0, 0, 0, 0, 1.4, 0.7, 1.0, col(0x8a5828));
+  // tampa aberta
+  B.part(m, 0, 1.0, -0.3, 0.6, 0, 0, 0, 0, 0, 1.4, 0.25, 0.9, col(0x6a4020));
+  // dentes
+  for (let i = 0; i < 5; i++) {
+    const x = -0.5 + i * 0.25;
+    B.part(m, x, 0.75, 0.4, 0, 0, 0, 0, 0, 0, 0.08, 0.2, 0.08, 0xeeeecc);
+  }
+  // pernas
+  B.part(m, -0.5, 0.1, 0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  B.part(m, 0.5, 0.1, 0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  B.part(m, -0.5, 0.1, -0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  B.part(m, 0.5, 0.1, -0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  // língua
+  B.part(m, 0, 0.6, 0.5, 0, 0, 0, 0, 0, 0, 0.15, 0.12, 0.4, 0xcc3333);
+}
+function drawNvPirate(B, G, base, z, col, t) {
+  const m = base;
+  // pernas (calças rasgadas)
+  B.part(m, -0.12, 0.45, 0, 0, 0, 0, 0, 0, 0, 0.22, 0.9, 0.22, col(0x2c3c4c));
+  B.part(m, 0.12, 0.45, 0, 0, 0, 0, 0, 0, 0, 0.22, 0.9, 0.22, col(0x2c3c4c));
+  // tronco (casaco náutico rasgado)
+  B.part(m, 0, 0.95, 0, 0, 0, 0, 0, 0, 0, 0.55, 0.7, 0.35, col(0x4a7a74));
+  B.part(m, 0, 1.25, 0, 0, 0, 0, 0, 0, 0, 0.5, 0.3, 0.3, col(0x2a4a44));
+  // braços
+  B.part(m, -0.35, 0.95, 0, 0, 0, 0, 0, 0, 0, 0.2, 0.7, 0.2, col(0x4a7a74));
+  B.part(m, 0.35, 0.95, 0, 0, 0, 0, 0, 0, 0, 0.2, 0.7, 0.2, col(0x4a7a74));
+  // mãos
+  B.part(m, -0.35, 0.55, 0, 0, 0, 0, 0, 0, 0, 0.16, 0.16, 0.16, col(0x8a6a5a));
+  B.part(m, 0.35, 0.55, 0, 0, 0, 0, 0, 0, 0, 0.16, 0.16, 0.16, col(0x8a6a5a));
+  // cabeça
+  B.part(m, 0, 1.45, 0, 0, 0, 0, 0, 0, 0, 0.42, 0.45, 0.4, col(0x8a6a5a));
+  // chapéu pirata
+  B.part(m, 0, 1.75, 0, 0, 0, 0, 0, 0, 0, 0.55, 0.12, 0.5, col(0x1a1a1a));
+  B.part(m, 0, 1.7, 0.35, 0, 0, 0, 0, 0, 0, 0.15, 0.12, 0.25, col(0x1a1a1a));
+  // caveira no chapéu
+  B.part(m, 0, 1.76, 0.05, 0, 0, 0, 0, 0, 0, 0.12, 0.08, 0.12, col(0xeeeecc));
+  // olhos (brilho)
+  G.part(m, -0.12, 1.5, 0.2, 0, 0, 0, 0, 0, 0, 0.08, 0.08, 0.05, 0xff2a1a);
+  G.part(m, 0.12, 1.5, 0.2, 0, 0, 0, 0, 0, 0, 0.08, 0.08, 0.05, 0xff2a1a);
+  // sabre
+  B.part(m, 0.45, 0.7, 0.3, 0, -0.6, 0, 0, 0, 0, 0.06, 0.06, 0.9, col(0x9aa4b2));
+  // corda/algas
+  B.part(m, -0.2, 1.0, 0.2, 0, 0.2, 0, 0, 0, 0, 0.06, 0.4, 0.06, col(0x3a5a3a));
+}
+export function drawEnemy(B, G, z, t) {
+  const type = z.type;
+  const def = z.def;
+  const flash = z.hurtT > 0;
+  const col = (c) => (flash ? 0xffffff : c);
+  const body = BODIES[type];
+  const dead = !z.alive;
+  const k = dead ? Math.min(1, z.deadT * 4) : 0;
+  const sink = dead ? Math.max(0, z.deadT - 2.5) * 0.25 : 0;
+  const rise = z.rise * 1.4 * z.scale;
+  if (!body) {
+    const look = z.look;
+    if (dead) {
+      drawCharacter(B, z.pos.x, 0.15 * z.scale - sink, z.pos.z, z.fallDir + Math.PI, z.scale, look, { tilt: (-Math.PI / 2) * k, walk: 0, swing: 0, G });
+      return;
+    }
+    const lean = type === 'runner' ? 0.35 : z.state === 'wind' ? 0.4 : z.state === 'charge' || z.state === 'lunge' ? 0.5 : type === 'reaper' ? 0.22 : type === 'brute' ? 0.15 : look.lean ?? 0.1;
+    const raise = z.state === 'slam' ? Math.min(1, (0.75 - z.stateT) / 0.45) : z.state === 'cast' ? 1 : 0;
+    drawCharacter(B, z.pos.x, -rise, z.pos.z, z.facing, z.scale, look, {
+      walk: z.walk, swing: type === 'summoner' ? 0.2 : type === 'reaper' ? (z.state === 'lunge' ? 1.2 : 0.75) : z.state === 'charge' ? 1 : type === 'runner' ? 0.9 : 0.55, hurt: z.hurtT,
+      attack: z.attackT > 0 ? Math.sin((z.attackT / 0.35) * Math.PI) : 0, lean, raise,
+      headTilt: type === 'armored' || type === 'reaper' ? 0 : Math.sin(z.walk * 0.7) * 0.12, G,
+    });
+    // brilho extra: pavio do explosivo pisca; cristal do invocador pulsa
+    if (type === 'bloater' && Math.sin(t * 22) > 0) G.box(z.pos.x, 1.3 * z.scale, z.pos.z, 0.16, 0.16, 0.16, 0xffe060, t * 9);
+    return;
+  }
+  const baseFlyY = z.def?.hover ?? 1.4;
+  let y = -rise;
+  if (z.def?.fly) y = dead ? Math.max(0.15, (z.flyY ?? baseFlyY) * (1 - k)) : z.flyY ?? baseFlyY;
+  const ghost = type === 'specter' || type === 'rm_spirit';
+  const ry = dead ? z.fallDir + Math.PI : z.facing;
+  const roll = dead ? (type === 'spider' ? Math.PI * k : ghost ? 0.12 * k : (-Math.PI / 2) * k) : 0;
+  let tilt = roll;
+  if (!dead && (type === 'dog' || body === drawHound || body === drawBeast) && z.state === 'lunge') tilt = 0.15;
+  if (!dead && type === 'bat') tilt = 0.25 + (z.attackT > 0 ? 0.35 : 0);
+  if (!dead && type === 'wasp') tilt = 0.12;
+  const sc = ghost && dead ? z.scale * Math.max(0.2, 1 - z.deadT * 0.55) : z.scale;
+  const m = baseMatrix(z.pos.x, y + (dead && type === 'spider' ? 0.9 * k : 0) - sink, z.pos.z, ry, sc, tilt);
+  _base.copy(m);
+  body(B, G, _base, dead ? { ...z, walk: 0, attackT: 0 } : z, col, dead ? 0 : t);
+}
+

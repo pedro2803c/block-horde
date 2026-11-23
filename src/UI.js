@@ -28,7 +28,6 @@ function h(tag, attrs = {}, ...kids) {
 const fmt = (n) => Math.floor(n).toLocaleString('pt-BR');
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const tip = () => TIPS[Math.floor(Math.random() * TIPS.length)];
-const EVENT_LABEL = { rain: 'CHUVA', blackout: 'APAGÃO', fog: 'NEBLINA', alarm: 'REFORÇOS', hordealarm: 'ALARME', overload: 'SOBRECARGA', toxicfog: 'NÉVOA TÓXICA' };
 
 // Quantidade de colunas da escolha de sobreviventes: aproveita a largura,
 // evita uma linha com um único cartão e equilibra o tamanho das linhas.
@@ -1175,7 +1174,7 @@ export class UI {
       ...CROSSHAIR_ORDER.map((id) => h('button', { class: 'cross-opt' + (mode === id ? ' sel' : ''), 'aria-pressed': mode === id ? 'true' : 'false', title: CROSSHAIRS[id].desc, onclick: () => { s.crossMode = id; save(); } },
         sample(id), `${String(CROSSHAIRS[id].n).padStart(2, '0')} · ${CROSSHAIRS[id].name}`)),
     ];
-    const autoList = h('p', { class: 'cross-auto' }, WEAPON_ORDER.map((w, i) => [i ? ' · ' : '', h('b', {}, WEAPONS[w].name), ': ', CROSSHAIRS[WEAPON_CROSSHAIR[w] || 'classic'].name]));
+    const autoList = h('p', { class: 'cross-auto' }, ...WEAPON_ORDER.flatMap((w, i) => [i ? ' · ' : '', h('b', {}, WEAPONS[w].name), ': ', CROSSHAIRS[WEAPON_CROSSHAIR[w] || 'classic'].name]));
     const swatches = h('div', { class: 'swatches ctrl' }, CROSS_COLORS.map(([v, name, hex]) =>
       h('button', { class: 'swatch' + (v === 'default' ? ' def' : '') + ((s.crossColor || 'default') === v ? ' sel' : ''), style: hex ? `--sw:${hex}` : undefined, title: name, 'aria-label': `Cor: ${name}`, onclick: () => { s.crossColor = v; save(); } })));
     // prévia: um "zumbi" anda; a mira atira, encontra o alvo, trava e acerta (em ciclo)
@@ -1695,7 +1694,7 @@ export class UI {
       this.hMountBar.querySelector('.mount-bar-text').textContent = `${Math.round(pct)}%`;
       this.hMountBar.classList.toggle('critical', pct < 30);
       this.hMountIndicator.classList.remove('hidden');
-      this.hMountIndicator.querySelector('.mount-indicator-name').textContent = m.name;
+      this.hMountIndicator.querySelector('.mount-indicator-name').textContent = `${m.name} (${wm.state || 'utilizada'})`;
       this.hMountIndicator.querySelector('.mount-indicator-hp').textContent = `${Math.round(pct)}%`;
       this.hMountIndicator.classList.toggle('critical', pct < 30);
       this.hMountWaypoint.classList.add('hidden');
@@ -1724,7 +1723,7 @@ export class UI {
           const ang = Math.atan2(dz, dx);
           const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
           const idx = ((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8;
-          this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `${wm.def.name} · ${Math.round(dist)}m ${arrows[idx]}`;
+          this.hMountWaypoint.querySelector('.mount-waypoint-text').textContent = `${wm.state || 'Disponível'} — ${wm.def.name} · ${Math.round(dist)}m ${arrows[idx]}`;
           this.hMountWaypoint.classList.remove('near');
         }
         this.hMountWaypoint.classList.remove('hidden');
@@ -2306,7 +2305,7 @@ export class UI {
   toast(id, text, ic = 'medkit', kind = '') {
     if (this.g.input.touchMode) {
       const up = ic === 'tree'; // subida de nível
-      return this.notify(text, kind === 'bad' ? 'danger' : up ? 'gold' : 'success', ic, { pri: up ? 2 : kind === 'bad' ? 1 : 0, dur: up ? 3 : 2 });
+      return this.notify(text, kind === 'bad' ? 'danger' : up ? 'gold' : 'success', ic, { pri: up ? 2 : kind === 'bad' ? 1 : 0, dur: up ? 3 : 3 });
     }
     const el = this.pEls[id]?.toast;
     if (!el) return;

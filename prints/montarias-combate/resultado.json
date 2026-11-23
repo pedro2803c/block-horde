@@ -1,0 +1,746 @@
+{
+  "mounts": {
+    "praca": {
+      "name": "Jipe Blindado",
+      "weapon": "m_mount_mg",
+      "mountWeapon": "m_mount_mg",
+      "skills": {
+        "heavy": {
+          "name": "Rajada Pesada",
+          "kind": "burst",
+          "cd": 5,
+          "cdSet": true,
+          "dmg": 22,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "praca",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.08339999999999964
+          },
+          "dbgAfter": {
+            "cdVal": 5.083399999999999,
+            "t0": 0.08339999999999964,
+            "time": 0.08339999999999964,
+            "dashT": 0,
+            "furyT": 0
+          }
+        },
+        "dash": {
+          "name": "Atropelamento",
+          "kind": "charge",
+          "cd": 8,
+          "cdSet": true,
+          "dmg": 166,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dash": 70,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "praca",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.1666999999999989
+          },
+          "dbgAfter": {
+            "cdVal": 8.166699999999999,
+            "t0": 0.1666999999999989,
+            "time": 0.1666999999999989,
+            "dashT": 0.45,
+            "furyT": 0
+          }
+        }
+      },
+      "basic": {
+        "dmg": 16,
+        "fireCd": 0.02
+      },
+      "checks": {
+        "weaponLocked": true,
+        "bossDmg": 204,
+        "bossType": "devourer",
+        "remount": {
+          "onFoot": true,
+          "dmg": 108,
+          "mounted": true,
+          "tNull": false
+        },
+        "destroyed": {
+          "dmg": 0,
+          "alive": false,
+          "mounted": false,
+          "cdUnchanged": true
+        },
+        "hp": 1000000
+      }
+    },
+    "armazem": {
+      "name": "Empilhadeira de Combate",
+      "weapon": "m_mount_fork",
+      "mountWeapon": "m_mount_fork",
+      "skills": {
+        "heavy": {
+          "name": "Aríete Frontal",
+          "kind": "cone",
+          "cd": 5,
+          "cdSet": true,
+          "dmg": 85,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "armazem",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.1
+          },
+          "dbgAfter": {
+            "cdVal": 5.1,
+            "t0": 0.1,
+            "time": 0.1,
+            "dashT": 0,
+            "furyT": 0
+          }
+        },
+        "second": {
+          "name": "Empurrão Hidráulico",
+          "kind": "cone",
+          "cd": 8,
+          "cdSet": true,
+          "dmg": 25,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "armazem",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.11670000000000073
+          },
+          "dbgAfter": {
+            "cdVal": 8.116700000000002,
+            "t0": 0.11670000000000073,
+            "time": 0.11670000000000073,
+            "dashT": 0,
+            "furyT": 0
+          }
+        }
+      },
+      "basic": {
+        "dmg": 34,
+        "fireCd": 0.45
+      },
+      "checks": {
+        "weaponLocked": true,
+        "bossDmg": 71,
+        "bossType": "mechworker",
+        "remount": {
+          "onFoot": true,
+          "dmg": 85,
+          "mounted": true,
+          "tNull": false
+        },
+        "destroyed": {
+          "dmg": 0,
+          "alive": false,
+          "mounted": false,
+          "cdUnchanged": true
+        },
+        "hp": 1000000
+      }
+    },
+    "vale": {
+      "name": "Javali Mutante",
+      "weapon": "m_mount_tusk",
+      "mountWeapon": "m_mount_tusk",
+      "skills": {
+        "heavy": {
+          "name": "Garras",
+          "kind": "cone",
+          "cd": 4,
+          "cdSet": true,
+          "dmg": 55,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "vale",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.1
+          },
+          "dbgAfter": {
+            "cdVal": 4.1,
+            "t0": 0.1,
+            "time": 0.1,
+            "dashT": 0,
+            "furyT": 0
+          }
+        },
+        "dash": {
+          "name": "Investida",
+          "kind": "charge",
+          "cd": 7,
+          "cdSet": true,
+          "dmg": 132,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dash": 55,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "vale",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.11659999999999855
+          },
+          "dbgAfter": {
+            "cdVal": 7.116599999999998,
+            "t0": 0.11659999999999855,
+            "time": 0.11659999999999855,
+            "dashT": 0.4,
+            "furyT": 0
+          }
+        }
+      },
+      "basic": {
+        "dmg": 40,
+        "fireCd": 0.4
+      },
+      "checks": {
+        "weaponLocked": true,
+        "bossDmg": 172,
+        "bossType": "guardian",
+        "remount": {
+          "onFoot": true,
+          "dmg": 82,
+          "mounted": true,
+          "tNull": false
+        },
+        "destroyed": {
+          "dmg": 0,
+          "alive": false,
+          "mounted": false,
+          "cdUnchanged": true
+        },
+        "hp": 1000000
+      }
+    },
+    "distrito": {
+      "name": "Tanque Blindado",
+      "weapon": "m_mount_cannon",
+      "mountWeapon": "m_mount_cannon",
+      "skills": {
+        "heavy": {
+          "name": "Metralhadora de Casco",
+          "kind": "burst",
+          "cd": 4,
+          "cdSet": true,
+          "dmg": 36,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "distrito",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.1
+          },
+          "dbgAfter": {
+            "cdVal": 4.1,
+            "t0": 0.1,
+            "time": 0.1,
+            "dashT": 0,
+            "furyT": 0
+          }
+        }
+      },
+      "basic": {
+        "dmg": 64,
+        "fireCd": 1.2
+      },
+      "checks": {
+        "weaponLocked": true,
+        "bossDmg": 108,
+        "bossType": "general",
+        "remount": {
+          "onFoot": true,
+          "dmg": 54,
+          "mounted": true,
+          "tNull": false
+        },
+        "destroyed": {
+          "dmg": 0,
+          "alive": false,
+          "mounted": false,
+          "cdUnchanged": true
+        },
+        "hp": 1000000
+      }
+    },
+    "coliseu": {
+      "name": "Quadriga de Guerra",
+      "weapon": "m_mount_lance",
+      "mountWeapon": "m_mount_lance",
+      "skills": {
+        "heavy": {
+          "name": "Estocada de Lança",
+          "kind": "line",
+          "cd": 5,
+          "cdSet": true,
+          "dmg": 85,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "coliseu",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.1
+          },
+          "dbgAfter": {
+            "cdVal": 5.1,
+            "t0": 0.1,
+            "time": 0.1,
+            "dashT": 0,
+            "furyT": 0
+          }
+        },
+        "dash": {
+          "name": "Atropelamento",
+          "kind": "charge",
+          "cd": 8,
+          "cdSet": true,
+          "dmg": 168,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dash": 70,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "coliseu",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.11670000000000073
+          },
+          "dbgAfter": {
+            "cdVal": 8.116700000000002,
+            "t0": 0.11670000000000073,
+            "time": 0.11670000000000073,
+            "dashT": 0.45,
+            "furyT": 0
+          }
+        },
+        "second": {
+          "name": "Lâminas Laterais",
+          "kind": "sides",
+          "cd": 6,
+          "cdSet": true,
+          "dmg": 60,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "coliseu",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.2667000000000007
+          },
+          "dbgAfter": {
+            "cdVal": 6.266700000000001,
+            "t0": 0.2667000000000007,
+            "time": 0.2667000000000007,
+            "dashT": 0,
+            "furyT": 0
+          }
+        }
+      },
+      "basic": {
+        "dmg": 46,
+        "fireCd": 0.55
+      },
+      "checks": {
+        "weaponLocked": true,
+        "bossDmg": 159,
+        "bossType": "boss",
+        "remount": {
+          "onFoot": true,
+          "dmg": 85,
+          "mounted": true,
+          "tNull": false
+        },
+        "destroyed": {
+          "dmg": 0,
+          "alive": false,
+          "mounted": false,
+          "cdUnchanged": true
+        },
+        "hp": 1000000
+      }
+    },
+    "lab": {
+      "name": "Exoesqueleto Experimental",
+      "weapon": "m_mount_plasma",
+      "mountWeapon": "m_mount_plasma",
+      "skills": {
+        "heavy": {
+          "name": "Braço Mecânico",
+          "kind": "cone",
+          "cd": 4,
+          "cdSet": true,
+          "dmg": 70,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "lab",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.1
+          },
+          "dbgAfter": {
+            "cdVal": 4.1,
+            "t0": 0.1,
+            "time": 0.1,
+            "dashT": 0,
+            "furyT": 0
+          }
+        },
+        "second": {
+          "name": "Pulso Energético",
+          "kind": "area",
+          "cd": 9,
+          "cdSet": true,
+          "dmg": 65,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "lab",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.13330000000000292
+          },
+          "dbgAfter": {
+            "cdVal": 9.133300000000004,
+            "t0": 0.13330000000000292,
+            "time": 0.13330000000000292,
+            "dashT": 0,
+            "furyT": 0
+          }
+        }
+      },
+      "basic": {
+        "dmg": 24,
+        "fireCd": 0.08
+      },
+      "checks": {
+        "weaponLocked": true,
+        "bossDmg": 94,
+        "bossType": "lb_colossa",
+        "remount": {
+          "onFoot": true,
+          "dmg": 70,
+          "mounted": true,
+          "tNull": false
+        },
+        "destroyed": {
+          "dmg": 0,
+          "alive": false,
+          "mounted": false,
+          "cdUnchanged": true
+        },
+        "hp": 1000000
+      }
+    },
+    "templo": {
+      "name": "Leão de Sekhmet",
+      "weapon": "m_mount_roar",
+      "mountWeapon": "m_mount_roar",
+      "skills": {
+        "heavy": {
+          "name": "Patada Solar",
+          "kind": "cone",
+          "cd": 4,
+          "cdSet": true,
+          "dmg": 65,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "templo",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.05
+          },
+          "dbgAfter": {
+            "cdVal": 4.05,
+            "t0": 0.05,
+            "time": 0.05,
+            "dashT": 0,
+            "furyT": 0
+          }
+        },
+        "dash": {
+          "name": "Investida Sagrada",
+          "kind": "charge",
+          "cd": 8,
+          "cdSet": true,
+          "dmg": 140,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dash": 60,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "templo",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.11659999999999855
+          },
+          "dbgAfter": {
+            "cdVal": 8.116599999999998,
+            "t0": 0.11659999999999855,
+            "time": 0.11659999999999855,
+            "dashT": 0.4,
+            "furyT": 0
+          }
+        },
+        "second": {
+          "name": "Onda Solar",
+          "kind": "area",
+          "cd": 9,
+          "cdSet": true,
+          "dmg": 55,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "templo",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.16659999999999855
+          },
+          "dbgAfter": {
+            "cdVal": 9.166599999999999,
+            "t0": 0.16659999999999855,
+            "time": 0.16659999999999855,
+            "dashT": 0,
+            "furyT": 0
+          }
+        }
+      },
+      "basic": {
+        "dmg": 10,
+        "fireCd": 0.09
+      },
+      "checks": {
+        "weaponLocked": true,
+        "bossDmg": 95,
+        "bossType": "pharaoh",
+        "remount": {
+          "onFoot": true,
+          "dmg": 65,
+          "mounted": true,
+          "tNull": false
+        },
+        "destroyed": {
+          "dmg": 0,
+          "alive": false,
+          "mounted": false,
+          "cdUnchanged": true
+        },
+        "hp": 1000000
+      }
+    },
+    "naval": {
+      "name": "Tubarão Esqueleto",
+      "weapon": "m_mount_bite",
+      "mountWeapon": "m_mount_bite",
+      "skills": {
+        "heavy": {
+          "name": "Mordida Destruidora",
+          "kind": "bite",
+          "cd": 4,
+          "cdSet": true,
+          "dmg": 160,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "naval",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.1
+          },
+          "dbgAfter": {
+            "cdVal": 4.1,
+            "t0": 0.1,
+            "time": 0.1,
+            "dashT": 0,
+            "furyT": 0
+          }
+        },
+        "dash": {
+          "name": "Investida Abissal",
+          "kind": "charge",
+          "cd": 7,
+          "cdSet": true,
+          "dmg": 60,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dash": 30,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "naval",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.14990000000000148
+          },
+          "dbgAfter": {
+            "cdVal": 7.1499000000000015,
+            "t0": 0.14990000000000148,
+            "time": 0.14990000000000148,
+            "dashT": 0.45,
+            "furyT": 0
+          }
+        },
+        "second": {
+          "name": "Onda Esquelética",
+          "kind": "nova",
+          "cd": 10,
+          "cdSet": true,
+          "dmg": 90,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "naval",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.2831999999999971
+          },
+          "dbgAfter": {
+            "cdVal": 10.283199999999997,
+            "t0": 0.2831999999999971,
+            "time": 0.2831999999999971,
+            "dashT": 0,
+            "furyT": 0
+          }
+        },
+        "special": {
+          "name": "Fúria Predadora",
+          "kind": "fury",
+          "cd": 18,
+          "cdSet": true,
+          "dmg": 0,
+          "dmgBehind": 0,
+          "dmgOutside": 0,
+          "dmgOnCooldown": 0,
+          "fury": true,
+          "dbgBefore": {
+            "isMounted": true,
+            "mountId": "naval",
+            "rider": true,
+            "alive": true,
+            "dashT": 0,
+            "time": 0.3498999999999942
+          },
+          "dbgAfter": {
+            "cdVal": 18.349899999999995,
+            "t0": 0.3498999999999942,
+            "time": 0.3498999999999942,
+            "dashT": 0,
+            "furyT": 8
+          }
+        }
+      },
+      "basic": {
+        "dmg": 58,
+        "fireCd": 0.35
+      },
+      "checks": {
+        "weaponLocked": true,
+        "bossDmg": 349,
+        "bossType": "boss",
+        "remount": {
+          "onFoot": true,
+          "dmg": 256,
+          "mounted": true,
+          "tNull": false
+        },
+        "destroyed": {
+          "dmg": 0,
+          "alive": false,
+          "mounted": false,
+          "cdUnchanged": true
+        },
+        "hp": 1000000
+      }
+    }
+  },
+  "ui": {
+    "rows": [
+      "toggle:Entrar / sair",
+      "fire:Ataque principal",
+      "heavy:Rajada Pesada",
+      "dash:Atropelamento"
+    ],
+    "bar": true,
+    "mount": "Jipe Blindado"
+  },
+  "catalog": [
+    "2 habilidades · Ver detalhes ›",
+    "2 habilidades · Ver detalhes ›",
+    "2 habilidades · Ver detalhes ›",
+    "1 habilidades · Ver detalhes ›",
+    "3 habilidades · Ver detalhes ›",
+    "2 habilidades · Ver detalhes ›",
+    "3 habilidades · Ver detalhes ›",
+    "4 habilidades · Ver detalhes ›"
+  ],
+  "mobile": {
+    "labels": [
+      "Rajada",
+      "Atropelamento"
+    ],
+    "dmg": 38,
+    "mounted": true
+  },
+  "errors": []
+}

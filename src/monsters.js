@@ -609,7 +609,7 @@ function drawSpecter(B, G, base, z, col, t) {
   }
 }
 
-const BODIES = { spider: drawSpider, bat: drawBat, dog: drawDog, spore: drawSpore, wasp: drawWasp, specter: drawSpecter, nv_crab: drawNvCrab, nv_octopus: drawNvOctopus, nv_angler: drawNvAngler, nv_shark: drawNvShark, nv_serpent: drawNvSerpent, nv_mimic: drawNvMimic };
+const BODIES = { spider: drawSpider, bat: drawBat, dog: drawDog, spore: drawSpore, wasp: drawWasp, specter: drawSpecter, nv_crab: drawNvCrab, nv_octopus: drawNvOctopus, nv_angler: drawNvAngler, nv_shark: drawNvShark, nv_serpent: drawNvSerpent, nv_mimic: drawNvMimic, nv_pirate: drawNvPirate };
 
 // ------------------------------------------------------------------ Egito Antigo (só no Templo Antigo)
 const GOLD = 0xd4a020;
@@ -1949,90 +1949,394 @@ function drawNvCrab(B, G, base, z, col, t) {
   // carapaça
   B.part(m, 0, 0.5, 0, 0, 0, 0, 0, 0, 1.6, 0.7, 2.0, col(0xc84830));
   // pinças
-  B.part(m, -1.1, 0.7, 0.6, 0, 0.3, 0, 0, 0, 0, 0.7, 0.5, 0.9, col(0x7a2c1e));
-  B.part(m, 1.1, 0.7, 0.6, 0, -0.3, 0, 0, 0, 0, 0.7, 0.5, 0.9, col(0x7a2c1e));
+  B.part(m, -1.1, 0.7, 0.6, 0, 0.3, 0, 0, 0, 0.7, 0.5, 0.9, col(0x7a2c1e));
+  B.part(m, 1.1, 0.7, 0.6, 0, -0.3, 0, 0, 0, 0.7, 0.5, 0.9, col(0x7a2c1e));
   // patas (6)
   for (let i = 0; i < 3; i++) {
     const x = -1.2 + i * 0.6;
-    B.part(m, x, 0.15, 0.9, 0, 0, 0, 0, 0, 0, 0.25, 0.3, 0.25, col(0x7a2c1e));
-    B.part(m, x, 0.15, -0.9, 0, 0, 0, 0, 0, 0, 0.25, 0.3, 0.25, col(0x7a2c1e));
+    B.part(m, x, 0.15, 0.9, 0, 0, 0, 0, 0, 0.25, 0.3, 0.25, col(0x7a2c1e));
+    B.part(m, x, 0.15, -0.9, 0, 0, 0, 0, 0, 0.25, 0.3, 0.25, col(0x7a2c1e));
   }
   // olhos
-  G.part(m, -0.3, 0.85, 1.0, 0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.12, 0xffe060);
-  G.part(m, 0.3, 0.85, 1.0, 0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.12, 0xffe060);
+  G.part(m, -0.3, 0.85, 1.0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.12, 0xffe060);
+  G.part(m, 0.3, 0.85, 1.0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.12, 0xffe060);
 }
 function drawNvOctopus(B, G, base, z, col, t) {
-  const m = base;
-  // cabeça
-  B.part(m, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 1.4, 1.2, 1.4, col(0x3c4468));
-  // tentáculos (8)
+  const P = (x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (x, y, zz, sx, sy, sz, c) => G.part(base, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const bob = Math.sin(t * 2.2) * 0.06;
+  // manto bulboso (cabeça alongada para trás)
+  P(0, 1.35 + bob, -0.15, 1.25, 1.05, 1.35, 0x5a4a9a);
+  P(0, 1.95 + bob, -0.35, 0.95, 0.55, 1.0, 0x6c5cb4);
+  P(0, 2.3 + bob, -0.5, 0.55, 0.35, 0.6, 0x7a6ac4);
+  // manchas
+  P(-0.4, 1.7 + bob, -0.3, 0.2, 0.2, 0.3, 0x3a2c6a); P(0.35, 1.5 + bob, -0.55, 0.22, 0.22, 0.3, 0x3a2c6a);
+  // rosto / sifão
+  P(0, 1.0 + bob, 0.55, 0.7, 0.4, 0.3, 0x4a3c84);
+  // 8 tentáculos curvos em 2 segmentos
   for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2;
-    const x = Math.sin(a) * 1.0;
-    const zp = Math.cos(a) * 1.0;
-    B.part(m, x, 0.3, zp, 0, a, 0, 0, 0, 0, 0.22, 0.6, 0.22, col(0x1e2438));
+    const a = (i / 8) * Math.PI * 2 + 0.2;
+    const w = Math.sin(t * 3 + i) * 0.25;
+    const cx = Math.sin(a), cz = Math.cos(a);
+    P(cx * 0.55, 0.6, cz * 0.55, 0.24, 0.7, 0.24, 0x4a3c84, cz * 0.6, -cx * 0.6);
+    P(cx * (1.0 + w * 0.2), 0.15, cz * (1.0 + w * 0.2), 0.2, 0.2, 0.55, 0x3a2c6a, 0, 0);
+    P(cx * 1.25, 0.1, cz * 1.25, 0.12, 0.12, 0.12, 0xb89ae8); // ventosa na ponta
   }
-  // olhos
-  G.part(m, -0.35, 1.1, 0.7, 0, 0, 0, 0, 0, 0, 0.2, 0.2, 0.12, 0xff2a1a);
-  G.part(m, 0.35, 1.1, 0.7, 0, 0, 0, 0, 0, 0, 0.2, 0.2, 0.12, 0xff2a1a);
+  // olhos grandes com pupila
+  P(-0.45, 1.35 + bob, 0.55, 0.32, 0.3, 0.12, 0xf0e0a0); P(0.45, 1.35 + bob, 0.55, 0.32, 0.3, 0.12, 0xf0e0a0);
+  L(-0.45, 1.35 + bob, 0.62, 0.22, 0.08, 0.06, 0xff3a1a); L(0.45, 1.35 + bob, 0.62, 0.22, 0.08, 0.06, 0xff3a1a);
 }
 function drawNvAngler(B, G, base, z, col, t) {
-  const m = base;
-  // corpo de peixe
-  B.part(m, 0, 0.6, 0, 0, 0, 0, 0, 0, 0, 0.9, 0.7, 1.8, col(0x286274));
-  // boca
-  B.part(m, 0, 0.5, 1.0, 0, 0, 0, 0, 0, 0, 0.7, 0.4, 0.4, col(0x1a3a44));
-  // dente
-  B.part(m, 0, 0.35, 1.2, 0, 0, 0, 0, 0, 0, 0.12, 0.25, 0.12, 0xeeeecc);
-  // lanterna
-  G.part(m, 0, 1.3, 0.6, 0, 0, 0, 0, 0, 0, 0.18, 0.18, 0.18, 0x40e8ff);
-  // cauda
-  B.part(m, 0, 0.6, -1.1, 0, 0, 0, 0, 0, 0, 0.15, 0.4, 0.6, col(0x286274));
+  const P = (x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (x, y, zz, sx, sy, sz, c) => G.part(base, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const sw = Math.sin(t * 6) * 0.08;
+  // corpo arredondado
+  P(0, 0.95, 0, 1.2, 1.0, 1.3, 0x3a7a8c);
+  P(0, 0.6, 0.05, 1.05, 0.35, 1.15, 0x8ab8c0); // ventre claro
+  // cabeçorra com mandíbula inferior saliente
+  P(0, 1.05, 0.85, 1.25, 0.75, 0.6, 0x2e6474);
+  P(0, 0.55, 0.95, 1.35, 0.35, 0.75, 0x23505e, -0.15);
+  // dentes em agulha (superior e inferior)
+  for (let i = 0; i < 6; i++) {
+    const x = -0.5 + i * 0.2;
+    P(x, 0.82, 1.2, 0.07, 0.28, 0.07, 0xf2f0dc);
+    P(x + 0.1, 0.78, 1.28, 0.07, 0.26, 0.07, 0xf2f0dc);
+  }
+  // haste da isca + bulbo luminoso
+  P(0, 1.7, 0.7, 0.08, 0.7, 0.08, 0x23505e, 0.5);
+  P(0, 2.0, 1.05, 0.08, 0.08, 0.5, 0x23505e);
+  L(0, 1.85, 1.35, 0.3, 0.3, 0.3, 0x60f0ff);
+  // olhos pequenos brilhantes
+  L(-0.5, 1.25, 1.05, 0.12, 0.12, 0.08, 0xc0ffff); L(0.5, 1.25, 1.05, 0.12, 0.12, 0.08, 0xc0ffff);
+  // nadadeiras peitorais e cauda
+  P(-0.7, 0.85, 0.1, 0.12, 0.45, 0.5, 0x2e6474, 0, 0.4 + sw); P(0.7, 0.85, 0.1, 0.12, 0.45, 0.5, 0x2e6474, 0, -0.4 - sw);
+  P(sw, 0.95, -0.85, 0.2, 0.5, 0.5, 0x2e6474);
+  P(sw * 2, 0.95, -1.25, 0.12, 0.95, 0.45, 0x3a7a8c);
+  // espinhos dorsais
+  for (let i = 0; i < 3; i++) P(0, 1.55, -0.4 + i * 0.3, 0.06, 0.25, 0.08, 0x8ab8c0);
 }
 function drawNvShark(B, G, base, z, col, t) {
-  const m = base;
-  // corpo hidrodinâmico
-  B.part(m, 0, 0.6, 0, 0, 0, 0, 0, 0, 0, 0.7, 0.6, 2.4, col(0x3a6a84));
-  // nadadeira dorsal
-  B.part(m, 0, 1.1, 0, 0, 0, 0, 0, 0, 0, 0.12, 0.5, 0.6, col(0x1e3a4c));
-  // cauda
-  B.part(m, 0, 0.6, -1.4, 0, 0, 0, 0, 0, 0, 0.4, 0.5, 0.6, col(0x3a6a84));
-  // mandíbula
-  B.part(m, 0, 0.35, 1.1, 0, 0, 0, 0, 0, 0, 0.6, 0.25, 0.5, col(0x1e3a4c));
-  // olho
-  G.part(m, 0.3, 0.75, 0.9, 0, 0, 0, 0, 0, 0, 0.1, 0.1, 0.06, 0xff2a1a);
+  const P = (x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (x, y, zz, sx, sy, sz, c) => G.part(base, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const sw = Math.sin(t * 5 + z.walk) * 0.12;
+  const bite = z.attackT > 0 ? 0.25 : 0.08;
+  // corpo afunilado em 4 seções
+  P(0, 0.85, 0.75, 0.95, 0.85, 0.9, 0x4c7e9a);
+  P(0, 0.85, -0.1, 1.05, 0.95, 0.9, 0x4c7e9a);
+  P(sw * 0.5, 0.85, -0.9, 0.8, 0.75, 0.8, 0x44728c);
+  P(sw, 0.85, -1.6, 0.5, 0.5, 0.7, 0x3c6680);
+  // ventre branco
+  P(0, 0.48, 0.3, 0.85, 0.2, 1.8, 0xdfe8ec);
+  // focinho
+  P(0, 0.95, 1.4, 0.75, 0.55, 0.5, 0x4c7e9a);
+  // mandíbula com fileira de dentes
+  P(0, 0.42 - bite, 1.2, 0.75, 0.22, 0.75, 0x2c4a5c);
+  for (let i = 0; i < 5; i++) { P(-0.3 + i * 0.15, 0.6 - bite * 0.5, 1.5, 0.07, 0.16, 0.07, 0xffffff); }
+  // guelras
+  for (let i = 0; i < 3; i++) { P(-0.53, 0.85, 0.5 - i * 0.15, 0.04, 0.4, 0.05, 0x23394a); P(0.53, 0.85, 0.5 - i * 0.15, 0.04, 0.4, 0.05, 0x23394a); }
+  // barbatana dorsal triangular (3 degraus)
+  P(0, 1.45, -0.05, 0.14, 0.35, 0.7, 0x35596e); P(0, 1.75, -0.2, 0.12, 0.3, 0.45, 0x35596e); P(0, 2.0, -0.32, 0.1, 0.25, 0.2, 0x35596e);
+  // peitorais
+  P(-0.7, 0.55, 0.35, 0.6, 0.1, 0.4, 0x35596e, 0, -0.35); P(0.7, 0.55, 0.35, 0.6, 0.1, 0.4, 0x35596e, 0, 0.35);
+  // cauda em meia-lua
+  P(sw * 1.5, 1.3, -2.05, 0.12, 0.9, 0.35, 0x35596e, -0.5); P(sw * 1.5, 0.55, -2.0, 0.12, 0.6, 0.3, 0x35596e, 0.5);
+  // olhos vermelhos abissais e cicatriz
+  L(-0.48, 1.05, 1.15, 0.06, 0.14, 0.14, 0xff2a1a); L(0.48, 1.05, 1.15, 0.06, 0.14, 0.14, 0xff2a1a);
+  P(0.53, 1.0, 0.2, 0.03, 0.5, 0.08, 0xc8d4d8, 0.6);
 }
 function drawNvSerpent(B, G, base, z, col, t) {
-  const m = base;
-  // segmentos
-  for (let i = 0; i < 6; i++) {
-    const x = (i - 2.5) * 0.7;
-    B.part(m, x, 0.5 + Math.sin(t*2 + i)*0.1, 0, 0, 0, 0, 0, 0, 0, 0.45, 0.45, 0.5, col(0x1e7a64));
+  const P = (x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (x, y, zz, sx, sy, sz, c) => G.part(base, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  // corpo em S ao longo do eixo de avanço (+z = frente), segmentos encostados e afinando
+  const N = 9;
+  for (let i = 0; i < N; i++) {
+    const k = i / (N - 1);
+    const zz = 0.9 - i * 0.48;
+    const x = Math.sin(t * 3 - i * 0.7) * 0.45 * k;
+    const s = 0.75 - k * 0.45;
+    const y = 0.4 + (1 - k) * 0.5;
+    P(x, y, zz, s, s, 0.55, i % 2 ? 0x1e8a6c : 0x26a07e);
+    P(x, y - s * 0.45, zz, s * 0.8, 0.1, 0.5, 0xd8d080); // escamas ventrais
+    if (i < N - 2) P(x, y + s * 0.55, zz, 0.08, 0.22, 0.3, 0x40e0a0); // crista
   }
-  // cabeça
-  B.part(m, 3.0, 0.7, 0, 0, 0.3, 0, 0, 0, 0, 0.7, 0.6, 0.8, col(0x30d890));
-  // mandíbula
-  B.part(m, 3.4, 0.5, 0, 0, 0, 0, 0, 0, 0, 0.5, 0.3, 0.4, col(0x1a5a44));
+  // pescoço erguido e cabeça
+  P(0, 1.3, 1.3, 0.6, 0.7, 0.5, 0x26a07e, -0.3);
+  P(0, 1.75, 1.75, 0.75, 0.5, 0.85, 0x2bb88c);
+  P(0, 1.45, 1.85, 0.65, 0.22, 0.75, 0x1a6a54, 0.25); // mandíbula aberta
+  // presas
+  P(-0.2, 1.52, 2.15, 0.07, 0.26, 0.07, 0xffffff); P(0.2, 1.52, 2.15, 0.07, 0.26, 0.07, 0xffffff);
+  // chifres/barbatanas laterais
+  P(-0.45, 2.0, 1.5, 0.12, 0.4, 0.3, 0x40e0a0, 0, 0.5); P(0.45, 2.0, 1.5, 0.12, 0.4, 0.3, 0x40e0a0, 0, -0.5);
+  // olhos venenosos
+  L(-0.32, 1.88, 2.0, 0.1, 0.12, 0.14, 0xb0ff40); L(0.32, 1.88, 2.0, 0.1, 0.12, 0.14, 0xb0ff40);
 }
 function drawNvMimic(B, G, base, z, col, t) {
   const m = base;
   // baú
-  B.part(m, 0, 0.4, 0, 0, 0, 0, 0, 0, 0, 1.4, 0.7, 1.0, col(0x8a5828));
+  B.part(m, 0, 0.4, 0, 0, 0, 0, 0, 0, 1.4, 0.7, 1.0, col(0x8a5828));
   // tampa aberta
-  B.part(m, 0, 1.0, -0.3, 0.6, 0, 0, 0, 0, 0, 1.4, 0.25, 0.9, col(0x6a4020));
+  B.part(m, 0, 1.0, -0.3, 0.6, 0, 0, 0, 0, 1.4, 0.25, 0.9, col(0x6a4020));
   // dentes
   for (let i = 0; i < 5; i++) {
     const x = -0.5 + i * 0.25;
-    B.part(m, x, 0.75, 0.4, 0, 0, 0, 0, 0, 0, 0.08, 0.2, 0.08, 0xeeeecc);
+    B.part(m, x, 0.75, 0.4, 0, 0, 0, 0, 0, 0.08, 0.2, 0.08, 0xeeeecc);
   }
   // pernas
-  B.part(m, -0.5, 0.1, 0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
-  B.part(m, 0.5, 0.1, 0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
-  B.part(m, -0.5, 0.1, -0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
-  B.part(m, 0.5, 0.1, -0.3, 0, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  B.part(m, -0.5, 0.1, 0.3, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  B.part(m, 0.5, 0.1, 0.3, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  B.part(m, -0.5, 0.1, -0.3, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
+  B.part(m, 0.5, 0.1, -0.3, 0, 0, 0, 0, 0, 0.18, 0.3, 0.18, col(0x3a2810));
   // língua
-  B.part(m, 0, 0.6, 0.5, 0, 0, 0, 0, 0, 0, 0.15, 0.12, 0.4, 0xcc3333);
+  B.part(m, 0, 0.6, 0.5, 0, 0, 0, 0, 0, 0.15, 0.12, 0.4, 0xcc3333);
 }
+function drawNvPirate(B, G, base, z, col, t) {
+  const m = base;
+  const P = (x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (x, y, zz, sx, sy, sz, c) => G.part(m, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const SK = 0x5a9a7a; // pele azulada de criatura afogada
+  // calças piratas desgastadas (finais das pernas, por baixo dos botas)
+  P(-0.12, 0.45, 0, 0.22, 0.9, 0.22, 0x2c3c4c);
+  P(0.12, 0.45, 0, 0.22, 0.9, 0.22, 0x2c3c4c);
+  // botas altas deterioradas (peças finais das pernas, na base do chão)
+  P(-0.13, -0.58, 0, 0.38, 0.22, 0.40, 0x3a3632);
+  P(0.13, -0.58, 0, 0.38, 0.22, 0.40, 0x3a3632);
+  // casaco longo rasgado e encharcado
+  P(0, 0.92, 0, 0.62, 0.68, 0.40, 0x2c3a40);
+  P(0.20, 0.95, 0.02, 0.24, 0.02, 0.14, 0x2a2a30, 0.3);
+  P(-0.30, 1.05, -0.05, 0.18, 0.02, 0.10, 0x2a2a30, -0.4);
+  P(0, 0.55, 0.15, 0.45, 0.06, 0.30, 0x2a2a3a);
+  // camisa antiga por baixo (fina, dobram a borda do casaco)
+  P(0, -0.60, 0, 0.40, 0.20, 0.22, 0x9aa8a0);
+  // cinto largo com fivela
+  P(0, -0.65, 0, 0.68, 0.07, 0.40, 0x2c2620);
+  P(0, -0.65, 0, 0.30, 0.09, 0.30, 0xffc860);
+  // fios marítimos pendurados do cinto
+  P(0.35, -0.65, 0.15, 0.05, 0.05, 0.22, 0x7a6050, 0.5);
+  P(-0.35, -0.65, 0.15, 0.05, 0.05, 0.22, 0x7a6050, -0.5);
+  // braços e mãos (pele afogada)
+  P(-0.35, 0.95, 0, 0.20, 0.70, 0.20, SK);
+  P(0.35, 0.95, 0, 0.20, 0.70, 0.20, SK);
+  P(-0.35, 0.55, 0, 0.16, 0.16, 0.16, SK);
+  P(0.46, 0.62, 0.36, 0.12, 0.08, 0.08, SK);
+  P(-0.35, 0.55, 0.10, 0.10, 0.08, 0.06, 0x7a7a7a);
+  // cabeça (pele afogada)
+  P(0, 1.45, 0, 0.42, 0.45, 0.40, SK);
+  // barba irregular e bigode
+  P(0, 1.28, 0.16, 0.18, 0.04, 0.10, 0x3a2a18);
+  P(0, 1.24, 0.18, 0.16, 0.03, 0.06, 0x4a4038);
+  P(-0.10, 1.32, 0.10, 0.05, 0.05, 0.06, 0x3a2a18);
+  P(0.10, 1.33, 0.11, 0.05, 0.04, 0.06, 0x3a2a18);
+  P(0.02, 1.20, 0.16, 0.05, 0.04, 0.04, 0x3a2a18);
+  // tapa-olho + olho direito com brilho sobrenatural discreto
+  P(-0.12, 1.46, 0.22, 0.08, 0.08, 0.06, 0x0a0a0a);
+  L(-0.12, 1.46, 0.22, 0.03, 0.05, 0.04, 0xffffff);
+  L(0.12, 1.5, 0.2, 0.08, 0.08, 0.05, 0xffffff);
+  P(0.12, 1.48, 0.2, 0.055, 0.055, 0.035, 0x3aa0a0);
+  L(0.12, 1.48, 0.2, 0.03, 0.04, 0.02, 0x70f0ff);
+  // chapéu pirata (tricórnio) + bandana sob o chapéu
+  P(0, 1.75, 0, 0.55, 0.11, 0.50, 0x3a2e2c);
+  P(0.52, 1.60, 0.05, 0.11, 0.13, 0.12, 0x2a2220);
+  P(-0.52, 1.60, 0.05, 0.11, 0.13, 0.12, 0x2a2220);
+  P(0, 1.85, 0, 0.07, 0.10, 0.07, 0x3a2e2c);
+  P(0, 1.71, 0.10, 0.5, 0.02, 0.24, 0xff3e1a);
+  // sabre pirata (enferrujado)
+  B.part(m, 0.45, 0.7, 0.3, 0, -0.6, 0, 0, 0, 0.06, 0.06, 0.9, col(0x9aa4b2));
+  // algas no fundo das pernas
+  P(-0.2, 1.0, 0.2, 0.06, 0.4, 0.06, 0x3a5a3a);
+  P(0.15, 0.9, 0.25, 0.06, 0.35, 0.06, 0x3a5a3a);
+}
+function drawNvHarpooner(B, G, base, z, col, t) {
+  const P = (x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (x, y, zz, sx, sy, sz, c) => G.part(base, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const w = Math.sin(z.walk || 0) * 0.35;
+  const aim = z.attackT > 0 ? -0.5 : 0;
+  // botas e calça de oleado
+  P(-0.15, 0.45, 0, 0.24, 0.9, 0.26, 0x2a3a3a, w); P(0.15, 0.45, 0, 0.24, 0.9, 0.26, 0x2a3a3a, -w);
+  P(-0.15, 0.1, 0.04, 0.28, 0.2, 0.36, 0x1a1412); P(0.15, 0.1, 0.04, 0.28, 0.2, 0.36, 0x1a1412);
+  // capa de chuva amarelada e rasgada (marca do arpoador)
+  P(0, 1.15, 0, 0.62, 0.8, 0.38, 0xb89a3a);
+  P(0, 0.72, -0.05, 0.66, 0.2, 0.42, 0x8a7028);
+  P(0, 1.2, -0.22, 0.6, 0.95, 0.06, 0x8a7028); // aba das costas
+  // cinto com corrente enrolada
+  P(0, 0.85, 0, 0.66, 0.1, 0.42, 0x3a2a1a);
+  for (let i = 0; i < 4; i++) P(-0.25 + i * 0.17, 0.95 + (i % 2) * 0.06, 0.22, 0.1, 0.1, 0.06, 0x7a8088);
+  // braços: esquerdo segura o arpão, direito puxa a corrente
+  P(-0.42, 1.15, 0.1, 0.2, 0.7, 0.2, 0xb89a3a, -0.6 + aim); P(0.42, 1.1, 0, 0.2, 0.7, 0.2, 0xb89a3a, 0.2);
+  P(-0.42, 0.95, 0.45, 0.16, 0.16, 0.16, 0x6a8a84); P(0.42, 0.78, 0.05, 0.16, 0.16, 0.16, 0x6a8a84);
+  // cabeça afogada esverdeada com chapéu sueste
+  P(0, 1.78, 0, 0.44, 0.44, 0.42, 0x6a8a84);
+  P(0, 2.05, -0.05, 0.62, 0.08, 0.62, 0x8a7028);
+  P(0, 2.13, 0, 0.42, 0.14, 0.42, 0xb89a3a);
+  P(0, 1.98, -0.32, 0.6, 0.1, 0.25, 0x8a7028, 0.4); // aba traseira caída
+  // barba de algas
+  P(0, 1.55, 0.18, 0.36, 0.18, 0.1, 0x2c5a34); P(-0.1, 1.42, 0.2, 0.08, 0.16, 0.06, 0x2c5a34);
+  L(-0.11, 1.82, 0.22, 0.08, 0.06, 0.04, 0x80ffd0); L(0.11, 1.82, 0.22, 0.08, 0.06, 0.04, 0x80ffd0);
+  // arpão longo com ponta farpada
+  P(-0.42, 1.05, 0.7, 0.07, 0.07, 1.9, 0x5a3c22, aim * 0.3);
+  P(-0.42, 1.05 + aim * 0.15, 1.7, 0.12, 0.12, 0.3, 0xa8b0b8);
+  P(-0.42, 1.05 + aim * 0.15, 1.55, 0.3, 0.06, 0.08, 0xa8b0b8);
+  // corrente pendurada do arpão
+  for (let i = 0; i < 4; i++) P(-0.3 + i * 0.12, 0.85 - i * 0.08, 0.35 - i * 0.05, 0.08, 0.08, 0.08, 0x7a8088);
+}
+function drawNvGhost(B, G, base, z, col, t) {
+  const P = (x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (x, y, zz, sx, sy, sz, c) => G.part(base, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const f = Math.sin(t * 2.5) * 0.1; // flutua
+  const y0 = 0.35 + f;
+  // sem pernas: cauda espectral que se desfaz em fiapos
+  L(0, y0 + 0.15, -0.05, 0.42, 0.3, 0.3, 0x3ab8d8);
+  L(0.05 + Math.sin(t * 4) * 0.08, y0 - 0.12, -0.12, 0.26, 0.25, 0.2, 0x2a90b0);
+  L(-0.04 + Math.sin(t * 4 + 1) * 0.1, y0 - 0.32, -0.2, 0.14, 0.18, 0.12, 0x1e6a88);
+  // uniforme de marinheiro: camisa listrada + gola
+  for (let i = 0; i < 4; i++) P(0, y0 + 0.45 + i * 0.17, 0, 0.56, 0.17, 0.34, i % 2 ? 0xd8f4ff : 0x2a5a8a);
+  P(0, y0 + 1.15, -0.12, 0.62, 0.12, 0.3, 0x2a5a8a); // gola marinheira
+  P(0, y0 + 1.05, 0.18, 0.14, 0.18, 0.04, 0xd04040); // lenço
+  // braços estendidos (assombração)
+  P(-0.4, y0 + 0.9, 0.3, 0.18, 0.18, 0.65, 0xd8f4ff); P(0.4, y0 + 0.9, 0.3, 0.18, 0.18, 0.65, 0xd8f4ff);
+  L(-0.4, y0 + 0.9, 0.68, 0.16, 0.16, 0.14, 0x9af4ff); L(0.4, y0 + 0.9, 0.68, 0.16, 0.16, 0.14, 0x9af4ff);
+  // crânio pálido com boné de marinheiro
+  P(0, y0 + 1.48, 0, 0.44, 0.44, 0.42, 0xcfe8ee);
+  P(0, y0 + 1.36, 0.19, 0.3, 0.1, 0.06, 0x203038); // boca
+  P(0, y0 + 1.75, 0, 0.5, 0.12, 0.46, 0xffffff);
+  P(0, y0 + 1.72, 0.24, 0.3, 0.05, 0.12, 0x1a2a40);
+  // órbitas vazias que brilham
+  L(-0.11, y0 + 1.52, 0.22, 0.11, 0.1, 0.04, 0x70f0ff); L(0.11, y0 + 1.52, 0.22, 0.11, 0.1, 0.04, 0x70f0ff);
+  // névoa / aura flutuando ao redor
+  for (let i = 0; i < 4; i++) { const a = t * 1.5 + i * 1.57; L(Math.sin(a) * 0.6, y0 + 0.6 + i * 0.25, Math.cos(a) * 0.45, 0.08, 0.08, 0.08, 0x70e8ff); }
+}
+function drawNvBrute(B, G, base, z, col, t) {
+  const P = (x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(base, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (x, y, zz, sx, sy, sz, c) => G.part(base, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const w = Math.sin(z.walk || 0) * 0.25;
+  const slam = z.attackT > 0 || z.state === 'slam' ? -1.1 : 0;
+  // pernas curtas e grossas
+  P(-0.3, 0.45, 0, 0.42, 0.9, 0.44, 0x2a3a3a, w); P(0.3, 0.45, 0, 0.42, 0.9, 0.44, 0x2a3a3a, -w);
+  // tronco largo e curvado, pele inchada de afogado
+  P(0, 1.35, 0.05, 1.2, 1.0, 0.8, 0x4c7a6a, 0.15);
+  P(0, 1.95, 0.15, 1.05, 0.45, 0.75, 0x4c7a6a, 0.15);
+  // barriga com cracas
+  P(0, 1.1, 0.42, 0.8, 0.55, 0.12, 0x6a9a84);
+  for (let i = 0; i < 5; i++) P(-0.35 + i * 0.18, 1.05 + (i % 2) * 0.25, 0.5, 0.12, 0.12, 0.08, 0xd8d0b0);
+  // correntes cruzadas no peito
+  for (let i = 0; i < 5; i++) P(-0.45 + i * 0.22, 1.85 - i * 0.18, 0.5, 0.1, 0.1, 0.08, 0x7a8088);
+  // braços gigantes, esquerdo ergue a âncora
+  P(-0.8, 1.55, 0.1, 0.45, 1.0, 0.45, 0x4c7a6a, slam); P(0.8, 1.35, 0.1, 0.45, 1.0, 0.45, 0x4c7a6a, 0.1);
+  P(0.8, 0.8, 0.15, 0.4, 0.35, 0.4, 0x3a5a4c);
+  // cabeça pequena afundada nos ombros, com capuz de lona
+  P(0, 2.3, 0.35, 0.44, 0.42, 0.42, 0x6a9a84);
+  P(0, 2.48, 0.25, 0.56, 0.28, 0.52, 0x5a4a38);
+  P(0, 2.15, 0.56, 0.3, 0.1, 0.05, 0x1a2020);
+  L(-0.11, 2.32, 0.57, 0.08, 0.07, 0.04, 0xffb040); L(0.11, 2.32, 0.57, 0.08, 0.07, 0.04, 0xffb040);
+  // âncora gigante
+  const ay = slam ? 2.7 : 1.0, az = slam ? 0.6 : 0.55;
+  P(-0.8, ay, az, 0.14, 1.5, 0.14, 0x5a646e);
+  P(-0.8, ay + 0.7, az, 0.5, 0.12, 0.12, 0x5a646e);
+  P(-0.8, ay - 0.72, az, 1.1, 0.16, 0.18, 0x5a646e);
+  P(-1.3, ay - 0.55, az, 0.16, 0.38, 0.18, 0x5a646e); P(-0.3, ay - 0.55, az, 0.16, 0.38, 0.18, 0x5a646e);
+  P(-0.8, ay + 0.85, az, 0.26, 0.26, 0.08, 0x5a646e);
+}
+Object.assign(BODIES, { nv_harpooner: drawNvHarpooner, nv_ghost: drawNvGhost, nv_brute: drawNvBrute });
+
+// --- Laboratório de Pesquisa: 14 mobs exclusivos com identidade visual própria (voxel, anatomia distinta) ---
+function drawLabMob(kind, B, G, m, col, t) {
+  const P = (x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (x, y, zz, sx, sy, sz, c) => G.part(m, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const leg = (x, c) => P(x, 0.45, 0, 0.22, 0.9, 0.22, c);
+  const head = (c) => P(0, 1.45, 0, 0.42, 0.45, 0.4, c);
+  if (kind === 'lb_specter') { // Espectro Infectado: corpo etéreo/flutuante, translúcido
+    L(0, 1.15, 0, 0.5, 0.55, 0.5, 0x70e8ff, 0.1);
+    L(-0.14, 0.72, 0.05, 0.14, 0.14, 0.1, 0x9af4ff, 0.4); L(0.14, 0.72, 0.05, 0.14, 0.14, 0.1, 0x9af4ff, -0.4);
+    leg(-0.12, 0x2a7a7a); leg(0.12, 0x2a7a7a); head(0x5a9aa8);
+  } else if (kind === 'lb_tremor') { // Tremor: torso pesado/pressado, pernas reforçadas
+    leg(-0.12, 0x2a3a3a); leg(0.12, 0x2a3a3a);
+    P(-0.3, 0.9, 0, 0.34, 0.6, 0.34, 0x4a3a2a); P(0.3, 0.9, 0, 0.34, 0.6, 0.34, 0x4a3a2a);
+    P(0, 1.55, 0, 0.44, 0.44, 0.44, 0x6a6a6a);
+    P(-0.12, 1.02, 0.12, 0.22, 0.18, 0.22, 0x7a5a4a); P(0.12, 1.02, 0.12, 0.22, 0.18, 0.22, 0x7a5a4a);
+    head(0x6a6a5a);
+  } else if (kind === 'lb_launcher') { // Lancador: reservatório ácido visível à frente
+    leg(-0.12, 0x2a3a3a); leg(0.12, 0x2a3a3a);
+    P(-0.45, 0.9, 0, 0.22, 0.18, 0.22, 0x7a7a7a); P(0, 0.9, 0, 0.28, 0.42, 0.28, 0x7a7a7a);
+    P(0, 0.95, 0, 0.3, 0.48, 0.3, 0x9a9a9a); head(0x9a9a9a);
+    P(0, 1.3, 0.05, 0.34, 0.16, 0.34, 0x9aff40);
+  } else if (kind === 'lb_suppressor') { // Supressor: emissão de campo green, estrutura vertical
+    leg(-0.12, 0x4aff4a); leg(0.12, 0x4aff4a);
+    P(-0.5, 1.05, 0, 0.1, 0.1, 0.1, 0x8aff4a); P(0.5, 1.05, 0, 0.1, 0.1, 0.1, 0x8aff4a);
+    P(0, 0.9, 0, 0.34, 0.42, 0.34, 0x2aff4a); P(0, 1.05, 0, 0.26, 0.04, 0.3, 0x70ffa0);
+    head(0x2aff4a);
+  } else if (kind === 'lb_corrosive') { // Corrosivo: corpo contaminado, bolsas ácidas
+    leg(-0.12, 0x2a5a3a); leg(0.12, 0x2a5a3a);
+    P(-0.22, 0.92, 0.1, 0.14, 0.24, 0.14, 0x6a3a3a); P(0.22, 0.92, 0.1, 0.14, 0.24, 0.14, 0x6a3a3a);
+    P(-0.28, 1.0, 0.15, 0.1, 0.28, 0.08, 0x4a1a1a, 0.5); P(0.28, 1.0, 0.15, 0.1, 0.28, 0.08, 0x4a1a1a, -0.5);
+    P(0, 1.25, 0, 0.34, 0.28, 0.34, 0x3a4a3a);
+    L(-0.18, 0.7, 0.22, 0.12, 0.12, 0.04, 0x9aff4a); L(0.18, 0.7, 0.22, 0.12, 0.12, 0.04, 0x9aff4a);
+    head(0x4a9a5a);
+  } else if (kind === 'lb_incendiary') { // Incendiário: fissuras luminosas, bolsas de combustível
+    leg(-0.12, 0x2a1a1a); leg(0.12, 0x2a1a1a);
+    P(0, 0.9, 0, 0.32, 0.5, 0.32, 0x8aff3a);
+    L(0, 0.95, 0.25, 0.34, 0.04, 0.34, 0xff6a1a); L(-0.12, 0.88, 0.08, 0.08, 0.16, 0.06, 0xff9a4a); L(0.12, 0.88, 0.08, 0.08, 0.16, 0.06, 0xff9a4a);
+    head(0x8a5a4a);
+  } else if (kind === 'lb_freezer') { // Congelador: cristais de gelo
+    leg(-0.12, 0x2a4a5a); leg(0.12, 0x2a4a5a);
+    P(0, 0.9, 0, 0.32, 0.5, 0.32, 0x70c0ff);
+    L(0, 0.95, 0.15, 0.3, 0.3, 0.06, 0x80d0ff); L(-0.15, 0.85, 0, 0.1, 0.3, 0.1, 0x90e0ff, 0.4); L(0.15, 0.85, 0, 0.1, 0.3, 0.1, 0x90e0ff, -0.4);
+    head(0x5a90a0);
+  } else if (kind === 'lb_hunter') { // Caçador: postura agressiva/predatória, baionetes luminosos
+    leg(-0.14, 0x8a1610); leg(0.14, 0x8a1610);
+    P(-0.2, 0.85, 0, 0.16, 0.5, 0.16, 0x8a1610); P(0.2, 0.85, 0, 0.16, 0.5, 0.16, 0x8a1610);
+    P(0, 0.45, 0, 0.24, 0.7, 0.24, 0x4a0a0a);
+    P(-0.26, 1.15, 0, 0.12, 0.14, 0.12, 0xff6030, 0.5); P(0.26, 1.15, 0, 0.12, 0.14, 0.12, 0xff6030, -0.5);
+    P(0, 1.0, 0.18, 0.26, 0.04, 0.26, 0xffb030);
+    head(0x5a3030);
+  } else if (kind === 'lb_pack') { // Matilha: anatomia de matilha (quatro patas, agregado)
+    leg(-0.22, 0x4a2a14); leg(0.22, 0x4a2a14);
+    P(-0.14, 0.55, 0.05, 0.22, 0.3, 0.22, 0x6a4a3a); P(0.14, 0.55, 0.05, 0.22, 0.3, 0.22, 0x6a4a3a);
+    P(0.2, 0.9, 0.1, 0.14, 0.3, 0.14, 0x4a1a14); P(-0.2, 0.9, 0.1, 0.14, 0.3, 0.14, 0x4a1a14);
+    head(0x6a5a4a);
+  } else if (kind === 'lb_signaler') { // Sinalizador: elemento luminoso de identificação
+    leg(-0.12, 0x4a4a4a); leg(0.12, 0x4a4a4a);
+    P(0, 0.8, 0, 0.3, 0.38, 0.3, 0x4a4a4a);
+    L(0, 1.2, 0, 0.22, 0.22, 0.08, 0xffc040); L(0, 1.33, 0.05, 0.08, 0.06, 0.03, 0xff8a20);
+    head(0x5a5a5a);
+  } else if (kind === 'lb_puppeteer') { // Titereiro: apêndices ascendentes, fios de controle
+    leg(-0.12, 0xb050ff); leg(0.12, 0xb050ff);
+    P(0, 0.75, 0, 0.3, 0.42, 0.3, 0xb050ff);
+    L(-0.3, 1.3, 0.08, 0.12, 0.14, 0.14, 0xb050ff, 0.4); L(0.3, 1.3, 0.08, 0.12, 0.14, 0.14, 0xb050ff, -0.4);
+    L(0.22, 0.85, 0.18, 0.1, 0.42, 0.1, 0x7040ff); L(-0.22, 0.85, 0.18, 0.1, 0.42, 0.1, 0x7040ff);
+    head(0x705070);
+  } else if (kind === 'lb_camouflaged') { // Camuflado: corpo mate, palhaço sutil
+    leg(-0.12, 0x3a3a3a); leg(0.12, 0x3a3a3a);
+    P(0, 0.5, 0, 0.3, 0.6, 0.3, 0x1a1a1a); head(0x1a1a1a);
+  } else if (kind === 'lb_demolisher') { // Demolidor: braços pesados, estruturas de impacto
+    leg(-0.18, 0x6a6a6a); leg(0.18, 0x6a6a6a);
+    P(-0.36, 0.9, 0, 0.3, 0.5, 0.3, 0x6a6a6a); P(0.36, 0.9, 0, 0.3, 0.5, 0.3, 0x6a6a6a);
+    P(0, 0.75, 0, 0.42, 0.45, 0.42, 0x5a5a5a); P(0, 1.45, 0, 0.34, 0.34, 0.34, 0x4a4a4a);
+    P(-0.3, 1.02, 0.12, 0.12, 0.42, 0.1, 0x5a5a5a); P(0.3, 1.02, 0.12, 0.12, 0.42, 0.1, 0x5a5a5a);
+    L(0, 1.1, 0.1, 0.32, 0.06, 0.32, 0xffd040);
+    head(0x6a6a6a);
+  } else if (kind === 'lb_aerial') { // Aéreo Mutante: corpo dobrado, asas visíveis
+    leg(-0.16, 0x4aff4a); leg(0.16, 0x4aff4a);
+    P(-0.16, 0.45, 0, 0.12, 0.28, 0.3, 0x2a4a2a); P(0.16, 0.45, 0, 0.12, 0.28, 0.3, 0x2a4a2a);
+    P(0, 0.9, 0, 0.34, 0.22, 0.34, 0x4aff4a); P(0, 1.35, 0, 0.36, 0.04, 0.36, 0x70f0ff, 0.5);
+    head(0x4aff4a);
+  }
+}
+Object.assign(BODES, {
+  lb_specter: (B, G, m, z, col, t) => drawLabMob('lb_specter', B, G, m, col, t),
+  lb_tremor: (B, G, m, z, col, t) => drawLabMob('lb_tremor', B, G, m, col, t),
+  lb_launcher: (B, G, m, z, col, t) => drawLabMob('lb_launcher', B, G, m, col, t),
+  lb_suppressor: (B, G, m, z, col, t) => drawLabMob('lb_suppressor', B, G, m, col, t),
+  lb_corrosive: (B, G, m, z, col, t) => drawLabMob('lb_corrosive', B, G, m, col, t),
+  lb_incendiary: (B, G, m, z, col, t) => drawLabMob('lb_incendiary', B, G, m, col, t),
+  lb_freezer: (B, G, m, z, col, t) => drawLabMob('lb_freezer', B, G, m, col, t),
+  lb_hunter: (B, G, m, z, col, t) => drawLabMob('lb_hunter', B, G, m, col, t),
+  lb_pack: (B, G, m, z, col, t) => drawLabMob('lb_pack', B, G, m, col, t),
+  lb_signaler: (B, G, m, z, col, t) => drawLabMob('lb_signaler', B, G, m, col, t),
+  lb_puppeteer: (B, G, m, z, col, t) => drawLabMob('lb_puppeteer', B, G, m, col, t),
+  lb_camouflaged: (B, G, m, z, col, t) => drawLabMob('lb_camouflaged', B, G, m, col, t),
+  lb_demolisher: (B, G, m, z, col, t) => drawLabMob('lb_demolisher', B, G, m, col, t),
+  lb_aerial: (B, G, m, z, col, t) => drawLabLabMobFix('lb_aerial', B, G, m, z, col, t),
+});
+
 export function drawEnemy(B, G, z, t) {
   const type = z.type;
   const def = z.def;

@@ -17,7 +17,7 @@ import { platform } from './platform.js';
 import { TouchControls } from './touch.js';
 import { ControllerManager } from './gamepad.js';
 import { diffOf } from './difficulty.js';
-import { mountDef, mountForArena, drawMount, MOUNT_USE_DIST, mountSkills, mountSkillAt, mountRam, mountWeaponDef, MOUNTS, MOUNT_SKILLS } from './mounts.js';
+import { mountDef, mountForArena, mountOrderForArena, drawMount, MOUNT_USE_DIST, mountSkills, mountSkillAt, mountRam, mountWeaponDef, MOUNTS, MOUNT_SKILLS } from './mounts.js';
 import { loadMountKeys } from './mountControls.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -58,7 +58,6 @@ const EVENT_INFO = {
   rain: { title: 'TEMPESTADE ÁCIDA!', kind: 'wave', sfx: 'wave', rate: 0.85 },
   hordealarm: { title: 'ALARME DE HORDA! CARROS DISPARANDO', kind: 'bad', sfx: 'siren', rate: 1.2 },
   overload: { title: 'SOBRECARGA DAS MÁQUINAS!', kind: 'bad', sfx: 'siren', rate: 0.7 },
-  toxicfog: { title: 'NÉVOA TÓXICA! PROCURE ABRIGO', kind: 'bad', sfx: 'wave', rate: 0.6 },
   blackout: { title: 'APAGÃO NA FÁBRICA!', kind: 'wave', sfx: 'siren', rate: 0.8 },
   fog: { title: 'NEBLINA DENSA!', kind: 'wave', sfx: 'wave', rate: 0.7 },
   alarm: { title: 'ATAQUE DE REFORÇOS!', kind: 'bad', sfx: 'siren', rate: 1 },
@@ -367,6 +366,8 @@ export class Game {
     this.mountPending = montariaDaArena && !demo ? { id: arenaDef.id, def: montariaDaArena } : null;
     this.mountDef = montariaDaArena || null;
     this.mountReleases = 0;
+    this.bossStarted = [];       // chefes iniciados nesta partida (progressão de montaria: 1º/2º/3º confronto)
+    this.mountReleasedBoss = {}; // liberação já efetuada por tipo de chefe (evita duplicação)
     this.camTarget.set(center.x, 0, center.z);
     if (demo) {
       const demoPool = ['walker', 'walker', ...ENEMY_ORDER.filter((t) => !ENEMIES[t].boss && isEnemyAllowedInArena(t, arenaDef.id))];
@@ -474,6 +475,9 @@ export class Game {
     this.matchDiff = this.settings.difficulty || 'normal'; // reiniciar mantém a dificuldade da partida
     this.arenaDef = arenaDef;
     this.survivorPicks = survivors;
+    this.bossStarted = [];       // resetar progressão da partida (chefe 1º/2º/3º)
+    this.mountReleasedBoss = {};
+    this.mountReleases = 0;
     this.setupMatch(arenaDef, survivors);
     this.state = 'playing';
     this.ui.hud(true);
@@ -1739,22 +1743,28 @@ export class Game {
 
   // libera a montaria exclusiva da arena (uma vez por partida) no ponto livre perto do jogador e longe do chefe
   releaseMount(boss) {
-    if (this.mountReleases >= 3) return;
+    const arenaId = this.arena.def.id;
+    const prog = mountOrderForArena(arenaId);
+    const bt = boss.type;
+    if (this.bossStarted.indexOf(bt) === -1) this.bossStarted.push(bt);
+    const releaseN = this.bossStarted.length; // 1º, 2º, 3º chefe iniciado nesta partida
+    if (this.mountReleases >= 3) return; // regra de integridade: máximo de três liberações
+    if (this.mountReleasedBoss[bt]) return; // evento duplicado não libera novamente
+    this.mountReleasedBoss[bt] = true;
+    // transição: destrói a montaria anterior antes de disponibilizar a próxima
     if (this.worldMount && this.worldMount.alive) {
       const wm = this.worldMount;
-      if (wm.rider) { this.dismount(wm.rider, true); }
-      wm.alive = false; wm.hp = 0;
+      if (wm.rider) this.dismount(wm.rider, true);
+      wm.alive = false; wm.hp = 0; wm.state = 'substituída';
     }
     this.worldMount = null;
-    if (!this.mountPending && this.mountDef) this.mountPending = { id: this.arena.def.id, def: this.mountDef };
-    const pend = this.mountPending;
+    const pid = prog[Math.min(releaseN - 1, prog.length - 1)]; // montaria correspondente ao confronto
+    const pend = mountDef(pid);
     if (!pend) return;
-    this.mountPending = null;
     this.mountReleases += 1;
-    const releaseN = this.mountReleases;
     const A = this.arena;
     const p = this.players.find((q) => q.alive) || this.players[0];
-    const R = Math.max(1.35, pend.def.size * 0.8);
+    const R = Math.max(1.35, pend.size * 0.8);
     const ok = (x, z) => x > 2 && z > 2 && x < A.W - 2 && z < A.D - 2 && !A.circleBlocked(x, z, R)
       && !A.props.some((pr) => !pr.dead && Math.hypot(pr.x - x, pr.z - z) < R + 0.6)
       && Math.hypot(boss.pos.x - x, boss.pos.z - z) > 6
@@ -1768,11 +1778,12 @@ export class Game {
         if (ok(x, z)) spot = { x, z };
       }
     if (!spot) spot = this.freeSpot(p.pos.x, p.pos.z, R);
-    this.worldMount = { id: pend.id, def: pend.def, x: spot.x, z: spot.z, spawnX: spot.x, spawnZ: spot.z, facing: Math.atan2(boss.pos.x - spot.x, boss.pos.z - spot.z), hp: pend.def.maxHp, maxHp: pend.def.maxHp, rider: null, alive: true, respawnT: 0, hurtT: 0, wheelT: 0 };
-    for (const q of this.players) q.mountId = pend.id;
+    this.worldMount = { id: pid, def: pend, x: spot.x, z: spot.z, spawnX: spot.x, spawnZ: spot.z, facing: Math.atan2(boss.pos.x - spot.x, boss.pos.z - spot.z), hp: pend.maxHp, maxHp: pend.maxHp, rider: null, alive: true, respawnT: 0, hurtT: 0, wheelT: 0, state: 'disponível' };
+    for (const q of this.players) q.mountId = pid;
     for (let k = 0; k < 24; k++) this.parts.spawn(spot.x, 0.3, spot.z, rand(-3, 3), rand(2, 5), rand(-3, 3), 0.12, pick([0xffc107, 0x29b6f6, 0xffffff]), 0.8, 8, 2);
     this.audio.play('pickup', { volume: 0.9, priority: true });
-    const msg = releaseN === 1 ? 'Uma montaria esta disponivel!' : releaseN === 2 ? 'Nova montaria liberada!' : 'Ultima montaria disponivel! Prepare-se para o confronto final!';
+    const msgs = { 1: 'Uma montaria está disponível!', 2: 'Nova montaria liberada!', 3: 'Última montaria disponível! Prepare-se para o confronto final!' };
+    const msg = msgs[Math.min(releaseN, 3)] || msgs[3];
     for (const q of this.players) this.ui.toast(q.id, msg, 'vehicle');
   }
 
@@ -1799,6 +1810,7 @@ export class Game {
       return;
     }
     wm.rider = p;
+    wm.state = 'utilizada';
     p.pos.set(wm.x, 0, wm.z);
     p.facing = wm.facing;
     p.mountId = wm.id;
@@ -1822,11 +1834,13 @@ export class Game {
       if (destroyed) {
         wm.alive = false;
         wm.hp = 0;
+wm.state = 'destruída';
         for (let k = 0; k < 18; k++) {
           this.parts.spawn(wm.x, 0.8, wm.z, rand(-4, 4), rand(2, 6), rand(-4, 4), 0.16, pick([0xff8020, 0xffc107, 0x333840]), 0.9, 14, 2);
         }
         this.noiseShake(0.35);
       } else {
+        wm.state = 'disponível';
         // estaciona no local onde o jogador desmontou e coloca o jogador ao lado
         const side = this.freeSpot(wm.x + Math.cos(wm.facing) * 1.45, wm.z - Math.sin(wm.facing) * 1.45, p.radius + 0.1);
         p.pos.set(side.x, 0, side.z);
@@ -2221,12 +2235,6 @@ export class Game {
       fogN = 8;
       fogF = 30;
       fogHex = MIST[theme] || 0x8a949e;
-    } else if (this.event === 'toxicfog') {
-      sunT *= 0.6;
-      hemiT *= 0.78;
-      fogN = 4;
-      fogF = 22;
-      fogHex = 0x4a5a34;
     } else if (this.event === 'hordealarm') {
       sunT *= 0.8;
       hemiT *= 0.9;
@@ -2295,15 +2303,14 @@ export class Game {
         if (Math.random() < 0.5) this.parts.spawn(d.x, 0.05, d.z, rand(-1, 1), rand(0.6, 1.6), rand(-1, 1), 0.05, 0x9cc4e8, 0.25, 8, 2);
       }
     }
-    // névoa baixa em floresta/necrotério e durante o evento de neblina
-    const toxic = this.event === 'toxicfog';
-    if ((theme === 'forest' || theme === 'graveyard' || this.event === 'fog' || toxic) && Math.random() < dt * (toxic ? 30 : 12)) {
-      for (let n = 0; n < 2; n++) this.parts.spawn(cx + rand(-13, 13), rand(0.1, 0.9), cz + rand(-13, 13), rand(-0.4, 0.4), rand(-0.1, 0.25), rand(-0.4, 0.4), rand(0.16, 0.38), toxic ? pick([0x8aa04a, 0x9a6ac0]) : 0x9aa8a4, rand(2.4, 4.2), -0.05, 2);
+    // neblina baixa em floresta/necrotério e durante o evento de neblina (visual apenas)
+    if ((theme === 'forest' || theme === 'graveyard' || this.event === 'fog') && Math.random() < dt * 12) {
+      for (let n = 0; n < 2; n++) this.parts.spawn(cx + rand(-13, 13), rand(0.1, 0.9), cz + rand(-13, 13), rand(-0.4, 0.4), rand(-0.1, 0.25), rand(-0.4, 0.4), rand(0.16, 0.38), 0x9aa8a4, rand(2.4, 4.2), -0.05, 2);
     }
     this.updateAmbientParticles(dt);
     // camadas de áudio do clima seguem o estado (sem reenviar todo quadro)
     const wRain = this.rainOn || storm;
-    const wFog = this.event === 'fog' || this.event === 'toxicfog';
+    const wFog = this.event === 'fog';
     if (wRain !== this._wRain) {
       this._wRain = wRain;
       this.audio.setWeatherAmbient('rain', wRain);
@@ -2355,24 +2362,6 @@ export class Game {
       }
       // as sirenes seguem tocando enquanto durar o evento
       for (const pr of A.props) if (pr.evAlarm && !pr.dead && pr.alarmT < 1) pr.alarmT = 2;
-    } else if (ev === 'toxicfog') {
-      // dano progressivo para quem está fora de abrigo
-      this.toxT = (this.toxT || 0) + dt;
-      if (this.toxT >= 1) {
-        this.toxT = 0;
-        const el = this.eventDur - this.eventLeft;
-        const dmg = 1.5 + Math.min(4.5, el * 0.28);
-        for (const p of this.players) {
-          if (!p.alive) continue;
-          if (this.inShelter(p.pos.x, p.pos.z)) {
-            p.fogExp = 0;
-            continue;
-          }
-          p.fogExp = (p.fogExp || 0) + 1;
-          this.damagePlayer(p, dmg * (1 + Math.min(1, p.fogExp * 0.06)), p.pos.x, p.pos.z, 0, true);
-          if (p.fogExp === 3) this.ui.toast(p.id, 'A névoa corrói! Abrigue-se nas ruínas ou na cabana', 'warning');
-        }
-      }
     } else if (ev === 'breach' || ev === 'trial' || ev === 'curse') {
       this.updateWorldEvent(ev, dt);
     } else if (ev === 'overload') {
@@ -2389,8 +2378,6 @@ export class Game {
     this.eventLeft = rand(16, 22);
     this.eventDur = this.eventLeft;
     this.eventBoost = 1;
-    this.toxT = 0;
-    for (const p of this.players) p.fogExp = 0;
     const info = EVENT_INFO[kind] || EVENT_INFO.rain;
     this.ui.banner(info.title, info.kind);
     this.audio.play(info.sfx || 'wave', { volume: 0.8, priority: true, rate: info.rate || 1 });
@@ -2411,9 +2398,9 @@ export class Game {
       }
     }
     this.audio.setWeatherAmbient('rain', kind === 'rain');
-    this.audio.setWeatherAmbient('fog', kind === 'fog' || kind === 'toxicfog');
+    this.audio.setWeatherAmbient('fog', kind === 'fog');
     this._wRain = kind === 'rain' || this.rainOn;
-    this._wFog = kind === 'fog' || kind === 'toxicfog';
+    this._wFog = kind === 'fog';
   }
   endEvent() {
     if (this.event) this.endWorldEvent(this.event);
@@ -4749,8 +4736,7 @@ export class Game {
   }
 
   addCloud(x, z, sp) {
-    const tf = this.event === 'toxicfog' ? 1.35 : 1;
-    this.clouds.push({ x, z, r: sp.radius * tf, life: sp.life * tf, max: sp.life * tf, dps: sp.dps * tf, tick: 0 });
+    this.clouds.push({ x, z, r: sp.radius, life: sp.life, max: sp.life, dps: sp.dps, tick: 0 });
     this.arena.splat(x, z, sp.radius * 0.8, '#5a2a7a', 0.6);
     for (let k = 0; k < 14; k++) this.parts.spawn(x + rand(-0.5, 0.5), 0.3, z + rand(-0.5, 0.5), rand(-2.5, 2.5), rand(1, 3), rand(-2.5, 2.5), rand(0.15, 0.3), pick([0xb060ff, 0x8a3ad0]), 0.8, 2, 2);
     this.audio.play('splash', { pos: { x, z }, volume: 0.6, rate: 0.6 });

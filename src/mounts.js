@@ -15,6 +15,8 @@ export const MOUNTS = {
   lab:     { name: 'Exoesqueleto Experimental', hp: 200, speed: 7.0,  weapon: 'm_mount_plasma', color: 0x40ffb0, size: 1.2, kind: 'exo',      seatY: 0.46, seatZ:  0.00 },
   templo:  { name: 'Leão de Sekhmet',           hp: 260, speed: 9.0,  weapon: 'm_mount_roar',   color: 0xd4a040, size: 1.6, kind: 'lion',     seatY: 0.78, seatZ: -0.05 },
   naval:   { name: 'Tubarão Esqueleto',         hp: 360, speed: 9.2,  weapon: 'm_mount_bite',   color: 0x40e0ff, size: 2.0, kind: 'shark',    seatY: 0.94, seatZ: -0.12, noRespawn: true },
+  templo_2: { name: 'Quadriga Sacrificial',    hp: 260, speed: 11.0, weapon: 'm_mount_lance2',   color: 0xc8a048, size: 1.8, kind: 'chariot', seatY: 0.64, seatZ: -0.58 },
+  templo_3: { name: 'Vaca Real',               hp: 240, speed: 9.5,  weapon: 'm_mount_tusk2',    color: 0xd8b070, size: 1.6, kind: 'beast',    seatY: 0.68, seatZ: -0.05 },
   cemiterio: { name: 'Golem de Ossos', hp: 420, speed: 5.0, weapon: 'm_mount_bone', color: 0xd8c8a0, size: 2.2, kind: 'golem', seatY: 1.20, seatZ: -0.10 },
 };
 
@@ -25,6 +27,8 @@ const MOUNT_WEAPONS = {
   m_mount_tusk:   { name: 'Presas',       kind: 'gun',    dmg: 40, range: 4,  rate: 0.50, pellets: 1, spread: 0.15, mag: Infinity, ammo: Infinity, color: 0xd8b080, sound: 'melee_hit', heavy: true },
   m_mount_cannon: { name: 'Canhão',       kind: 'rocket', dmg: 95, range: 32, rate: 1.30, speed: 20, pellets: 1, spread: 0, radius: 3.4, mag: Infinity, ammo: Infinity, color: 0xff8020, sound: 'shot_rifle', heavy: true, kick: 0.4 },
   m_mount_lance:  { name: 'Lança',        kind: 'gun',    dmg: 46, range: 7,  rate: 0.65, pellets: 1, spread: 0.08, mag: Infinity, ammo: Infinity, color: 0xffe080, sound: 'shot_rifle', heavy: true },
+  m_mount_lance2: { name: 'Lança Sacrificial', kind: 'gun', dmg: 42, range: 8, rate: 0.62, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffc060, sound: 'shot_rifle', heavy: true },
+  m_mount_tusk2:  { name: 'Presas Sagradas',   kind: 'gun', dmg: 38, range: 4.3, rate: 0.50, pellets: 1, spread: 0.12, mag: Infinity, ammo: Infinity, color: 0xd8b080, sound: 'melee_hit', heavy: true },
   m_mount_plasma: { name: 'Plasma',       kind: 'bolt',   dmg: 24, range: 22, rate: 0.18, speed: 26, pellets: 1, spread: 0, mag: Infinity, ammo: Infinity, color: 0x40ffb0, sound: 'shot_plasma', heavy: false },
   m_mount_roar:   { name: 'Rugido',              kind: 'flame',  dmg: 18, range: 7,  rate: 0.14, arc: 1.1, burn: { dps: 12, t: 3 }, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffb040, sound: 'flame', heavy: false },
   m_mount_bite:   { name: 'Mandíbulas', kind: 'gun',    dmg: 58, range: 5.5, rate: 0.45, pellets: 1, spread: 0.10, mag: Infinity, ammo: Infinity, color: 0x40e0ff, sound: 'stomp', heavy: true },
@@ -86,6 +90,14 @@ export const MOUNT_SKILLS = {
     { act: 'second',  name: 'Onda Esquelética',    icon: 'burst', cd: 10, kind: 'nova', radius: 4.5, dmg: 90, knock: 4, stun: 1.0, sound: 'stomp', desc: 'Impacto aquático em volta: dano em área e atordoa.' },
     { act: 'special', name: 'Fúria Predadora',     icon: 'flame', cd: 18, kind: 'fury', dur: 8, sound: 'roar', desc: 'Por 8 s: mais velocidade de ataque e dano.' },
   ],
+  templo_2: [
+    { act: 'heavy', name: 'Gado da Sacrifica', icon: 'target', cd: 5, kind: 'burst', shots: 6, dmg: 12, range: 20, spread: 0.05, sound: 'shot_rifle', desc: 'Rajada do escoteiro centenário: inimigos no alcance ganham dano em pilha.' },
+    { act: 'dash',  name: 'Investida da Guarda', icon: 'run', cd: 8, kind: 'charge', dur: 0.45, dmg: 68, knock: 14, sound: 'roar', desc: 'Solene avanço que atropela quem estiver no caminho.' },
+  ],
+  templo_3: [
+    { act: 'heavy', name: 'Mordida Real', icon: 'paw', cd: 4, kind: 'cone', range: 3.2, arc: 1.5, dmg: 58, knock: 9, sound: 'blade', desc: 'Garras do vaca real em leque: fere vários inimigos à frente.' },
+    { act: 'dash',  name: 'Investida Sacrificial', icon: 'run', cd: 7, kind: 'charge', dur: 0.4, dmg: 60, knock: 12, sound: 'roar', desc: 'Corrida pesada que atropela os invasores.' },
+  ],
 };
 // atropelamento passivo: dano ao encostar com velocidade (só veículos e montarias pesadas)
 export const MOUNT_RAM = {
@@ -95,6 +107,8 @@ export const MOUNT_RAM = {
   coliseu:  { dmg: 28, knock: 10 },
   vale:     { dmg: 22, knock: 8 },
   templo:   { dmg: 20, knock: 7 },
+  templo_2: { dmg: 26, knock: 8 },
+  templo_3: { dmg: 24, knock: 7 },
   cemiterio: { dmg: 24, knock: 9 },
 };
 
@@ -109,6 +123,8 @@ export const MOUNT_INFO = {
   lab:     { arena: 'Laboratório de Pesquisa', desc: 'Armadura experimental que dispara rajadas rápidas de plasma.', traits: ['Armadura', 'Energia', 'Cadência alta'], attack: 'Plasma: rajadas, braço mecânico e pulso energético.' },
   templo:  { arena: 'Templo Antigo', desc: 'Leão sagrado de Sekhmet que solta um rugido de fogo à frente.', traits: ['Criatura', 'Fogo', 'Área curta'], attack: 'Rugido de fogo, patada solar, investida e onda solar.' },
   naval:   { arena: 'Cemitério Naval', desc: 'Esqueleto de tubarão com mandíbulas enormes e plataforma para o piloto. Unidade única: destruído, não volta na partida.', traits: ['Criatura', 'Corpo a corpo', '4 habilidades', 'Única por partida'], attack: 'Mandíbulas: mordida frontal de curta distância.' },
+  templo_2: { arena: 'Templo Antigo', desc: 'Quadriga real dos santuários: carro de guerra veloz com alcance longo.', traits: ['Veículo', 'Carro de guerra', 'Alcance longo'], attack: 'Lança sacrificial: estocada longa, gado da sacrifício e investida da guarda.' },
+  templo_3: { arena: 'Templo Antigo', desc: 'Vaca real dos santuários: corpo-a-corpo robusto com presas afiadas.', traits: ['Criatura', 'Bruto', 'Corpo a corpo'], attack: 'Presas sagradas: mordida curta, garras e investida sacrificial.' },
   cemiterio: { arena: 'Necrópole', desc: 'Golem de ossos animado por magia negra. Lento, pesado e devastador em combate corpo a corpo.', traits: ['Criatura', 'Corpo a corpo', 'Pesado', '4 habilidades'], attack: 'Punho ósseo: golpe pesado de curta distância.' },
 };
 // cada montaria recebe suas habilidades reais no catálogo/HUD/controles
@@ -117,13 +133,20 @@ for (const [id, list] of Object.entries(MOUNT_SKILLS)) if (MOUNT_INFO[id]) MOUNT
 export const MOUNT_CATALOG = [
   'praca', 'armazem', 'vale', 'distrito',
   'cemiterio',
-  'coliseu', 'lab', 'templo', 'naval',
+  'coliseu', 'lab', 'templo', 'templo_2', 'templo_3', 'naval',
 ];
 
 // helpers
 export function isMountWeapon(id) { return !!MOUNT_WEAPONS[id]; }
 export function mountForArena(arenaId) { return MOUNTS[arenaId] || null; }
 export function mountDef(id) { return MOUNTS[id] || null; }
+
+// Progressão de montarias por confronto (arena): em cada confronto contra um chefe, uma montaria diferente é liberada.
+export const ARENA_MOUNT_ORDER = {
+  templo: ['templo', 'templo_2', 'templo_3'],
+  naval:  ['naval'],
+};
+export function mountOrderForArena(arenaId) { return ARENA_MOUNT_ORDER[arenaId] || [arenaId]; }
 export function allMountIds() { return Object.keys(MOUNTS); }
 export function mountWeaponDef(id) { return MOUNT_WEAPONS[id] || null; }
 export function mountSkills(id) { return MOUNT_SKILLS[id] || null; }

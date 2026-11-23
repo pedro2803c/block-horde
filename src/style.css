@@ -563,7 +563,7 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 .touch .interact-prompt .interact-key { min-width: 2.2rem; height: 2.2rem; font-size: 1rem; border-radius: 6px; }
 .toast { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); display: flex; justify-content: center; opacity: 0; }
 .toast > span { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.7rem; border-radius: var(--r-sm); background: linear-gradient(180deg, #23a95a, #167a40); border: 2px solid var(--success); color: #fff; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5); }
-.toast.show { animation: toast 1.8s; }
+.toast.show { animation: toast 3.5s; }
 @keyframes toast { 0% { opacity: 0; transform: translateY(6px); } 12%, 75% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 
 /* banner central (ondas) */
@@ -1368,6 +1368,7 @@ body.touch .diff-card .d-rec { font-size: 0.6rem; margin: 0 0.5rem; }
 /* celular: integridade e aviso da montaria sobem para o topo (embaixo ficam os botões de toque) */
 body.touch .mount-bar { top: calc(5.1rem + env(safe-area-inset-top)); bottom: auto; right: auto; left: 50%; transform: translateX(-50%); min-width: 180px; padding: 0.35rem 0.6rem; }
 body.touch .mount-indicator { display: none !important; }
+body.touch .mount-cmds { top: calc(7.6rem + env(safe-area-inset-top)); bottom: auto; right: auto; left: 50%; transform: translateX(-50%); width: min(220px, 46vw); font-size: 0.62rem; }
 body.touch .mount-waypoint { top: calc(5.1rem + env(safe-area-inset-top)); bottom: auto; right: auto; left: 50%; transform: translateX(-50%); }
 /* botão de montar (toque) e legendas dos botões */
 .tb.mnt { right: 214px; bottom: 80px; width: 52px; height: 52px; border-color: var(--info); }

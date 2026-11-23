@@ -599,11 +599,11 @@ export const ARENAS = [
     }),
   },
   {
-    id: 'vale', name: 'Floresta Sombria', desc: 'Território infectado: neblina, cogumelos luminosos e lagoa tóxica.', floor: 'wild',
-    theme: 'forest', ambient: 'forest', weather: 'toxicfog', boss: 'guardian', unlock: 10, particles: ['spores'],
-    diff: { label: 'Muito alta', tier: 3, hp: 1.28, speed: 1.08, count: 1.2 }, eventName: 'Névoa tóxica',
+    id: 'vale', name: 'Floresta Sombria', desc: 'Território infectado: neblina natural, cogumelos luminosos, vegetação densa e ruínas abandonadas.', floor: 'wild',
+    theme: 'forest', ambient: 'forest', weather: 'fog', boss: 'guardian', unlock: 10, particles: ['spores'],
+    diff: { label: 'Muito alta', tier: 3, hp: 1.28, speed: 1.08, count: 1.2 }, eventName: 'NEBLINA DENSA!',
     shelters: [[6, 5, 9, 8], [35, 5, 38, 7]],
-    tip: 'Na névoa tóxica, abrigue-se nas ruínas ou na cabana. A vegetação esconde emboscadas.', lampI: 8,
+    tip: 'Dica de sobrevivência: cuidado com as emboscadas! A vegetação esconde criaturas perigosas.', lampI: 8,
     light: { sky: 0x18231f, fog: 0x243530, sun: 0x9ab0e0, sunI: 0.95, hemi: 0.75 },
     map: makeMap(46, 32, '#', [[21, 0, 4, 'h'], [21, 31, 4, 'h'], [0, 15, 4, 'v'], [45, 15, 4, 'v']], (m) => {
       m.rect(1, 1, 44, 30, 'g');
@@ -836,7 +836,7 @@ export const ARENAS = [
     }),
   },
   {
-    id: 'naval', name: 'Cemitério Naval', desc: 'O Porto dos Amaldiçoados: navios naufragados, docas deterioradas, água escura, canhões antigos e tempestade marítima.', floor: 'graveyard',
+    id: 'naval', name: 'Cemitério Naval — O Porto dos Amaldiçoados', desc: 'Navios naufragados, docas deterioradas, água escura, canhões antigos e tempestade marítima.', floor: 'graveyard',
     theme: 'naval', ambient: 'city', weather: 'rain', boss: 'boss', unlock: 1, spawnShare: 0.35, maxLights: 8, lightMul: 1,
     diff: { label: 'Muito alta', tier: 3, hp: 1.22, speed: 1.06, count: 1.15 }, eventName: 'Tempestade Abissal',
     particles: ['rain', 'ash'],
