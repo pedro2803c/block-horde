@@ -1,0 +1,173 @@
+{
+ "result": [
+  {
+   "id": "lb_specter",
+   "name": "Espectro Infectado",
+   "hash": "0700ff506e4e",
+   "size": 3480,
+   "distinct": true
+  },
+  {
+   "id": "lb_tremor",
+   "name": "Tremor",
+   "hash": "08ee0215f938",
+   "size": 3891,
+   "distinct": true
+  },
+  {
+   "id": "lb_launcher",
+   "name": "Lancador",
+   "hash": "9b4d9249aa68",
+   "size": 4998,
+   "distinct": true
+  },
+  {
+   "id": "lb_suppressor",
+   "name": "Supressor",
+   "hash": "34c51f373496",
+   "size": 4031,
+   "distinct": true
+  },
+  {
+   "id": "lb_corrosive",
+   "name": "Corrosivo",
+   "hash": "18c0459b4f8b",
+   "size": 5774,
+   "distinct": true
+  },
+  {
+   "id": "lb_incendiary",
+   "name": "Incendiario",
+   "hash": "a02de092c349",
+   "size": 5101,
+   "distinct": true
+  },
+  {
+   "id": "lb_freezer",
+   "name": "Congelador",
+   "hash": "d1eae0bf5197",
+   "size": 7039,
+   "distinct": true
+  },
+  {
+   "id": "lb_hunter",
+   "name": "Cacador",
+   "hash": "7954b4ae735f",
+   "size": 5910,
+   "distinct": true
+  },
+  {
+   "id": "lb_pack",
+   "name": "Matilha",
+   "hash": "35ddc09cafc0",
+   "size": 4629,
+   "distinct": true
+  },
+  {
+   "id": "lb_signaler",
+   "name": "Sinalizador",
+   "hash": "7b900d3b6e48",
+   "size": 6711,
+   "distinct": true
+  },
+  {
+   "id": "lb_puppeteer",
+   "name": "Titereiro",
+   "hash": "2a53ff3e8b07",
+   "size": 8368,
+   "distinct": true
+  },
+  {
+   "id": "lb_camouflaged",
+   "name": "Camuflado",
+   "hash": "8c6decd512b7",
+   "size": 4097,
+   "distinct": true
+  },
+  {
+   "id": "lb_demolisher",
+   "name": "Demolidor",
+   "hash": "2f4699b0cc1d",
+   "size": 4532,
+   "distinct": true
+  },
+  {
+   "id": "lb_aerial",
+   "name": "Aereo Mutante",
+   "hash": "c72799e50b19",
+   "size": 2013,
+   "distinct": true
+  },
+  {
+   "id": "ff_saci",
+   "name": "Saci-Perére Corrompido",
+   "hash": "9c5e5d4f6f8d",
+   "size": 4965,
+   "distinct": true
+  },
+  {
+   "id": "ff_curupira",
+   "name": "Curupira Corrompida",
+   "hash": "fbe1f4a7cc83",
+   "size": 6775,
+   "distinct": true
+  },
+  {
+   "id": "ff_pisadeira",
+   "name": "Pisadeira Sombria",
+   "hash": "fc3cfce7911c",
+   "size": 3970,
+   "distinct": true
+  },
+  {
+   "id": "ff_iara",
+   "name": "Iara das Águas Mortas",
+   "hash": "73b652dd5e5c",
+   "size": 4908,
+   "distinct": true
+  },
+  {
+   "id": "ff_cuca",
+   "name": "Cuca do Pântano",
+   "hash": "329f0512a77d",
+   "size": 5138,
+   "distinct": true
+  },
+  {
+   "id": "ff_mula",
+   "name": "Mula Sem Cabeça",
+   "hash": "b3e1239b030c",
+   "size": 4728,
+   "distinct": true
+  },
+  {
+   "id": "ff_lobisomem",
+   "name": "Lobisomem Infectado",
+   "hash": "82603f4d25e9",
+   "size": 6403,
+   "distinct": true
+  },
+  {
+   "id": "ff_boto",
+   "name": "Boto Abissal",
+   "hash": "d2f09278dfa9",
+   "size": 4985,
+   "distinct": true
+  },
+  {
+   "id": "ff_caipora",
+   "name": "Caipora Selvagem",
+   "hash": "fe0b5688b450",
+   "size": 6082,
+   "distinct": true
+  },
+  {
+   "id": "ff_boitata",
+   "name": "Boitatá — Serpente de Fogо",
+   "hash": "8d138b018d66",
+   "size": 3802,
+   "distinct": true
+  }
+ ],
+ "errors": []
+}

@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--no-sandbox'] });
+const page = await b.newPage({ viewport: { width: 1280, height: 900 } });
+const errors = [];
+page.on('pageerror', (e) => errors.push(e.message));
+page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+await page.goto('http://localhost:4173/?test', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(4000);
+const out = await page.evaluate(() => ({ state: window.__bh?.state, hasBHt: !!window.__bhTest }));
+console.log(JSON.stringify({ out, errors: errors.slice(0, 8) }, null, 1));
+await b.close();
