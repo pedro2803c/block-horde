@@ -3713,6 +3713,200 @@ const V3 = {
 };
 Object.assign(BODIES, V3);
 
+// ===== REWORK V2 — lote 4: Cemitério Naval (substitui os modelos de blocos parados)
+const NV_SK = 0x5a9a7a; // pele de afogado
+function drawNvChestV2(B, G, base, z, col, t) { // Baú Devorador: tampa-mandíbula, língua, perninhas
+  const P = (m, x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, x, y, zz, sx, sy, sz, c) => G.part(m, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const g = (z.walk || 0) * 1.6, lunge = z.state === 'lunge' ? 1 : 0, atk = z.attackT > 0 ? 1 : 0;
+  const hop = Math.abs(Math.sin(g)) * 0.08 + lunge * 0.15;
+  for (const [x, zz, ph] of [[0.26, 0.2, 0], [-0.26, 0.2, Math.PI], [0.26, -0.2, Math.PI], [-0.26, -0.2, 0]]) {
+    const leg = joint(base, x, 0.24 + hop, zz, Math.sin(g + ph) * 0.6, 0, 0);
+    P(leg, 0, -0.12, 0, 0.1, 0.24, 0.1, 0x3a2414);
+    P(leg, 0, -0.24, 0.04, 0.14, 0.05, 0.18, 0x2a1a0e);
+  }
+  const box = joint(base, 0, 0.42 + hop, 0, 0, 0, Math.sin(g) * 0.05);
+  P(box, 0, 0, 0, 0.8, 0.36, 0.54, 0x8a4a1e);
+  for (const x of [-0.3, 0, 0.3]) P(box, x, 0, 0, 0.06, 0.38, 0.56, 0x5a3a20); // ripas de ferro
+  P(box, 0, 0.2, 0.0, 0.84, 0.06, 0.58, 0x3a2a1a);
+  for (let i = 0; i < 6; i++) P(box, -0.3 + i * 0.12, 0.2, 0.27, 0.05, 0.08, 0.03, TEETH); // dentes de baixo
+  L(box, 0, 0.12, 0.05, 0.36, 0.06, 0.3, 0xff3a2a); // boca brilhando
+  const lid = joint(box, 0, 0.2, -0.27, -(0.35 + atk * 0.5 + lunge * 0.5 + Math.max(0, Math.sin(t * 2)) * 0.15), 0, 0);
+  P(lid, 0, 0.1, 0.27, 0.82, 0.18, 0.56, 0x7a3e18);
+  P(lid, 0, 0.2, 0.27, 0.6, 0.06, 0.5, 0x8a4a1e);
+  for (let i = 0; i < 6; i++) P(lid, -0.3 + i * 0.12, 0.0, 0.53, 0.05, 0.09, 0.03, TEETH);
+  for (const sg of [-1, 1]) { P(lid, sg * 0.18, 0.12, 0.555, 0.12, 0.08, 0.02, 0x0a0a0a); L(lid, sg * 0.18, 0.12, 0.565, 0.08, 0.05, 0.02, 0xffd040); } // olhos na tampa
+  P(lid, 0, 0.12, 0.55, 0.1, 0.12, 0.03, 0xffc860); // fechadura
+  const tg = joint(box, 0, 0.12, 0.1, -0.2 - lunge * 0.5 + Math.sin(t * 5) * 0.15, 0, 0);
+  P(tg, 0, 0, 0.18, 0.18, 0.05, 0.36, 0xc83a5a); // língua
+  for (const [x, zz] of [[-0.2, -0.1], [0.24, 0.08]]) L(box, x, 0.26, zz, 0.08, 0.06, 0.08, 0xffd040); // moedas
+}
+function drawNvCrabV2(B, G, base, z, col, t) { // Caranguejo: 6 patas articuladas, pinças com dedo móvel, olhos em haste
+  const P = (m, x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, x, y, zz, sx, sy, sz, c) => G.part(m, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const g = (z.walk || 0) * 2, atk = z.attackT > 0 ? 1 : 0;
+  const body = joint(base, 0, 0.42 + Math.abs(Math.sin(g)) * 0.03, 0, 0, 0, Math.sin(g) * 0.06);
+  P(body, 0, 0, 0, 0.9, 0.26, 0.62, 0xd84a2a);
+  P(body, 0, 0.12, -0.02, 0.7, 0.1, 0.5, 0xe86a3a);
+  for (const x of [-0.24, 0, 0.24]) P(body, x, 0.18, -0.05, 0.12, 0.06, 0.2, 0xffe0a0); // espinhos claros
+  for (const sg of [-1, 1]) {
+    const st = joint(body, sg * 0.14, 0.12, 0.26, -0.2 + Math.sin(t * 3 + sg) * 0.15, 0, 0);
+    P(st, 0, 0.12, 0, 0.05, 0.24, 0.05, 0xc83a20);
+    P(st, 0, 0.26, 0, 0.1, 0.1, 0.1, 0x1a1a1a);
+    L(st, 0, 0.26, 0.04, 0.06, 0.06, 0.04, 0xffd040);
+    for (let i = 0; i < 3; i++) { // patas
+      const a = Math.sin(g + i * 2 + (sg > 0 ? 0 : Math.PI)) * 0.4;
+      const hip = joint(body, sg * 0.42, -0.02, 0.18 - i * 0.2, 0, a, sg * -0.5);
+      P(hip, sg * 0.16, 0, 0, 0.32, 0.07, 0.07, 0xc83a20);
+      const kn = joint(hip, sg * 0.32, 0, 0, 0, 0, sg * -1.1);
+      P(kn, sg * 0.14, 0, 0, 0.3, 0.06, 0.06, 0xb83018);
+    }
+    const arm = joint(body, sg * 0.4, 0.02, 0.3, -0.3 - atk * 0.5, sg * -0.4, 0);
+    P(arm, 0, 0, 0.16, 0.12, 0.12, 0.3, 0xc83a20);
+    const claw = joint(arm, 0, 0, 0.34, 0, 0, 0);
+    P(claw, 0, 0.02, 0.14, 0.26, 0.2, 0.3, 0xe84a2a);
+    const fing = joint(claw, 0, -0.08, 0.06, 0.3 + atk * 0.5 + Math.max(0, Math.sin(t * 4)) * 0.2, 0, 0);
+    P(fing, 0, -0.03, 0.14, 0.18, 0.08, 0.26, 0xf06a3a);
+    P(claw, 0, 0.1, 0.3, 0.2, 0.06, 0.1, 0xffe0a0);
+  }
+  P(body, 0, -0.08, 0.32, 0.3, 0.06, 0.04, 0x5a1010); // boca
+}
+function drawNvOctopusV2(B, G, base, z, col, t) { // Polvo: cabeça bulbosa pulsante, 8 tentáculos de 3 segmentos
+  const P = (m, x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, x, y, zz, sx, sy, sz, c) => G.part(m, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const pulse = 1 + Math.sin(t * 3) * 0.05, spit = z.state === 'spit' || z.attackT > 0 ? 1 : 0;
+  const head = joint(base, 0, 0.62, 0, -0.15, 0, Math.sin(t * 1.5) * 0.06);
+  P(head, 0, 0.34, -0.06, 0.66 * pulse, 0.62 * pulse, 0.66 * pulse, 0x5a3aa8);
+  P(head, 0, 0.66, -0.12, 0.48, 0.2, 0.5, 0x6a4ab8);
+  for (const [x, y] of [[-0.2, 0.5], [0.22, 0.4], [0.05, 0.62]]) P(head, x, y, 0.26, 0.08, 0.08, 0.04, 0x8a6ad8); // manchas
+  for (const sg of [-1, 1]) {
+    P(head, sg * 0.18, 0.2, 0.3, 0.18, 0.18, 0.06, 0xf0e8c0);
+    P(head, sg * 0.18, 0.2, 0.335, 0.1, 0.14, 0.02, 0x0a0a0a); // pupila horizontal
+    L(head, sg * 0.18, 0.24, 0.34, 0.04, 0.03, 0.02, 0xffffff);
+  }
+  P(head, 0, 0.02, 0.32, 0.16, 0.12 + spit * 0.08, 0.1, 0x2a1a4a); // sifão
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    let seg = joint(base, Math.sin(a) * 0.26, 0.42, Math.cos(a) * 0.26, 0, a, 0);
+    for (let k = 0; k < 3; k++) {
+      seg = joint(seg, 0, 0, k ? 0.2 : 0, 0.55 + Math.sin(t * 3 + i + k) * 0.35, 0, 0);
+      P(seg, 0, 0, 0.1, 0.16 - k * 0.04, 0.12 - k * 0.03, 0.24, k % 2 ? 0x4a2a98 : 0x5a3aa8);
+      if (k < 2) P(seg, 0, -0.06 + k * 0.01, 0.1, 0.08, 0.03, 0.08, 0xe0b0e0); // ventosas
+    }
+  }
+}
+function drawNvFishV2(B, G, base, z, col, t, o) { // peixe articulado (Peixe-Lanterna, Tubarão)
+  const P = (m, x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, x, y, zz, sx, sy, sz, c) => G.part(m, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const sw = Math.sin((z.walk || 0) * 1.5 + t * 2), lunge = z.state === 'lunge' ? 1 : 0, bite = z.attackT > 0 || z.state === 'spit' || lunge ? 1 : 0;
+  const body = joint(base, 0, o.h + Math.sin(t * 2) * 0.04, 0, -lunge * 0.2, sw * 0.12, 0);
+  P(body, 0, 0, 0, o.w, o.bh, o.len, o.c1);
+  P(body, 0, -o.bh * 0.32, 0.02, o.w * 0.86, o.bh * 0.4, o.len * 0.9, o.belly);
+  P(body, 0, o.bh * 0.55, -o.len * 0.05, 0.06, o.fin, o.len * 0.3, o.c2, -0.3); // barbatana dorsal
+  const head = joint(body, 0, 0, o.len / 2, 0, -sw * 0.08, 0);
+  P(head, 0, 0.02, o.hl / 2, o.w * 0.92, o.bh * 0.84, o.hl, o.c1);
+  for (const sg of [-1, 1]) { P(head, sg * o.w * 0.46, o.bh * 0.2, o.hl * 0.6, 0.02, 0.1, 0.1, 0x0a0a0a); L(head, sg * o.w * 0.47, o.bh * 0.2, o.hl * 0.6, 0.02, 0.06, 0.06, o.eye); }
+  const jaw = joint(head, 0, -o.bh * 0.2, o.hl * 0.1, 0.15 + bite * 0.55 + Math.max(0, Math.sin(t * 2.5)) * 0.1, 0, 0);
+  P(jaw, 0, -0.04, o.hl * 0.5, o.w * 0.8, 0.08, o.hl * 0.95, o.belly);
+  for (let i = 0; i < 5; i++) { const x = -o.w * 0.32 + i * o.w * 0.16; P(head, x, -o.bh * 0.16, o.hl * 0.98, 0.04, 0.1, 0.03, TEETH); P(jaw, x + 0.03, 0.02, o.hl * 0.96, 0.04, 0.09, 0.03, TEETH); }
+  L(head, 0, -o.bh * 0.05, o.hl * 0.6, o.w * 0.6, 0.04, o.hl * 0.6, 0x8a1010);
+  for (const sg of [-1, 1]) { const pf = joint(body, sg * o.w * 0.5, -o.bh * 0.2, o.len * 0.2, 0.2, 0, sg * (0.7 + sw * 0.3)); P(pf, sg * 0.16, 0, 0, 0.32, 0.04, 0.2, o.c2); }
+  const tail = joint(body, 0, 0, -o.len / 2, 0, sw * 0.6, 0);
+  P(tail, 0, 0, -0.18, o.w * 0.5, o.bh * 0.5, 0.36, o.c1);
+  P(tail, 0, 0, -0.42, 0.06, o.bh * 1.4, 0.22, o.c2);
+  if (o.extra) o.extra({ body, head, jaw, t, sw, bite }, P, L);
+}
+Object.assign(BODIES, {
+  nv_pirate: R2({
+    skin: NV_SK, shirt: 0x2c3a40, sleeve: 0x2c3a40, arm: NV_SK, pants: 0x2c3c4c, shin: 0x3a3632, boots: 0x2a2622, hands: NV_SK, eye: 0x70f0ff, brow: 0x3a2a18,
+    w: 1.0, legH: 0.52, torsoH: 0.6, head: 0.95, hunch: 0.15, arms: 'blades', armW: 0.9, noClaws: true, jaw: 0.3, stride: 0.6,
+    extra: (J, P, L) => {
+      P(J.head, 0, 0.36, 0, 0.62, 0.08, 0.52, 0x1e1a16); // tricórnio: aba
+      P(J.head, 0, 0.44, -0.02, 0.4, 0.16, 0.38, 0x1e1a16);
+      for (const sg of [-1, 1]) P(J.head, sg * 0.28, 0.42, 0.06, 0.12, 0.12, 0.2, 0x1e1a16, 0, sg * -0.4); // pontas dobradas
+      P(J.head, 0, 0.44, 0.2, 0.12, 0.1, 0.02, 0xe8e0c8); // caveira
+      P(J.head, 0, 0.3, 0.0, 0.48, 0.05, 0.46, 0xb01c1c); // bandana
+      P(J.head, -0.1, 0.19, 0.245, 0.14, 0.11, 0.03, 0x0a0a0a); // tapa-olho
+      P(J.head, 0, 0.26, 0.2, 0.5, 0.025, 0.02, 0x0a0a0a, 0, -0.3);
+      P(J.jaw, 0, -0.1, 0.18, 0.34, 0.14, 0.1, 0x3a2a18); // barba
+      P(J.head, 0, 0.06, 0.25, 0.24, 0.04, 0.03, 0x3a2a18); // bigode
+      P(J.torso, 0, J.tH * 0.35, 0.0, 0.66, 0.84, 0.4, 0x2c3a40); // casaco longo
+      for (let i = 0; i < 4; i++) P(J.torso, -0.24 + i * 0.16, -0.08 - (i % 2) * 0.06, -0.12, 0.12, 0.14, 0.18, 0x24323a); // barra rasgada
+      P(J.torso, 0, J.tH * 0.62, 0.165, 0.18, 0.5, 0.02, 0x9aa8a0); // camisa
+      P(J.torso, 0, J.tH * 0.25, 0.0, 0.7, 0.08, 0.44, 0x2c2620); // cinto
+      P(J.torso, 0, J.tH * 0.25, 0.225, 0.14, 0.1, 0.02, 0xffc860); // fivela
+      P(J.torso, -0.32, J.tH * 0.15, 0.05, 0.06, 0.4, 0.08, 0x2a1a0e, 0.3); // bainha
+      P(J.torso, 0.25, J.tH * 0.5, 0.17, 0.05, 0.3, 0.02, 0x3a5a3a); // algas
+      P(J.arms[1].el, 0, -0.5, 0.1, 0.04, 0.5, 0.08, 0x9aa4b2, 0.5); // sabre
+      P(J.arms[1].el, 0, -0.28, 0.06, 0.16, 0.04, 0.08, 0xffc860);
+      P(J.arms[0].el, 0, -0.34, 0.06, 0.04, 0.14, 0.04, 0xa8b0b8); // gancho
+      P(J.arms[0].el, 0, -0.42, 0.12, 0.04, 0.04, 0.14, 0xa8b0b8);
+    },
+  }),
+  nv_harpooner: R2({
+    skin: NV_SK, shirt: 0xe0b020, sleeve: 0xe0b020, arm: NV_SK, pants: 0x2a3a4a, boots: 0x1a1a1a, hands: NV_SK, eye: 0x70f0ff,
+    w: 0.95, legH: 0.54, torsoH: 0.58, head: 0.92, hunch: 0.2, arms: 'reach', armW: 0.9, noClaws: true, jaw: 0.2, stride: 0.55,
+    extra: (J, P, L) => {
+      P(J.head, 0, 0.36, -0.06, 0.56, 0.12, 0.6, 0xe0b020); // chapéu sueste
+      P(J.head, 0, 0.44, 0.0, 0.4, 0.12, 0.4, 0xe0b020);
+      P(J.jaw, 0, -0.12, 0.16, 0.34, 0.2, 0.1, 0x3a6a3a); // barba de algas
+      for (const x of [-0.12, 0, 0.12]) P(J.jaw, x, -0.26, 0.16, 0.05, 0.12, 0.04, 0x2a5a2a);
+      P(J.torso, 0, J.tH * 0.3, 0.0, 0.6, 0.8, 0.38, 0xe0b020); // capa de chuva longa
+      for (let i = 0; i < 3; i++) P(J.torso, 0, J.tH * 0.4 + i * 0.12, 0.2, 0.04, 0.04, 0.02, 0x1a1a1a); // botões
+      const h = J.arms[0].el; // arpão com corrente
+      P(h, 0, -0.1, 0.14, 0.05, 1.3, 0.05, 0x6a4a28, 0.3);
+      P(h, 0, 0.58, 0.34, 0.14, 0.18, 0.04, 0xa8b0b8, 0.3);
+      for (let i = 0; i < 5; i++) P(h, 0.04, -0.3 - i * 0.08, 0.02 - i * 0.04, 0.04, 0.05, 0.04, 0x8a909a);
+    },
+  }),
+  nv_ghost: R2({
+    skin: 0xd8e8f0, shirt: 0xe8f0f8, pants: 0x9ac8e8, tail2: 0x7ab0d8, arm: 0x9ac8e8, hands: 0xb0e0ff, eye: 0x40e0ff, brow: 0x7ab0d8, claw: 0x9affff,
+    noLegs: true, legH: 0.55, w: 0.9, torsoH: 0.56, head: 0.95, hunch: 0.1, arms: 'reach', armW: 0.85, jaw: 0.5,
+    extra: (J, P, L) => {
+      for (let i = 0; i < 4; i++) P(J.torso, 0, J.tH * 0.3 + i * 0.1, 0.165, 0.56, 0.04, 0.02, 0x2a5aa8); // camisa listrada
+      P(J.head, 0, 0.36, 0, 0.42, 0.1, 0.42, 0xf0f0f0); // gorro de marinheiro
+      P(J.head, 0, 0.42, 0.0, 0.48, 0.03, 0.48, 0x2a5aa8);
+      P(J.torso, 0, J.tH * 0.95, 0.12, 0.3, 0.06, 0.1, 0xb01c1c); // lenço
+      L(J.torso, 0, J.tH * 0.6, -0.17, 0.3, 0.3, 0.02, 0x9affff); // brilho espectral
+      for (let i = 0; i < 3; i++) L(J.torso, Math.sin(J.t * 2 + i) * 0.3, -0.5 - i * 0.1, Math.cos(J.t * 2 + i) * 0.2, 0.1, 0.06, 0.1, 0xb0f0ff); // névoa
+    },
+  }),
+  nv_brute: R2({
+    skin: 0x4a7a6a, shirt: 0x3a5a4a, arm: 0x4a7a6a, pants: 0x2a3a3a, boots: 0x1a2222, hands: 0x3a5a4a, eye: 0x70f0ff, brow: 0x2a3a3a,
+    w: 1.5, chest: 1.3, depth: 1.25, legW: 1.4, legH: 0.44, torsoH: 0.7, head: 0.75, headFwd: 1.6, headDown: 0.05, hunch: 0.35, arms: 'brawl', armW: 1.6, hand: 1.7, noClaws: true, stride: 0.4, gait: 0.7, jaw: 0.25,
+    extra: (J, P, L) => {
+      for (const [x, y] of [[-0.25, 0.25], [0.2, 0.4], [0.05, 0.15], [0.3, 0.55], [-0.15, 0.55]]) P(J.torso, x, y, 0.2, 0.1, 0.1, 0.06, 0xd8d0b8); // cracas
+      for (let i = 0; i < 6; i++) P(J.torso, -0.4 + i * 0.16, J.tH * 0.8 - i * 0.08, 0.2, 0.06, 0.08, 0.06, 0x6a6a6a); // corrente cruzada
+      P(J.torso, 0, J.tH * 0.98, -0.12, 0.6, 0.18, 0.3, 0x2a4a3a); // corcova
+      const a = J.arms[1].el; // âncora gigante
+      P(a, 0, -0.3, 0.1, 0.1, 1.1, 0.1, 0x4a4a52);
+      P(a, 0, -0.84, 0.1, 0.7, 0.1, 0.12, 0x4a4a52);
+      for (const sg of [-1, 1]) P(a, sg * 0.32, -0.74, 0.1, 0.1, 0.2, 0.12, 0x4a4a52, 0, sg * 0.4);
+      P(a, 0, 0.24, 0.1, 0.24, 0.24, 0.06, 0x4a4a52);
+    },
+  }),
+  nv_mimic: drawNvChestV2,
+  nv_crab: drawNvCrabV2,
+  nv_octopus: drawNvOctopusV2,
+  nv_angler: (B, G, b, z, col, t) => drawNvFishV2(B, G, b, z, col, t, {
+    c1: 0x2a5a6a, c2: 0x1e4a58, belly: 0x5a8a8a, eye: 0xffe040, h: 0.55, w: 0.62, bh: 0.56, len: 0.6, hl: 0.42, fin: 0.26,
+    extra: (J, P, L) => {
+      const lure = joint(J.head, 0, 0.3, 0.1, -0.5 + Math.sin(J.t * 2) * 0.15, 0, 0); // haste com isca luminosa
+      P(lure, 0, 0.2, 0, 0.04, 0.4, 0.04, 0x1e4a58);
+      const p = 0.1 + Math.abs(Math.sin(J.t * 4)) * 0.05;
+      L(lure, 0, 0.44, 0.06, p, p, p, 0x9affff);
+    },
+  }),
+  nv_shark: (B, G, b, z, col, t) => drawNvFishV2(B, G, b, z, col, t, {
+    c1: 0x4a6a80, c2: 0x3a5a70, belly: 0xe0e8ec, eye: 0xff3a2a, h: 0.5, w: 0.5, bh: 0.46, len: 1.05, hl: 0.48, fin: 0.5,
+    extra: (J, P) => { for (let i = 0; i < 3; i++) P(J.head, 0.25, 0.02, 0.05 - i * 0.07, 0.02, 0.18, 0.025, 0x1e2a34); }, // guelras
+  }),
+  nv_serpent: (B, G, b, z, col, t) => drawSnakeV2(B, G, b, z, col, t, {
+    c1: 0x2a8a6a, c2: 0x1e6a50, eye: 0xffe040, glow: 0x5affc8, n: 8,
+    extra: (J, P) => { for (let i = 0; i < 4; i++) P(J.head, 0, 0.22, 0.1 - i * 0.1, 0.04, 0.16 - i * 0.02, 0.08, 0x9affd8, -0.4); }, // crista
+  }),
+});
+
 export function drawEnemy(B, G, z, t) {
   const type = z.type;
   const def = z.def;
