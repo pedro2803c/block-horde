@@ -2790,8 +2790,13 @@ function drawRigV2(B, G, base, z, col, t, o) {
   const legH = o.legH || 0.5; // altura do quadril
   const hipX = 0.13 * (o.hipW || W);
   const thigh = legH * 0.5, shin = legH * 0.46;
-  for (const [x, ph] of [[hipX, 0], [-hipX, Math.PI]]) {
-    const a = lunge ? (x > 0 ? -0.9 : 0.7) : Math.sin(g + ph) * (o.stride ?? 0.6);
+  const legs = o.noLegs ? [] : o.oneLeg ? [[0, 0]] : [[hipX, 0], [-hipX, Math.PI]];
+  if (o.noLegs) for (let i = 0; i < 3; i++) { // cauda espectral no lugar das pernas
+    const sw = Math.sin(t * 3 + i) * 0.08;
+    P(base, sw * i, legH - 0.12 - i * 0.16, -i * 0.05, (0.5 - i * 0.13) * W, 0.18, (0.32 - i * 0.07) * W, i % 2 ? (o.tail2 || o.pants) : o.pants);
+  }
+  for (const [x, ph] of legs) {
+    const a = o.oneLeg ? -Math.abs(Math.sin(g * 1.5)) * 0.4 : lunge ? (x > 0 ? -0.9 : 0.7) : Math.sin(g + ph) * (o.stride ?? 0.6);
     const hip = joint(base, x, legH + bob, 0, a, 0, 0);
     P(hip, 0, -thigh / 2, 0, 0.2 * (o.legW || W), thigh + 0.04, 0.21 * (o.legW || W), o.pants);
     const knee = joint(hip, 0, -thigh, 0, Math.max(0, -a) * 0.9 + (o.knee ?? 0.1), 0, 0);
@@ -3323,6 +3328,390 @@ Object.assign(BODIES, {
   ff_boitata: (B, G, m, z, col, t) => drawFolkMob('ff_boitata', B, G, m, col, t),
 });
 
+
+// ===== REWORK V2 — lote 3: Laboratório e Floresta Sombria (substitui os modelos de blocos parados)
+// Quadrúpede articulado: tronco, pescoço/cabeça com mandíbula, 4 patas com joelho, cauda.
+function drawQuadV2(B, G, base, z, col, t, o) {
+  const P = (m, x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, x, y, zz, sx, sy, sz, c) => G.part(m, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const g = (z.walk || 0) * (o.gait || 1.3);
+  const lunge = z.state === 'lunge' ? 1 : 0;
+  const atk = z.attackT > 0 ? Math.min(1, z.attackT * 3) : 0;
+  const bob = Math.abs(Math.sin(g)) * 0.04;
+  const H = o.h || 0.55, Lg = o.len || 0.9, W = o.w || 0.42;
+  const body = joint(base, 0, H + bob, 0, -lunge * 0.15 + (o.pitch || 0), 0, 0);
+  P(body, 0, 0.02, -0.05, W, o.bodyH || 0.36, Lg, o.c1);
+  P(body, 0, 0.0, Lg * 0.36, W * 1.1, (o.bodyH || 0.36) * 1.15, Lg * 0.36, o.c2 || o.c1); // peito
+  P(body, 0, -(o.bodyH || 0.36) * 0.45, 0, W * 0.8, 0.05, Lg * 0.7, o.belly || o.c2 || o.c1);
+  const head = joint(body, 0, (o.neckY ?? 0.12), Lg * 0.5 + 0.04, -0.15 + lunge * -0.25 + Math.sin(g * 0.5) * 0.05, 0, 0);
+  const hs = o.head || 1;
+  P(head, 0, 0.06 * hs, 0.12 * hs, 0.36 * hs, 0.32 * hs, 0.34 * hs, o.c2 || o.c1);
+  P(head, 0, -0.01 * hs, 0.36 * hs, 0.24 * hs, 0.16 * hs, (o.snout || 0.26) * hs, o.c1);
+  P(head, 0, 0.06 * hs, (0.36 + (o.snout || 0.26) / 2) * hs, 0.1 * hs, 0.06 * hs, 0.03, 0x14100c);
+  const jawA = 0.2 + atk * 0.5 + lunge * 0.4;
+  const jaw = joint(head, 0, -0.08 * hs, 0.24 * hs, jawA, 0, 0);
+  P(jaw, 0, -0.03, 0.12 * hs, 0.22 * hs, 0.06, (o.snout || 0.26) * hs, o.jaw || o.c2 || o.c1);
+  P(jaw, 0, 0.0, 0.12 * hs, 0.18 * hs, 0.03, (o.snout || 0.26) * 0.9 * hs, 0x5a1010);
+  for (const sg of [-1, 1]) {
+    P(head, sg * 0.1 * hs, 0.13 * hs, 0.29 * hs, 0.1 * hs, 0.07 * hs, 0.02, 0x0a0a08);
+    L(head, sg * 0.1 * hs, 0.13 * hs, 0.3 * hs, 0.07 * hs, 0.05 * hs, 0.02, o.eye || 0xff3a2a);
+    P(head, sg * 0.07 * hs, -0.06 * hs, (0.36 + (o.snout || 0.26) / 2 - 0.03) * hs, 0.03, 0.06, 0.03, TEETH);
+    if (o.ears !== false) P(head, sg * 0.13 * hs, 0.28 * hs, 0.04, 0.08 * hs, 0.16 * hs, 0.06, o.c1, -0.3, sg * -0.2);
+  }
+  for (const [x, zz, ph] of [[W * 0.38, Lg * 0.36, 0], [-W * 0.38, Lg * 0.36, Math.PI], [W * 0.38, -Lg * 0.38, Math.PI], [-W * 0.38, -Lg * 0.38, 0]]) {
+    const a = lunge ? (zz > 0 ? -1.0 : 0.8) : Math.sin(g + ph) * 0.6;
+    const hip = joint(body, x, -0.06, zz, a, 0, 0);
+    P(hip, 0, -H * 0.24, 0, (o.legW || 0.15), H * 0.5, (o.legW || 0.15) * 1.1, o.c2 || o.c1);
+    const kn = joint(hip, 0, -H * 0.46, 0, zz > 0 ? Math.max(0, -a) * 0.8 : -Math.max(0, a) * 0.8 - 0.15, 0, 0);
+    P(kn, 0, -H * 0.22, 0, (o.legW || 0.15) * 0.85, H * 0.46, (o.legW || 0.15) * 0.9, o.leg || o.c1);
+    P(kn, 0, -H * 0.46, 0.04, (o.legW || 0.15) * 1.1, 0.07, (o.legW || 0.15) * 1.5, o.foot || 0x2a1a14);
+  }
+  if (o.tail !== false) {
+    const tl = joint(body, 0, 0.08, -Lg * 0.5, -0.6 + Math.sin(t * 6) * 0.2, Math.sin(t * 5) * 0.3, 0);
+    P(tl, 0, 0, -0.18, 0.08, 0.08, 0.38, o.c1);
+  }
+  if (o.extra) o.extra({ body, head, jaw, Lg, H, W, hs, t, g, atk, lunge }, P, L);
+}
+
+// Serpente segmentada ondulante
+function drawSnakeV2(B, G, base, z, col, t, o) {
+  const P = (m, x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  const L = (m, x, y, zz, sx, sy, sz, c) => G.part(m, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+  const g = (z.walk || 0) * 1.4 + t * 2;
+  const n = o.n || 9;
+  const lunge = z.state === 'lunge' ? 1 : 0;
+  for (let i = n - 1; i >= 1; i--) {
+    const s = 1 - i / (n + 2);
+    const x = Math.sin(g - i * 0.7) * 0.22 * (i / n + 0.3);
+    P(base, x, 0.14 * s + 0.04, -i * 0.26 + 0.2, 0.34 * s, 0.26 * s, 0.3, i % 2 ? o.c1 : o.c2);
+    if (o.glow) L(base, x, 0.28 * s + 0.06, -i * 0.26 + 0.2, 0.14 * s, 0.04, 0.16, o.glow);
+  }
+  const rise = 0.35 + lunge * 0.25;
+  const head = joint(base, Math.sin(g) * 0.06, rise, 0.36, -0.2 - lunge * 0.3, 0, 0);
+  P(base, Math.sin(g) * 0.1, rise * 0.5, 0.26, 0.3, rise, 0.28, o.c2); // pescoço erguido
+  P(head, 0, 0.06, 0.12, 0.4, 0.24, 0.42, o.c1);
+  const jaw = joint(head, 0, -0.05, 0.0, 0.25 + lunge * 0.5 + (z.attackT > 0 ? 0.4 : 0), 0, 0);
+  P(jaw, 0, -0.03, 0.18, 0.34, 0.06, 0.36, o.c2);
+  for (const sg of [-1, 1]) {
+    L(head, sg * 0.13, 0.14, 0.28, 0.07, 0.05, 0.04, o.eye);
+    P(head, sg * 0.08, -0.04, 0.3, 0.03, 0.1, 0.03, TEETH);
+  }
+  if (o.extra) o.extra({ head, jaw, t, g }, P, L);
+}
+
+const Q = (o) => (B, G, b, z, col, t) => drawQuadV2(B, G, b, z, col, t, o);
+const V3 = {
+  // --- LABORATÓRIO ---
+  lb_specter: R2({
+    skin: 0x9ad8e8, shirt: 0x1e4452, pants: 0x16323c, tail2: 0x24515f, arm: 0x3a8fa0, hands: 0x70e8ff, eye: 0x9affff, brow: 0x5aa8b8, claw: 0x9affff,
+    noLegs: true, legH: 0.55, w: 0.9, torsoH: 0.56, head: 1.0, headW: 0.9, hunch: 0.15, headDown: 0.1, arms: 'reach', armW: 0.8, jaw: 0.5, noTeeth: true,
+    extra: (J, P, L) => {
+      L(J.torso, 0, J.tH * 0.6, 0.17, 0.16, 0.24, 0.02, 0x70e8ff); // núcleo infectado visível
+      for (const [x, y] of [[-0.2, 0.2], [0.18, 0.4]]) L(J.torso, x, y, 0.165, 0.06, 0.14, 0.02, 0x70e8ff);
+      P(J.head, 0, 0.34, -0.1, 0.36, 0.2, 0.3, 0x1e4452, -0.5); // capuz rasgado
+    },
+  }),
+  lb_tremor: R2({
+    skin: 0x6a6050, shirt: 0x5c5240, pants: 0x3a3228, boots: 0x241e18, arm: 0x504636, hands: 0x5c5240, eye: 0xffc040, brow: 0x3a3a34,
+    w: 1.5, chest: 1.3, depth: 1.25, legW: 1.4, legH: 0.42, torsoH: 0.7, head: 0.7, headFwd: 1.8, headDown: 0.0, hunch: 0.45, arms: 'brawl', armW: 1.7, hand: 1.9, noClaws: true, stride: 0.35, gait: 0.65, jaw: 0.2,
+    extra: (J, P, L) => {
+      for (let i = 0; i < 3; i++) P(J.torso, (i - 1) * 0.26, J.tH * 0.9, -0.2, 0.2, 0.26, 0.14, 0x3a3a34, -0.4); // placas nas costas
+      for (const a of J.arms) { L(a.el, 0, -0.3, 0.2, 0.3, 0.04, 0.02, 0xffa030); P(a.sh, 0, 0.02, 0, 0.36, 0.2, 0.36, 0x3a3a34); } // punhos sísmicos
+      L(J.torso, 0, J.tH * 0.55, 0.2, 0.4, 0.04, 0.02, 0xffa030);
+    },
+  }),
+  lb_launcher: R2({
+    skin: 0x7a8a6a, shirt: 0x4e5a62, pants: 0x3a4048, boots: 0x24282c, arm: 0x4e5a62, hands: 0x6a7278, eye: 0x9aff40,
+    w: 1.0, legH: 0.52, torsoH: 0.58, head: 0.9, hunch: 0.2, arms: 'reach', noTeeth: true, jaw: 0.0, stride: 0.5,
+    extra: (J, P, L) => {
+      P(J.head, 0, 0.12, 0.2, 0.4, 0.26, 0.12, 0x2a3034); // máscara de gás
+      for (const sg of [-1, 1]) L(J.head, sg * 0.1, 0.2, 0.27, 0.09, 0.08, 0.02, 0x9aff40);
+      P(J.head, 0, 0.02, 0.3, 0.12, 0.12, 0.14, 0x3a4048);
+      P(J.torso, 0, J.tH * 0.6, -0.32, 0.46, 0.62, 0.3, 0x3a4a3a); // tanque ácido
+      L(J.torso, 0, J.tH * 0.6, -0.48, 0.3, 0.46, 0.02, 0x9aff40);
+      P(J.torso, 0.2, J.tH * 0.95, -0.2, 0.06, 0.06, 0.36, 0x2a3034, 0.6); // mangueira
+      const r = J.arms[0].el; // canhão no braço
+      P(r, 0, -0.34, 0.04, 0.24, 0.42, 0.24, 0x6a7278);
+      P(r, 0, -0.58, 0.04, 0.16, 0.08, 0.16, 0x24282c);
+      L(r, 0, -0.62, 0.04, 0.1, 0.02, 0.1, 0x9aff40);
+    },
+  }),
+  lb_suppressor: R2({
+    skin: 0x6a9a7a, shirt: 0x1e4a32, pants: 0x1a3a28, boots: 0x0e1e14, arm: 0x2a5a3a, hands: 0x6a9a7a, eye: 0x40ff9a,
+    w: 1.1, chest: 1.1, legH: 0.54, torsoH: 0.62, head: 0.85, hunch: 0.05, headDown: -0.05, arms: 'cast', noTeeth: true, jaw: 0.05, stride: 0.4,
+    extra: (J, P, L) => {
+      P(J.head, 0, 0.24, 0.0, 0.5, 0.32, 0.48, 0x1e4a32); // capacete fechado
+      L(J.head, 0, 0.2, 0.25, 0.36, 0.05, 0.02, 0x40ff9a);
+      P(J.torso, 0, J.tH * 0.6, -0.26, 0.4, 0.56, 0.2, 0x2a3a30); // gerador
+      for (const x of [-0.12, 0.12]) { P(J.torso, x, J.tH * 0.6 + 0.4, -0.26, 0.06, 0.4, 0.06, 0x8a9a90); L(J.torso, x, J.tH * 0.6 + 0.62, -0.26, 0.1, 0.1, 0.1, 0x40ff9a); }
+      const p = 0.5 + 0.5 * Math.sin(J.t * 4);
+      L(J.torso, 0, -0.5, 0, 1.4 + p * 0.3, 0.02, 1.4 + p * 0.3, 0x2ecc71); // anel do campo
+    },
+  }),
+  lb_corrosive: R2({
+    skin: 0x5a7a3a, shirt: 0x4a6a30, pants: 0x3a5a2a, boots: 0x2a3a1a, arm: 0x5a7a3a, hands: 0x6a8a3a, eye: 0xc0ff40, jawC: 0x4a6a30,
+    w: 1.1, chest: 0.95, depth: 1.3, legH: 0.48, torsoH: 0.6, head: 0.95, headW: 1.1, hunch: 0.3, headFwd: 1.3, arms: 'reach', jaw: 0.45, stride: 0.45, gait: 0.85,
+    extra: (J, P, L) => {
+      for (const [x, y, s] of [[-0.22, 0.25, 0.18], [0.2, 0.42, 0.14], [0.02, 0.15, 0.2], [0.26, 0.15, 0.1]]) { P(J.torso, x, y, 0.2, s, s, 0.08, 0x7a9a3a); L(J.torso, x, y, 0.245, s * 0.6, s * 0.6, 0.02, 0xc0ff40); } // bolsas ácidas
+      L(J.jaw, 0, -0.12, 0.22, 0.06, 0.18, 0.04, 0xc0ff40); // baba ácida
+      for (const a of J.arms) L(a.el, 0, -0.42, 0.06, 0.05, 0.12, 0.05, 0xc0ff40);
+      L(J.torso, 0, -0.5, 0.1, 0.5, 0.02, 0.5, 0x8aff30); // poça
+    },
+  }),
+  lb_incendiary: R2({
+    skin: 0x5a3020, shirt: 0x4a2a1a, pants: 0x3a2018, boots: 0x1a0e0a, arm: 0x5a3020, hands: 0x3a2018, eye: 0xffb020, brow: 0x2a1410,
+    w: 1.0, legH: 0.52, torsoH: 0.6, head: 0.92, hunch: 0.15, arms: 'reach', jaw: 0.3, stride: 0.5, claw: 0xff6a10,
+    extra: (J, P, L) => {
+      for (const [x, y, r] of [[0.08, 0.3, 0.3], [-0.12, 0.5, -0.4], [0.18, 0.62, 0.2], [-0.05, 0.12, 0.5]]) L(J.torso, x, y, 0.17, 0.04, 0.24, 0.02, 0xff6a10); // fissuras de lava
+      L(J.head, 0.06, 0.12, 0.235, 0.03, 0.2, 0.02, 0xff6a10);
+      for (const x of [-0.14, 0.14]) { P(J.torso, x, J.tH * 0.6, -0.26, 0.16, 0.5, 0.16, 0x8a2a10); L(J.torso, x, J.tH * 0.6 + 0.3, -0.26, 0.08, 0.1, 0.08, 0xffd040); } // tanques de combustível
+      const f = 0.08 + Math.abs(Math.sin(J.t * 12)) * 0.08;
+      L(J.head, 0, 0.42, 0, f, f * 2, f, 0xff8a20); // chama na cabeça
+      L(J.arms[0].el, 0, -0.42, 0.04, 0.12, f * 2, 0.12, 0xff6a10);
+    },
+  }),
+  lb_freezer: R2({
+    skin: 0x8ab8c8, shirt: 0x5a8aa0, pants: 0x3a6a80, boots: 0x2a4a5a, arm: 0x6a9ab0, hands: 0xb0f0ff, eye: 0x9affff, brow: 0x4a7a90, claw: 0xd0ffff,
+    w: 1.05, legH: 0.54, torsoH: 0.6, head: 0.92, hunch: 0.1, arms: 'reach', jaw: 0.2, stride: 0.45, gait: 0.85,
+    extra: (J, P, L) => {
+      for (const [x, y, h, r] of [[-0.24, 0.62, 0.36, 0.4], [0.24, 0.62, 0.4, -0.4], [0, 0.66, 0.46, 0], [-0.12, 0.5, 0.26, 0.7]]) L(J.torso, x, J.tH * 0.9 + 0.05, -0.12, 0.08, h, 0.08, 0xc0f8ff); // cristais nas costas
+      P(J.head, 0, 0.32, 0, 0.5, 0.08, 0.48, 0xc0f8ff); // geada
+      for (const sg of [-1, 1]) L(J.head, sg * 0.18, 0.42, 0, 0.06, 0.2, 0.06, 0xc0f8ff);
+      for (const a of J.arms) L(a.el, 0, -0.32, 0.04, 0.2, 0.08, 0.2, 0x9affff);
+      L(J.torso, 0, J.tH * 0.6, 0.17, 0.14, 0.14, 0.02, 0x29b6f6);
+    },
+  }),
+  lb_hunter: Q({
+    c1: 0x5a1a14, c2: 0x7a2a1a, belly: 0x3a0e0a, leg: 0x4a1410, foot: 0x1a0a08, eye: 0xffe040, h: 0.62, len: 0.95, w: 0.4, head: 1.0, snout: 0.3, gait: 1.5, ears: false,
+    extra: (J, P, L) => {
+      for (let i = 0; i < 5; i++) P(J.body, 0, 0.22, J.Lg * 0.35 - i * 0.18, 0.08, 0.16 - i * 0.02, 0.08, 0xc8c0a0, -0.4); // espinhos ósseos
+      for (const sg of [-1, 1]) { P(J.body, sg * 0.24, -0.06, J.Lg * 0.5, 0.05, 0.05, 0.36, 0xd8dce4, 0.6); L(J.body, sg * 0.24, -0.16, J.Lg * 0.66, 0.03, 0.03, 0.22, 0xff6a20); } // lâminas de aço
+      P(J.head, 0, 0.26, 0.0, 0.3, 0.1, 0.3, 0x3a0e0a); // crânio blindado
+    },
+  }),
+  lb_pack: Q({
+    c1: 0x6a4a30, c2: 0x7a5a3a, belly: 0x9a7a5a, leg: 0x5a3a24, eye: 0xff4a2a, h: 0.48, len: 0.82, w: 0.36, head: 0.9, gait: 1.4,
+    extra: (J, P, L) => {
+      P(J.body, 0, 0.06, J.Lg * 0.3, 0.46, 0.1, 0.12, 0x6a7078); // coleira metálica
+      L(J.body, 0, 0.06, J.Lg * 0.37, 0.08, 0.06, 0.02, 0xe53935);
+      for (const [x, zz] of [[0.15, 0], [-0.12, -0.2]]) P(J.body, x, 0.19, zz, 0.16, 0.04, 0.2, 0x8a909a); // placas de ferro
+      P(J.body, 0.22, 0.0, -0.05, 0.02, 0.18, 0.3, 0x8a1a1a); // ferida
+    },
+  }),
+  lb_signaler: R2({
+    skin: 0x8a8070, shirt: 0x3a3a40, pants: 0x2a2a30, boots: 0x1a1a1e, arm: 0x4a4a52, hands: 0x8a8070, eye: 0xffc107,
+    w: 0.8, legH: 0.62, torsoH: 0.56, head: 0.85, hunch: 0.1, arms: 'cast', armW: 0.85, stride: 0.5, jaw: 0.3,
+    extra: (J, P, L) => {
+      P(J.torso, 0, J.tH + 0.1, -0.16, 0.08, 0.9, 0.08, 0x6a6a72); // antena nas costas
+      const p = 0.5 + 0.5 * Math.sin(J.t * 8);
+      L(J.torso, 0, J.tH + 0.6, -0.16, 0.18 + p * 0.1, 0.18 + p * 0.1, 0.18 + p * 0.1, 0xffc107); // farol
+      P(J.torso, 0, J.tH * 0.6, 0.17, 0.56, 0.08, 0.03, 0xffc107, 0, 0.5); // faixa refletiva
+      L(J.head, 0.12, 0.2, 0.24, 0.1, 0.1, 0.02, 0xe53935); // olho-lanterna
+      P(J.arms[0].el, 0, -0.32, 0.06, 0.1, 0.24, 0.1, 0x2a2a30); // sinalizador na mão
+      L(J.arms[0].el, 0, -0.48, 0.06, 0.08, 0.1, 0.08, 0xe53935);
+    },
+  }),
+  lb_puppeteer: R2({
+    skin: 0x6a4a7a, shirt: 0x2a1a3a, pants: 0x1e1228, boots: 0x140c1c, arm: 0x4a2a5a, hands: 0x8a6a9a, eye: 0xe070ff, brow: 0x1e1228, claw: 0xe070ff,
+    w: 0.85, legH: 0.64, torsoH: 0.62, head: 0.88, headW: 0.85, hunch: 0.25, headDown: 0.15, arms: 'cast', armW: 0.75, hand: 1.2, stride: 0.35, gait: 0.75, jaw: 0.1, noTeeth: true,
+    extra: (J, P, L) => {
+      P(J.head, 0, 0.08, 0.24, 0.36, 0.32, 0.03, 0xe8e0f0); // máscara de teatro
+      for (const sg of [-1, 1]) P(J.head, sg * 0.1, 0.16, 0.26, 0.1, 0.05, 0.02, 0x14080e);
+      P(J.head, 0, -0.02, 0.26, 0.18, 0.03, 0.02, 0x14080e, 0, 0.3);
+      for (const sg of [-1, 1]) { P(J.torso, sg * 0.28, J.tH * 0.9, -0.14, 0.06, 0.5, 0.06, 0x4a2a5a, -0.5, sg * -0.5); P(J.torso, sg * 0.5, J.tH * 1.2, -0.32, 0.05, 0.36, 0.05, 0x4a2a5a, 0.4, sg * -0.2); } // apêndices
+      for (const a of J.arms) for (const fx of [-0.05, 0.05]) L(a.el, fx, -0.8, 0.05, 0.01, 0.9, 0.01, 0xe070ff); // fios
+    },
+  }),
+  lb_camouflaged: Q({
+    c1: 0x1a2418, c2: 0x243022, belly: 0x141c12, leg: 0x1a2418, foot: 0x0e140c, eye: 0xffd040, h: 0.34, len: 0.9, w: 0.5, head: 0.9, snout: 0.16, gait: 1.1, ears: false, tail: false, legW: 0.13, pitch: 0.05,
+    extra: (J, P, L) => {
+      for (const [x, zz, c] of [[0.15, 0.1, 0x2e3a24], [-0.12, -0.2, 0x3a4a2a], [0.05, -0.32, 0x1e2a1a], [-0.18, 0.25, 0x2e3a24]]) P(J.body, x, 0.19, zz, 0.18, 0.03, 0.2, c); // manchas camufladas
+      for (const sg of [-1, 1]) { P(J.head, sg * 0.12, 0.3, 0.0, 0.05, 0.22, 0.05, 0x1a2418, -0.6, sg * -0.3); P(J.body, sg * 0.32, 0.0, J.Lg * 0.5, 0.04, 0.04, 0.3, 0x8a8a6a, 0.3, sg * 0.3); } // antenas, garras
+    },
+  }),
+  lb_demolisher: R2({
+    skin: 0x6a6a5a, shirt: 0x5a5a52, pants: 0x3a3a42, shin: 0x22222a, boots: 0x22222a, arm: 0x7a7a70, hands: 0x8a8a80, eye: 0xffd040, brow: 0x3a3a34,
+    w: 1.5, chest: 1.3, depth: 1.3, legW: 1.5, legH: 0.44, torsoH: 0.68, head: 0.7, headFwd: 0.8, headDown: -0.05, hunch: 0.25, arms: 'brawl', armW: 1.6, hand: 1.6, noClaws: true, stride: 0.3, gait: 0.6, jaw: 0.1,
+    extra: (J, P, L) => {
+      P(J.head, 0, 0.22, 0.02, 0.52, 0.32, 0.5, 0x4a4a42); // elmo blindado
+      L(J.head, 0, 0.2, 0.27, 0.36, 0.05, 0.02, 0xffd040);
+      P(J.torso, 0, J.tH * 0.9, 0.0, 0.9, 0.12, 0.5, 0xffa020); // faixa de alerta
+      for (let i = 0; i < 4; i++) P(J.torso, -0.3 + i * 0.2, J.tH * 0.9, 0.26, 0.08, 0.13, 0.02, 0x1a1a1a);
+      for (const a of J.arms) { // braços-broca
+        P(a.el, 0, -0.4, 0.04, 0.24, 0.22, 0.24, 0x7a7a70);
+        P(a.el, 0, -0.58, 0.04, 0.16, 0.2, 0.16, 0x9a9a90, 0, J.t * 8);
+        P(a.el, 0, -0.74, 0.04, 0.08, 0.16, 0.08, 0xc8ccd4, 0, J.t * 8);
+      }
+    },
+  }),
+  lb_aerial: (B, G, b, z, col, t) => {
+    const P = (m, x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+    const L = (m, x, y, zz, sx, sy, sz, c) => G.part(m, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+    const flap = Math.sin(t * 10) * 0.6, dive = z.state === 'lunge' ? 0.5 : 0;
+    const body = joint(b, 0, 0, 0, 0.2 + dive, 0, 0);
+    P(body, 0, 0, 0, 0.32, 0.3, 0.7, 0x3a5a2a);
+    P(body, 0, 0.02, 0.05, 0.26, 0.24, 0.4, 0x4a7a3a);
+    for (let i = 0; i < 3; i++) L(body, 0, 0.16, 0.2 - i * 0.18, 0.06, 0.04, 0.1, 0x2aff8a);
+    const head = joint(body, 0, 0.08, 0.42, -0.2, 0, 0);
+    P(head, 0, 0.02, 0.1, 0.28, 0.24, 0.28, 0x4a7a3a);
+    P(head, 0, -0.04, 0.3, 0.12, 0.08, 0.2, 0xffb040); // bico
+    const jaw = joint(head, 0, -0.08, 0.2, 0.2 + (z.attackT > 0 || z.state === 'spit' ? 0.5 : 0), 0, 0);
+    P(jaw, 0, -0.02, 0.08, 0.1, 0.04, 0.16, 0xd08a30);
+    for (const sg of [-1, 1]) {
+      L(head, sg * 0.1, 0.08, 0.22, 0.06, 0.05, 0.03, 0xfff080);
+      const w1 = joint(body, sg * 0.16, 0.08, 0.05, 0, 0, sg * flap);
+      P(w1, sg * 0.32, 0, 0, 0.62, 0.05, 0.44, 0x4a7a3a);
+      L(w1, sg * 0.32, -0.03, -0.05, 0.56, 0.02, 0.36, 0x2aff8a);
+      const w2 = joint(w1, sg * 0.62, 0, 0, 0, 0, sg * flap * 0.6);
+      P(w2, sg * 0.24, 0, -0.06, 0.5, 0.04, 0.34, 0x3f6a32);
+      for (let i = 0; i < 3; i++) P(w2, sg * (0.1 + i * 0.16), 0, -0.26, 0.06, 0.03, 0.14, 0x2a4a20);
+      const leg = joint(body, sg * 0.1, -0.14, -0.05, 0.6 + dive, 0, 0);
+      P(leg, 0, -0.14, 0, 0.07, 0.26, 0.07, 0x3a5a2a);
+      for (const fx of [-0.04, 0.04]) P(leg, fx, -0.3, 0.06, 0.03, 0.1, 0.03, 0xffb040, 0.5);
+    }
+    const tl = joint(body, 0, 0, -0.38, -0.2 + Math.sin(t * 4) * 0.2, Math.sin(t * 3) * 0.3, 0);
+    P(tl, 0, 0, -0.2, 0.1, 0.06, 0.42, 0x3a5a2a);
+    P(tl, 0, 0, -0.44, 0.28, 0.04, 0.14, 0x2a4a20);
+  },
+  // --- FLORESTA SOMBRIA (folclore) ---
+  ff_saci: R2({
+    skin: 0x5a3420, shirt: 0x8a2018, pants: 0x6a1a14, boots: 0x2a1410, arm: 0x5a3420, hands: 0x5a3420, eye: 0xffa020, brow: 0x2a1410,
+    oneLeg: true, w: 0.8, legH: 0.56, torsoH: 0.5, head: 1.0, hunch: 0.1, headDown: -0.1, arms: 'run', armW: 0.8, stride: 0, gait: 1.2, jaw: 0.35, bob: 0.08,
+    extra: (J, P, L) => {
+      P(J.head, 0, 0.38, -0.02, 0.48, 0.14, 0.46, 0xc8201a); // gorro vermelho
+      P(J.head, 0.06, 0.52, -0.1, 0.3, 0.14, 0.3, 0xc8201a, -0.3, -0.3);
+      P(J.head, 0.14, 0.62, -0.2, 0.14, 0.12, 0.14, 0xe02a20, -0.6, -0.4);
+      P(J.jaw, 0.14, -0.04, 0.24, 0.04, 0.04, 0.22, 0x3a2414, 0, 0.2); // cachimbo
+      P(J.jaw, 0.16, 0.0, 0.36, 0.08, 0.1, 0.08, 0x3a2414);
+      L(J.jaw, 0.16, 0.06, 0.36, 0.05, 0.03, 0.05, 0xff6a10);
+      for (let i = 0; i < 2; i++) L(J.head, 0.2 + i * 0.06, 0.4 + ((J.t * 0.8 + i * 0.5) % 1) * 0.4, 0.3, 0.06, 0.06, 0.06, 0x8a8a8a); // fumaça
+      for (const [x, y] of [[-0.3, -0.3], [0.32, -0.42]]) L(J.torso, x, y + Math.sin(J.t * 6 + x * 9) * 0.1, 0.1, 0.06, 0.06, 0.06, 0xff6a10); // brasas
+    },
+  }),
+  ff_curupira: R2({
+    skin: 0x8a4a2a, shirt: 0x2e6a2a, pants: 0x2a5a22, boots: 0x8a4a2a, arm: 0x8a4a2a, hands: 0x8a4a2a, eye: 0xffe040, brow: 0x3a1a0a, claw: 0x2e2010,
+    w: 0.85, legH: 0.56, torsoH: 0.52, head: 0.95, hunch: 0.3, headFwd: 1.3, arms: 'run', armW: 0.8, stride: 0.8, gait: 1.25, jaw: 0.3,
+    extra: (J, P, L) => {
+      for (let i = 0; i < 6; i++) P(J.head, -0.2 + i * 0.08, 0.38 + (i % 2) * 0.08, -0.06, 0.1, 0.24, 0.2, 0xe03a14, -0.4, (i - 2.5) * 0.12); // cabelo de fogo
+      for (let i = 0; i < 3; i++) L(J.head, -0.12 + i * 0.12, 0.52 + Math.abs(Math.sin(J.t * 9 + i)) * 0.08, -0.08, 0.06, 0.1, 0.06, 0xff8a20);
+      P(J.torso, 0, -0.04, 0.02, 0.5, 0.2, 0.32, 0x4a7a2a); // tanga de folhas
+      for (let i = 0; i < 4; i++) P(J.torso, -0.18 + i * 0.12, -0.16, 0.14, 0.1, 0.16, 0.03, 0x3a8a2a, 0.2);
+      P(J.arms[1].el, 0, -0.1, 0.12, 0.05, 1.0, 0.05, 0x5a3a20); // lança de galho
+      L(J.arms[1].el, 0, 0.42, 0.12, 0.08, 0.12, 0.08, 0xff6a10);
+    },
+  }),
+  ff_pisadeira: R2({
+    skin: 0x6a6a52, shirt: 0x2a2a22, pants: 0x1e1e18, boots: 0x6a6a52, arm: 0x6a6a52, hands: 0x6a6a52, eye: 0xff2a2a, brow: 0x1a1a14, claw: 0xd8d0b0,
+    w: 0.75, chest: 0.85, legW: 0.6, legH: 0.7, torsoH: 0.58, head: 0.9, headW: 0.8, hunch: 0.65, headFwd: 1.6, headDown: -0.25, arms: 'blades', armW: 0.6, hand: 1.4, stride: 0.5, gait: 0.9, jaw: 0.5, knee: 0.4,
+    extra: (J, P, L) => {
+      for (let i = 0; i < 5; i++) P(J.head, -0.18 + i * 0.09, 0.2, -0.24, 0.08, 0.56, 0.06, 0x14140e, 0.2); // cabelo longo sujo
+      P(J.head, 0, 0.36, -0.02, 0.44, 0.06, 0.42, 0x14140e);
+      for (let i = 0; i < 4; i++) P(J.torso, 0, J.tH * 0.45 + i * 0.07, 0.15, 0.4, 0.025, 0.03, 0xa8a088); // costelas
+      for (const a of J.arms) for (const fx of [-0.06, 0, 0.06]) P(a.el, fx, -0.48, 0.08, 0.025, 0.26, 0.025, 0xd8d0b0, 0.5); // unhas longas
+    },
+  }),
+  ff_iara: R2({
+    skin: 0x6aa8b0, shirt: 0x1e5a6a, pants: 0x1e6a7a, tail2: 0x2a8a9a, arm: 0x6aa8b0, hands: 0x8ad0d8, eye: 0x9affff, brow: 0x1e4a5a, claw: 0x9affff,
+    noLegs: true, legH: 0.55, w: 0.85, torsoH: 0.56, head: 0.92, headW: 0.85, hunch: 0.05, headDown: -0.05, arms: 'cast', armW: 0.75, jaw: 0.4, noTeeth: true,
+    extra: (J, P, L) => {
+      for (let i = 0; i < 6; i++) P(J.head, -0.22 + i * 0.09, 0.14, -0.24, 0.08, 0.64 + (i % 2) * 0.1, 0.06, 0x0e2a3a, 0.25); // cabelo encharcado
+      P(J.head, 0, 0.36, -0.02, 0.46, 0.06, 0.44, 0x0e2a3a);
+      for (let i = 0; i < 3; i++) P(J.torso, 0, -0.08 - i * 0.12, -0.1, 0.36 - i * 0.06, 0.06, 0.2, 0x2a8a9a); // escamas
+      L(J.torso, 0, J.tH * 0.6, 0.17, 0.12, 0.12, 0.02, 0x9affff);
+      L(J.torso, 0, -0.62, -0.2 + Math.sin(J.t * 3) * 0.1, 0.5, 0.04, 0.24, 0x2a8a9a); // barbatana caudal
+      if (J.cast) L(J.arms[0].el, 0, -0.38, 0.06, 0.18, 0.18, 0.18, 0x29b6f6);
+    },
+  }),
+  ff_cuca: R2({
+    skin: 0x4a6a2a, shirt: 0x3a2a4a, pants: 0x2a1e34, boots: 0x3a5a22, arm: 0x4a6a2a, hands: 0x5a7a32, eye: 0xffd020, jawC: 0x3a5a22, claw: 0xd8d0a0,
+    w: 1.05, legH: 0.46, torsoH: 0.58, head: 1.15, headW: 1.1, hunch: 0.45, headFwd: 1.6, headDown: -0.2, arms: 'cast', stride: 0.4, gait: 0.8, jaw: 0.4,
+    extra: (J, P, L) => {
+      P(J.head, 0, 0.06, 0.34, 0.3, 0.18, 0.32, 0x4a6a2a); // focinho de jacaré
+      P(J.jaw, 0, -0.04, 0.32, 0.28, 0.08, 0.34, 0x3a5a22);
+      for (const x of [-0.1, 0, 0.1]) { P(J.head, x, -0.04, 0.46, 0.03, 0.06, 0.03, TEETH); P(J.jaw, x + 0.05, 0.02, 0.44, 0.03, 0.06, 0.03, TEETH); }
+      for (let i = 0; i < 7; i++) P(J.head, -0.24 + i * 0.08, 0.38, -0.1, 0.08, 0.3, 0.08, 0xe0d070, -0.5, (i - 3) * 0.15); // cabelo palha amarela
+      P(J.torso, 0, -0.12, 0, 0.62, 0.42, 0.42, 0x3a2a4a); // vestido de bruxa
+      for (let i = 0; i < 4; i++) P(J.torso, 0, J.tH * 0.9 - i * 0.2, -0.18, 0.1, 0.12, 0.08, 0x3a5a22, -0.4); // espinhos de jacaré
+      for (const [x, y] of [[-0.2, 0.3], [0.2, 0.45]]) { P(J.torso, x, y, 0.17, 0.04, 0.1, 0.04, 0xe8e0c8); L(J.torso, x, y + 0.06, 0.17, 0.1, 0.04, 0.1, 0xb0ff40); } // fungos
+    },
+  }),
+  ff_mula: Q({
+    c1: 0x3a1e14, c2: 0x4a2a1a, belly: 0x2a140e, leg: 0x2a1410, foot: 0x1a1a1a, eye: 0xff6a10, h: 0.8, len: 1.15, w: 0.44, head: 0.001, gait: 1.2, legW: 0.15,
+    extra: (J, P, L) => {
+      const f = 0.14 + Math.abs(Math.sin(J.t * 12)) * 0.1;
+      P(J.body, 0, 0.2, J.Lg * 0.5, 0.24, 0.3, 0.2, 0x3a1e14, -0.4); // pescoço cortado
+      L(J.body, 0, 0.42, J.Lg * 0.56, 0.26, f * 3, 0.26, 0xff6a10); // fogo no lugar da cabeça
+      L(J.body, 0, 0.62, J.Lg * 0.58, 0.14, f * 2, 0.14, 0xffd040);
+      P(J.body, 0, 0.22, -0.05, 0.5, 0.06, 0.6, 0x8a1a1a); // sela vermelha
+      P(J.body, 0, 0.18, -0.05, 0.54, 0.18, 0.04, 0xffc107);
+      for (let i = 0; i < 3; i++) L(J.body, 0, 0.1 + i * 0.06, -J.Lg * 0.58 - i * 0.08, 0.1, 0.1, 0.1, 0xff6a10); // cauda de fogo
+    },
+  }),
+  ff_lobisomem: R2({
+    skin: 0x4a4030, shirt: 0x4a4030, pants: 0x3a2a1e, boots: 0x2a2018, arm: 0x4a4030, hands: 0x3a3226, eye: 0xffe040, brow: 0x2a2418, jawC: 0x3a3226, claw: 0xe0d8c0,
+    w: 1.25, chest: 1.35, depth: 1.15, legW: 1.1, legH: 0.52, torsoH: 0.66, head: 0.95, hunch: 0.5, headFwd: 1.5, headDown: -0.3, arms: 'blades', armW: 1.15, hand: 1.3, stride: 0.75, gait: 1.15, jaw: 0.4, knee: 0.45,
+    extra: (J, P, L) => {
+      P(J.head, 0, 0.08, 0.34, 0.24, 0.18, 0.32, 0x4a4030); // focinho
+      P(J.head, 0, 0.12, 0.5, 0.1, 0.06, 0.04, 0x0a0a0a);
+      P(J.jaw, 0, -0.02, 0.32, 0.22, 0.06, 0.3, 0x3a3226);
+      for (const x of [-0.08, 0.08]) { P(J.head, x, -0.02, 0.46, 0.035, 0.1, 0.035, TEETH); P(J.jaw, x, 0.04, 0.42, 0.035, 0.08, 0.035, TEETH); }
+      for (const sg of [-1, 1]) P(J.head, sg * 0.16, 0.42, -0.04, 0.1, 0.24, 0.08, 0x3a3226, -0.2, sg * -0.25); // orelhas
+      for (let i = 0; i < 5; i++) P(J.torso, -0.24 + i * 0.12, J.tH * 0.95, -0.16, 0.1, 0.18, 0.1, 0x3a3226, -0.6); // pelo eriçado
+      P(J.torso, 0, J.tH * 0.62, 0.17, 0.34, 0.3, 0.03, 0x6a5a44); // peito
+      P(J.torso, 0.14, J.tH * 0.4, 0.18, 0.12, 0.03, 0.02, 0x7aff40); // infecção
+      P(J.torso, 0, -0.06, -0.24, 0.1, 0.1, 0.4, 0x4a4030, -0.6); // cauda
+    },
+  }),
+  ff_boto: (B, G, b, z, col, t) => {
+    const P = (m, x, y, zz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, x, y, zz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+    const L = (m, x, y, zz, sx, sy, sz, c) => G.part(m, x, y, zz, 0, 0, 0, 0, 0, sx, sy, sz, c);
+    const sw = Math.sin((z.walk || 0) * 1.4 + t * 2);
+    const body = joint(b, 0, 0.62 + sw * 0.05, 0, -0.1, 0, 0);
+    // tronco humanoide sobre corpo de boto (boto encantado, de chapéu)
+    P(body, 0, 0, 0, 0.5, 0.44, 0.9, 0xc88a9a);
+    P(body, 0, -0.18, 0.02, 0.4, 0.1, 0.8, 0xe8c8d0);
+    P(body, 0, 0.28, -0.05, 0.08, 0.26, 0.24, 0xa86a7a, -0.3); // barbatana dorsal
+    const head = joint(body, 0, 0.12, 0.46, -0.15, 0, 0);
+    P(head, 0, 0.04, 0.12, 0.42, 0.36, 0.34, 0xc88a9a);
+    P(head, 0, -0.04, 0.42, 0.16, 0.12, 0.34, 0xd89aaa); // bico longo
+    const jaw = joint(head, 0, -0.1, 0.24, 0.15 + (z.state === 'spit' || z.attackT > 0 ? 0.45 : 0), 0, 0);
+    P(jaw, 0, -0.02, 0.2, 0.14, 0.05, 0.36, 0xe8c8d0);
+    for (const x of [-0.04, 0.04]) P(jaw, x, 0.02, 0.32, 0.025, 0.04, 0.025, TEETH);
+    for (const sg of [-1, 1]) { P(head, sg * 0.16, 0.12, 0.24, 0.08, 0.06, 0.02, 0x0a0a0a); L(head, sg * 0.16, 0.12, 0.25, 0.05, 0.04, 0.02, 0x9affff); }
+    P(head, 0, 0.26, 0.04, 0.6, 0.04, 0.56, 0xf0ece0); // chapéu branco
+    P(head, 0, 0.36, 0.04, 0.34, 0.18, 0.32, 0xf0ece0);
+    P(head, 0, 0.3, 0.04, 0.35, 0.04, 0.33, 0x2a2a2a);
+    for (const sg of [-1, 1]) { const fin = joint(body, sg * 0.24, -0.14, 0.2, 0.3, 0, sg * (0.6 + sw * 0.3)); P(fin, sg * 0.14, 0, 0, 0.3, 0.05, 0.2, 0xa86a7a); }
+    const tail = joint(body, 0, 0, -0.46, sw * 0.4, 0, 0);
+    P(tail, 0, 0, -0.18, 0.3, 0.26, 0.38, 0xb87a8a);
+    P(tail, 0, 0, -0.42, 0.66, 0.06, 0.22, 0xa86a7a);
+    for (let i = 0; i < 3; i++) L(b, Math.sin(t * 2 + i * 2) * 0.4, 0.05, Math.cos(t * 2 + i * 2) * 0.4, 0.08, 0.02, 0.08, 0x29b6f6); // água em volta
+  },
+  ff_caipora: R2({
+    skin: 0x6a4a2a, shirt: 0x2a4a1e, pants: 0x2a3a18, boots: 0x3a2a18, arm: 0x6a4a2a, hands: 0x6a4a2a, eye: 0x9aff40, brow: 0x2a1a0a,
+    w: 1.05, legH: 0.5, torsoH: 0.62, head: 0.95, hunch: 0.2, arms: 'reach', stride: 0.5, jaw: 0.2,
+    extra: (J, P, L) => {
+      P(J.head, 0, 0.12, 0.24, 0.34, 0.3, 0.03, 0x8a6a3a); // máscara de casca
+      for (const sg of [-1, 1]) L(J.head, sg * 0.09, 0.18, 0.26, 0.07, 0.05, 0.02, 0x9aff40);
+      for (let i = 0; i < 5; i++) P(J.head, -0.2 + i * 0.1, 0.42 + (i % 2) * 0.1, -0.04, 0.08, 0.3, 0.06, 0x3a8a2a, -0.2, (i - 2) * 0.2); // cocar de folhas
+      P(J.torso, 0, J.tH * 0.6, 0.0, 0.66, 0.5, 0.4, 0x3a5a22); // manto de musgo
+      for (let i = 0; i < 4; i++) P(J.torso, -0.24 + i * 0.16, J.tH * 0.25, 0.2, 0.1, 0.2, 0.03, 0x2a4a1e, 0.2);
+      P(J.torso, 0, J.tH * 0.4, -0.24, 0.2, 0.2, 0.2, 0x5a3a1a); // cabaça
+      const st = J.arms[0].el; // zarabatana/cajado
+      P(st, 0, -0.1, 0.12, 0.06, 1.1, 0.06, 0x5a3a1a);
+      L(st, 0, 0.46, 0.12, 0.1, 0.1, 0.1, 0x9aff40);
+    },
+  }),
+  ff_boitata: (B, G, b, z, col, t) => drawSnakeV2(B, G, b, z, col, t, {
+    c1: 0x8a2a10, c2: 0x5a1a0a, eye: 0xffe040, glow: 0xff6a10, n: 10,
+    extra: (J, P, L) => {
+      const f = 0.1 + Math.abs(Math.sin(t * 10)) * 0.08;
+      for (const sg of [-1, 1]) L(J.head, sg * 0.13, 0.15, 0.3, f, f, f, 0xffd040); // olhos de fogo
+      for (let i = 0; i < 4; i++) L(J.head, -0.12 + i * 0.08, 0.2 + f, -0.05 - i * 0.04, 0.06, f * 2, 0.06, 0xff8a20); // crista de chamas
+    },
+  }),
+};
+Object.assign(BODIES, V3);
 
 export function drawEnemy(B, G, z, t) {
   const type = z.type;

@@ -13,6 +13,6 @@ await page.evaluate(() => window.__bh.ui.showScreen('enemies')); await page.wait
 for (const id of list.split(',')) {
   const idx = ENEMY_ORDER.indexOf(id); if (idx < 0) { console.log('fora da ordem:', id); continue; }
   const card = page.locator('li.beast').nth(idx); await card.scrollIntoViewIfNeeded(); await card.hover(); await page.waitForTimeout(650);
-  await card.locator('canvas.model').screenshot({ path: `${OUT}/${id}.png` }); await page.mouse.move(5, 5); await page.waitForTimeout(150);
+  { const bb = await card.locator('canvas.model').boundingBox(); await page.screenshot({ path: `${OUT}/${id}.png`, clip: bb }); } await page.mouse.move(5, 5); await page.waitForTimeout(150);
 }
 console.log('erros JS:', errors.length ? errors.slice(0, 5) : 'nenhum'); await b.close();
