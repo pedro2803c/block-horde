@@ -317,9 +317,7 @@ export class UI {
             btn('', 'info', 'Manual e tutorial', () => this.showScreen('manual', { back: 'menu' })),
             btn('', 'gamepad', 'Controles', () => this.showScreen('controls', { back: 'menu' })),
             btn('', 'gear', 'Configurações', () => this.showScreen('settings', { back: 'menu' })),
-            btn('', 'star', 'Créditos', () => this.showScreen('credits'))))),
-      skyline(),
-      h('div', { class: 'version' }, 'v1.1 · tudo gerado por código'));
+            btn('', 'star', 'Créditos', () => this.showScreen('credits'))))));
   }
 
   // escolha de personagem(ns)
