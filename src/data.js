@@ -1,4 +1,4 @@
-// Dados do jogo: armas, desbloqueios por multiplicador, inimigos, sobreviventes e arenas.
+﻿// Dados do jogo: armas, desbloqueios por multiplicador, inimigos, sobreviventes e arenas.
 import { makeMap } from './scenery.js';
 import { modCh } from './scenery3.js';
 
