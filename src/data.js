@@ -29,6 +29,7 @@ export const WEAPONS = {
   igrenade: { name: 'Granada incendiária', cat: 'Granada', kind: 'throw', proj: 'g_fire', dmg: 40, rate: 0.65, radius: 3, area: { life: 6, dps: 16 }, start: 3, pack: 2, sound: 'throw', color: 0xd85a1a },
   fgrenade: { name: 'Granada congelante', cat: 'Granada', kind: 'throw', proj: 'g_frost', dmg: 30, rate: 0.65, radius: 3.6, start: 3, pack: 2, sound: 'throw', color: 0x7ad8ff },
   tgrenade: { name: 'Granada tóxica', cat: 'Granada', kind: 'throw', proj: 'g_toxic', dmg: 10, rate: 0.65, radius: 3, area: { life: 8, dps: 14 }, start: 3, pack: 2, sound: 'throw', color: 0x6ab02a },
+  scythe_soul: { name: 'Foice das Almas', cat: 'Necrópole', kind: 'bolt', dmg: 38, rate: 0.45, speed: 24, pierce: 99, el: 'spirit', glow: 0x6a5a7a, mag: 8, reload: 2.0, start: 24, pack: 16, sound: 'shot_gl', color: 0x6a5a7a },
   proxmine: { name: 'Mina de proximidade', cat: 'Armadilha', kind: 'place', place: 'proxmine', rate: 0.4, start: 3, pack: 2, sound: 'beep', color: 0x3a3a2a },
   spikes: { name: 'Barreira de espinhos', cat: 'Armadilha', kind: 'place', place: 'spikes', rate: 0.4, start: 4, pack: 3, sound: 'crate', color: 0x6a6a70 },
   efence: { name: 'Cerca elétrica', cat: 'Armadilha', kind: 'place', place: 'efence', rate: 0.4, start: 3, pack: 2, sound: 'crate', color: 0xe8b020 },
