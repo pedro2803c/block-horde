@@ -149,7 +149,7 @@ export class UI {
       this.soundEl.classList.toggle('hidden', !muted || this.g.state === 'paused' || (this.g.state === 'playing' && !this.g.pad?.usingPad)); // nunca por cima de menus da partida
       if (muted) this.soundEl.querySelector('.txt').textContent = this.g.input.touchMode ? 'Toque na tela para ativar o som' : this.g.pad?.usingPad ? 'Clique na tela ou aperte uma tecla para ativar o som' : 'Clique ou aperte uma tecla para ativar o som';
     }, 400);
-    root.append(this.hudEl, this.bannerEl, this.alertsEl, this.screenEl, this.noticeEl, this.fpsEl, this.interactEl);
+    root.append(this.hudEl, this.bannerEl, this.screenEl, this.alertsEl, this.noticeEl, this.fpsEl, this.interactEl);
     this.fpsAcc = 0;
     this.fpsN = 0;
     this.buildHud();
@@ -1521,10 +1521,8 @@ export class UI {
     const tabs = h('div', { class: 'tabs shop-tabs', role: 'tablist' },
       SHOP_CATS.filter((c) => live || c.id !== 'match').map((c) => h('button', { class: 'tab' + (c.soon ? ' soon' : ''), role: 'tab', 'aria-selected': c.id === cat ? 'true' : 'false', 'data-focus': c.id === cat ? '' : undefined, onclick: () => { g.audio.play('shop_tab', { volume: 0.5 }); reopen({ cat: c.id, sel: null }); } }, icon(c.icon), c.name, c.soon ? h('em', {}, 'em breve') : null)));
     const rule = live
-      ? (canBuy
-        ? h('p', { class: 'shop-rule ok' }, icon('checkCircle'), 'Intervalo entre ondas: compras liberadas. Moedas não gastas são perdidas 100% se você morrer.')
-        : h('p', { class: 'shop-rule warn' }, icon('lock'), 'Onda em andamento: compras só no intervalo entre ondas. Moedas não gastas são perdidas 100% se você morrer.'))
-      : h('p', { class: 'shop-rule' }, icon('info'), 'Moedas só existem durante a partida: colete derrotando inimigos e compre no intervalo entre ondas (tecla B ou tocando no saldo). Aqui você vê e equipa o que já comprou.');
+      ? h('p', { class: 'shop-rule ok' }, icon('checkCircle'), 'Compras liberadas durante a partida. Moedas não gastas são perdidas 100% se você morrer.')
+      : h('p', { class: 'shop-rule' }, icon('info'), 'Moedas só existem durante a partida: colete derrotando inimigos e compre na loja (tecla B ou tocando no saldo). Aqui você vê e equipa o que já comprou.');
     const wallet = live ? h('div', { class: 'shop-wallet' }, icon('coin'), h('b', {}, fmt(g.wallet || 0)), h('small', {}, 'moedas da partida')) : h('div', { class: 'shop-wallet' }, icon('backpack'), h('b', {}, String(Object.keys(s.owned).length)), h('small', {}, 'itens permanentes'));
     if (!C.soon) this.runPreviews(items, 'shop', (pvr, it, t) => pvr.item(it.canvas, it.id, it.angle, t, it.active));
     return this.win('enemies items shop', live ? 'Loja' : 'Loja e inventário', close,

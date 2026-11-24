@@ -142,9 +142,9 @@ export const EconomyMixin = {
   },
 
   // ---------------------------------------------------------------- loja
-  // compras só no intervalo entre ondas (o jogo fica pausado com a loja aberta)
+  // compras liberadas durante a partida sempre que houver saldo (o jogo fica pausado com a loja aberta)
   canBuyNow() {
-    return (this.state === 'paused' || this.state === 'playing') && this.waveState === 'intermission' && !this.demo;
+    return (this.state === 'paused' || this.state === 'playing') && !this.demo;
   },
   openShop() {
     if (this.state !== 'playing' && this.state !== 'paused') return;
