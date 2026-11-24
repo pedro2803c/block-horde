@@ -4484,6 +4484,10 @@ wm.state = 'destruída';
           for (let k = 0; k < 12; k++) this.parts.spawn(nx, 1, nz, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, 0x8a1a2a, 0.4, 8, 2);
         }
       }
+      // lifesteal: recupera vida ao acertar o jogador em alcance
+      if (tgt && td < (def.reach || 1.2) + 0.5 && z.attackT > 0 && z.attackT < 0.1) {
+        z.hp = Math.min(z.maxHp || z.hp, z.hp + 4);
+      }
     }
     if (def.bossKind === 'pharaoh') this.pharaohTick(z, td, dt);
     if (def.bossKind === 'sobek' && this.sobekTick(z, td, dt)) return;
