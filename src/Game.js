@@ -35,7 +35,7 @@ const PLAYER_COLORS = [0x3aa0ff, 0xff8a2a];
 const SETTINGS_KEY = 'blockhorde_settings_v1';
 const RECORDS_KEY = 'blockhorde_records_v1';
 const PROFILE_KEY = 'blockhorde_profile_v1';
-const TUTORIAL_KEY = 'blockhorde_tutorial_v1';
+import { loadTut, saveTut, STEPS as TUT_STEPS, HINTS as TUT_HINTS, platOf as tutPlat, pickText as tutText } from './tutorial.js';
 // armas que o tiro automático do celular dispara (granadas e armadilhas só com o dedo)
 const AUTO_FIRE = new Set(['gun', 'flame', 'bolt', 'glob', 'rocket']);
 
@@ -110,6 +110,7 @@ export class Game {
       this.onKey(e);
     }, { capture: true });
     this.testMode = new URLSearchParams(location.search).has('test'); // depuração automatizada
+    this.forceTutorial = new URLSearchParams(location.search).has('tutorial'); // testes do tutorial
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.state === 'playing' && !this.testMode) this.pause();
     });
@@ -580,32 +581,75 @@ export class Game {
     });
   }
   // ------------------------------------------------------------------ tutorial curto (1ª partida solo)
+  // tutorial interativo de 12 etapas (src/tutorial.js): roda na partida solo enquanto não foi concluído/ignorado
   startTutorial() {
     this.tut = null;
-    if (this.mode !== 'solo' || this.testMode || platform.getItem(TUTORIAL_KEY)) return;
-    const p = this.players[0];
-    this.tut = { step: 0, t: 0, x: p.pos.x, z: p.pos.z, shots: this.stats.shots };
-    this.ui.tutorial(this.tut.step);
+    this.tutSave = loadTut();
+    if (this.mode !== 'solo' || this.testMode && !this.forceTutorial) return;
+    const s = this.tutSave;
+    if (s.status !== 'new' && s.status !== 'active') return;
+    s.status = 'active';
+    saveTut(s);
+    this.tut = { step: Math.min(s.step, TUT_STEPS.length - 1), t: 0 };
+    this.beginTutStep();
+  }
+  beginTutStep() {
+    const tu = this.tut;
+    tu.t = 0;
+    TUT_STEPS[tu.step].begin?.(this, tu);
+    this.ui.tutorial(tu.step);
+  }
+  // avança (ação cumprida, Continuar ou Pular etapa)
+  nextTutStep() {
+    const tu = this.tut;
+    if (!tu) return;
+    const s = this.tutSave;
+    const id = TUT_STEPS[tu.step].id;
+    if (!s.done.includes(id)) s.done.push(id);
+    tu.step++;
+    s.step = tu.step;
+    this.audio.play('levelup', { volume: 0.35 });
+    if (tu.step >= TUT_STEPS.length) {
+      s.status = 'done';
+      saveTut(s);
+      this.tut = null;
+      this.ui.tutorial(-1);
+      this.ui.tutorialDone();
+      return;
+    }
+    saveTut(s);
+    this.beginTutStep();
   }
   skipTutorial() {
     this.tut = null;
-    platform.setItem(TUTORIAL_KEY, '1');
+    const s = (this.tutSave ||= loadTut());
+    if (s.status !== 'done') s.status = 'skipped';
+    saveTut(s);
     this.ui.tutorial(-1);
+  }
+  // reinicia (manual) ou retoma uma etapa específica na próxima partida solo
+  resetTutorial(step = 0) {
+    const s = (this.tutSave = loadTut());
+    s.status = 'active';
+    s.step = step;
+    if (step === 0) s.done = [];
+    saveTut(s);
+  }
+  // dica contextual: só na 1ª vez que a mecânica aparece; nunca durante uma etapa do tutorial que já ensine isso
+  tutHint(id) {
+    if (this.testMode || this.mode === 'demo' || this.demo) return;
+    const s = (this.tutSave ||= loadTut());
+    if (s.seen.includes(id)) return;
+    s.seen.push(id);
+    saveTut(s);
+    this.ui.notify(tutText(TUT_HINTS[id], tutPlat(this)), 'info', 'info', { pri: 1, dur: 5 });
   }
   updateTutorial(dt) {
     const tu = this.tut;
     if (!tu) return;
-    const p = this.players[0];
     tu.t += dt;
-    let next = false;
-    if (tu.step === 0) next = Math.hypot(p.pos.x - tu.x, p.pos.z - tu.z) > 3 || tu.t > 12;
-    else if (tu.step === 1) next = this.stats.shots - tu.shots >= 4 || tu.t > 14;
-    else next = tu.t > 7;
-    if (!next) return;
-    tu.step++;
-    tu.t = 0;
-    if (tu.step >= 4) return this.skipTutorial();
-    this.ui.tutorial(tu.step);
+    const st = TUT_STEPS[tu.step];
+    if (st.kind === 'action' && st.check(this, tu)) this.nextTutStep();
   }
   toMenu(afterAd = false) {
     if (this.state === 'gameover' && !afterAd) return this.afterBreak(() => this.toMenu(true));
@@ -614,6 +658,8 @@ export class Game {
     this.state = 'menu';
     this.ui.hud(false);
     this.ui.showScreen('menu');
+    // 1º acesso: boas-vindas com Começar tutorial / Aprender depois / Manual
+    if ((!this.testMode || this.forceTutorial) && loadTut().status === 'new') this.ui.showScreen('welcome');
     this.audio.setMusic('menu');
     this.canvas.style.cursor = 'default';
     if (!this.demo) this.setupMatch(ARENAS[Math.floor(Math.random() * ARENAS.length)], [], true);
@@ -693,6 +739,7 @@ export class Game {
     if (p.isMounted) return; // a montaria mantém o próprio ataque até desmontar
     p.weapon = id;
     p.reloadT = 0; // trocar de arma cancela a recarga
+    if (this.state === 'playing' && !this.tut) this.tutHint('weapon');
     p.bloom = 0;
     const g = WEAPON_GROUPS.findIndex((grp) => grp.includes(id));
     if (g >= 0) p.groupSel[g] = id;
@@ -2484,6 +2531,7 @@ wm.state = 'destruída';
       p.lv++;
       p.pts++;
       this.audio.play('levelup', { volume: 0.7, priority: true });
+      if (!p.ai) this.tutHint('levelup');
       this.ui.toast(p.id, `Nível ${p.lv}! +1 ponto (${this.ui.treeKey()})`, 'tree');
       for (let k = 0; k < 16; k++) this.parts.spawn(p.pos.x + rand(-0.4, 0.4), rand(0.2, 1.6), p.pos.z + rand(-0.4, 0.4), 0, rand(1.5, 3.5), 0, 0.09, pick([0xffe060, 0xffffff]), 0.8, -1, 2);
     }
@@ -2559,6 +2607,7 @@ wm.state = 'destruída';
     p.cds[i] = cd;
     (p.cdMax || (p.cdMax = []))[i] = cd;
     p.cdMax[i] = cd;
+    if (!this.tut) this.tutHint('ability');
   }
   cast_dash(p) {
     let dx = 0;
@@ -3215,6 +3264,7 @@ wm.state = 'destruída';
       }
     } else this.upg[u.upgrade] = true;
     this.ui.unlockBanner(u.text);
+    this.tutHint('unlock');
     this.audio.play('levelup', { volume: 0.8, priority: true });
   }
 
@@ -3332,6 +3382,7 @@ wm.state = 'destruída';
     if (def.boss) {
       this.boss = zb;
       if (this.state === 'playing') this.releaseMount(zb); // evento real de aparição do chefe
+      if (this.state === 'playing') { this.tutHint('boss'); if (this.worldMount) this.tutHint('mount'); }
       if (def.riseIntro) {
         zb.rise = def.riseIntro; // emerge do chão
         for (let k = 0; k < 40; k++) this.parts.spawn(x + rand(-1.5, 1.5), 0.2, z + rand(-1.5, 1.5), rand(-3, 3), rand(2, 6), rand(-3, 3), rand(0.12, 0.25), pick([0xe0c080, 0xd4a020, 0xb08a40]), 1.2, 12, 0);

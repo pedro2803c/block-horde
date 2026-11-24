@@ -10,6 +10,7 @@ import { icon, weaponIcon, skullSvg } from './icons.js';
 import { platform } from './platform.js';
 import { DIFFICULTIES, DIFF_ROWS, diffOf, fmtMul } from './difficulty.js';
 import { ACTIONS, BROWSER_GUIDE, browserTip, browserName } from './gamepad.js';
+import { STEPS as TUT_STEPS, MANUAL as TUT_MANUAL, loadTut, saveTut, platOf as tutPlat, pickText as tutText } from './tutorial.js';
 
 // Construtor de DOM enxuto: h('div', { class: 'x', onclick }, filhos...)
 function h(tag, attrs = {}, ...kids) {
@@ -310,6 +311,7 @@ export class UI {
             btn('', 'backpack', 'Itens', () => this.showScreen('items')),
             btn('', 'map', 'Cenário', () => this.showScreen('scenery')),
             btn('', 'trophy', 'Recordes', () => this.showScreen('records')),
+            btn('', 'info', 'Manual e tutorial', () => this.showScreen('manual', { back: 'menu' })),
             btn('', 'gamepad', 'Controles', () => this.showScreen('controls', { back: 'menu' })),
             btn('', 'gear', 'Configurações', () => this.showScreen('settings', { back: 'menu' })),
             btn('', 'info', 'Créditos', () => this.showScreen('credits')))),
@@ -1437,6 +1439,7 @@ export class UI {
           h('div', { class: 'menu-buttons' },
             btn('primary lg', 'play', 'Continuar', () => g.resume()),
             btn('tree-btn' + (n ? ' has-pts' : ''), 'tree', h('span', { class: 'btn-txt' }, treeLabel, n ? h('span', { class: 'pt-badge inline' }, `+${n}`) : null), () => g.openTree()),
+            btn('', 'info', 'Manual do jogo', () => this.showScreen('manual', { back: 'pause' })),
             btn('', 'keyboard', 'Controles', () => this.showScreen('controls', { back: 'pause' })),
             this.fsButton(),
             btn('', 'gear', 'Configurações', () => this.showScreen('settings', { back: 'pause' })),
@@ -2085,36 +2088,78 @@ export class UI {
 
   // banner central para ondas; demais avisos viram notificações
   // dicas da primeira partida (step -1 esconde)
+  // caixa compacta do tutorial: etapa, progresso, instrução da plataforma em uso e destaque do elemento ensinado
   tutorial(step) {
     if (!this.tutEl) {
-      this.tutText = h('span', {});
+      this.tutText = h('span', { class: 'tut-text' });
       this.tutCount = h('small', {});
-      this.tutEl = h('div', { class: 'tutorial hidden', role: 'status' }, icon('info'), h('div', {}, this.tutCount, this.tutText),
-        h('button', { class: 'btn sm', onclick: () => this.g.skipTutorial() }, 'Pular'));
+      this.tutTitle = h('b', { class: 'tut-title' });
+      this.tutBar = h('i', {});
+      this.tutNext = h('button', { class: 'btn sm primary tut-next', onclick: () => this.g.nextTutStep() }, 'Continuar');
+      this.tutSkipStep = h('button', { class: 'btn sm tut-skip-step', onclick: () => this.g.nextTutStep() }, 'Pular etapa');
+      this.tutEl = h('div', { class: 'tutorial hidden', role: 'status', 'aria-live': 'polite' }, icon('info'),
+        h('div', { class: 'tut-body' }, h('div', { class: 'tut-head' }, this.tutCount, this.tutTitle), this.tutText, h('div', { class: 'tut-prog' }, this.tutBar)),
+        h('div', { class: 'tut-btns' }, this.tutNext, this.tutSkipStep,
+          h('button', { class: 'btn sm danger', onclick: () => this.g.skipTutorial() }, 'Sair do tutorial')));
       this.hudEl.append(this.tutEl);
     }
-    const P = this.g.pad;
-    const gl = (id) => P.actionGlyph(id);
-    const steps = P?.usingPad ? [
-      'Mova-se com o analógico esquerdo',
-      `Mire com o analógico direito (solto, mira no mais próximo) e atire com ${gl('fire')}`,
-      `Encoste nos itens para pegar. ${gl('prev')} · ${gl('next')} trocam de arma`,
-      `${gl('ab0')} · ${gl('ab1')} · ${gl('ab2')} usam habilidades, ${gl('ult')} a ultimate. ${gl('tree')} abre a árvore e ${gl('pause')} pausa`,
-    ] : this.g.input.touchMode ? [
-      'Arraste no lado esquerdo da tela para andar',
-      'O tiro é automático. Segure e arraste à direita para mirar você mesmo',
-      'Toque na arma para trocar; segure para escolher na lista',
-      'Os botões redondos usam habilidades; o de cadeado é a ultimate',
-    ] : [
-      'Mova-se com W A S D',
-      'Mire com o mouse e clique (ou Espaço) para atirar',
-      'Encoste nos itens para pegar. Teclas 1–9 trocam de arma',
-      'Z · X · C usam habilidades, R a ultimate. Tab abre a árvore e P pausa',
-    ];
-    if (step < 0 || step >= steps.length) return this.tutEl.classList.add('hidden');
-    this.tutCount.textContent = `Dica ${step + 1}/${steps.length}`;
-    this.tutText.textContent = steps[step];
+    document.querySelectorAll('.tut-hl').forEach((e) => e.classList.remove('tut-hl'));
+    if (step < 0 || step >= TUT_STEPS.length) return this.tutEl.classList.add('hidden');
+    const st = TUT_STEPS[step];
+    const plat = tutPlat(this.g);
+    this.tutCount.textContent = `Tutorial ${step + 1}/${TUT_STEPS.length}`;
+    this.tutTitle.textContent = st.title;
+    this.tutText.textContent = tutText(st.text, plat);
+    this.tutBar.style.width = `${(step / TUT_STEPS.length) * 100}%`;
+    const info = st.kind === 'info';
+    this.tutNext.classList.toggle('hidden', !info);
+    this.tutSkipStep.classList.toggle('hidden', info);
+    const sel = st.hl && (st.hl[plat] || st.hl['*']);
+    if (sel) document.querySelectorAll(sel).forEach((e) => e.classList.add('tut-hl'));
     this.tutEl.classList.remove('hidden');
+  }
+
+  tutorialDone() {
+    this.alert('TUTORIAL CONCLUÍDO! Agora você está preparado para enfrentar as hordas do BLOCK HORDE.', 'success', 'checkCircle');
+  }
+
+  // boas-vindas do 1º acesso
+  scr_welcome() {
+    const later = () => { const s = loadTut(); s.status = 'later'; saveTut(s); this.showScreen('menu'); };
+    const start = () => { this.g.resetTutorial(0); this.showScreen('difficulty', { back: () => this.showScreen('welcome'), go: () => this.g.quickStart() }); };
+    return this.win('welcome', 'BEM-VINDO AO BLOCK HORDE', later,
+      h('p', { class: 'welcome-msg' }, 'Prepare-se para enfrentar hordas de inimigos. Aprenda os controles, domine suas armas e sobreviva aos chefões.'),
+      h('div', { class: 'menu-buttons' },
+        btn('primary lg', 'play', 'Começar tutorial', start, { 'data-focus': '' }),
+        btn('', 'clock', 'Aprender depois', later),
+        btn('', 'info', 'Consultar manual do jogo', () => this.showScreen('manual', { back: 'welcome' }))));
+  }
+
+  // manual interativo: categorias com explicação, comandos da plataforma em uso e atalhos do tutorial
+  scr_manual({ back = 'menu', cat = 0 } = {}) {
+    const plat = tutPlat(this.g);
+    const c = TUT_MANUAL[cat];
+    const s = loadTut();
+    const goBack = () => this.showScreen(back);
+    const status = { new: 'Não iniciado', active: `Em andamento (etapa ${Math.min(s.step + 1, TUT_STEPS.length)}/${TUT_STEPS.length})`, later: 'Deixado para depois', skipped: 'Ignorado', done: 'Concluído' }[s.status] || '';
+    const inMatch = this.g.state !== 'menu';
+    return this.win('manual', 'Manual do jogo', goBack,
+      h('div', { class: 'manual-cols' },
+        h('div', { class: 'manual-cats', role: 'tablist' }, TUT_MANUAL.map((m, k) =>
+          btn(k === cat ? 'selected' : '', m.icon, m.title, () => this.showScreen('manual', { back, cat: k }), { role: 'tab', 'aria-selected': String(k === cat) }))),
+        h('div', { class: 'manual-page' },
+          h('h3', { class: 'section slashed', style: 'margin-top:0' }, c.title),
+          h('ul', { class: 'manual-list' }, tutText(c.body, plat).map((t) => h('li', {}, t))),
+          h('div', { class: 'manual-tut' },
+            h('small', {}, 'Tutorial: ', h('b', {}, status), ` · ${s.done.length} de ${TUT_STEPS.length} etapas concluídas`),
+            h('div', { class: 'row' },
+              inMatch ? null : btn('primary', 'play', s.status === 'active' ? 'Continuar tutorial' : 'Iniciar tutorial', () => {
+                if (s.status !== 'active') this.g.resetTutorial(0);
+                this.showScreen('difficulty', { back: () => this.showScreen('manual', { back, cat }), go: () => this.g.quickStart() });
+              }),
+              btn('', 'refresh', 'Reiniciar tutorial', () => { this.g.resetTutorial(0); this.alert('Tutorial reiniciado: começa na próxima partida solo.', 'success', 'checkCircle'); this.showScreen('manual', { back, cat }); }),
+              h('select', { class: 'tut-repeat', 'aria-label': 'Repetir uma etapa', onchange: (e) => { const k = +e.target.value; if (k < 0) return; this.g.resetTutorial(k); this.alert(`A etapa "${TUT_STEPS[k].title}" será repetida na próxima partida solo.`, 'success', 'checkCircle'); this.showScreen('manual', { back, cat }); } },
+                h('option', { value: '-1' }, 'Repetir uma etapa…'), TUT_STEPS.map((st, k) => h('option', { value: String(k) }, `${k + 1}. ${st.title}`))))))));
   }
 
   banner(text, kind = 'info') {
