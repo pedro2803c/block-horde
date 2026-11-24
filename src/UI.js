@@ -416,9 +416,9 @@ export class UI {
     h('span', { class: 'd-head' }, h('span', { class: 'd-ic' }, icon(d.icon)), h('span', {}, h('b', { class: 'd-name' }, `${i + 1}. ${d.name}`), h('span', { class: 'd-title' }, d.title))),
     d.recommended ? h('span', { class: 'd-rec' }, icon('star'), 'Recomendada') : null,
     (() => {
-      const c = h('canvas', { class: 'd-art', width: 280, height: 240, 'aria-hidden': 'true' });
+      const c = h('canvas', { class: 'd-art', width: 320, height: 260, 'aria-hidden': 'true' });
       const pv = this.getPreview();
-      if (pv) requestAnimationFrame(() => pv.enemy(c, d.mascot, 0.45, 1.3, false, 1.48));
+      if (pv) requestAnimationFrame(() => pv.enemy(c, d.mascot, 0.45, 1.3, false, 2.15));
       return c;
     })(),
     h('small', { class: 'd-desc' }, d.desc),
