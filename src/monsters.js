@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { baseMatrix, drawCharacter } from './render.js';
 
 // Modelos 3D dos inimigos, feitos de caixas.
@@ -609,7 +609,7 @@ function drawSpecter(B, G, base, z, col, t) {
   }
 }
 
-const BODIES = { spider: drawSpider, bat: drawBat, dog: drawDog, spore: drawSpore, wasp: drawWasp, specter: drawSpecter, nv_crab: drawNvCrab, nv_octopus: drawNvOctopus, nv_angler: drawNvAngler, nv_shark: drawNvShark, nv_serpent: drawNvSerpent, nv_mimic: drawNvMimic, nv_pirate: drawNvPirate };
+const BODIES = { spider: drawSpider, bat: drawBat, dog: drawDog, spore: drawSpore, wasp: drawWasp, specter: drawSpecter, nv_crab: drawNvCrab, nv_octopus: drawNvOctopus, nv_angler: drawNvAngler, nv_shark: drawNvShark, nv_serpent: drawNvSerpent, nv_mimic: drawNvMimic, nv_pirate: drawNvPirate, nc_vampire: drawNcVampire, nc_nosferatu: drawNcNosferatu, nc_knight: drawNcKnight, nc_executioner: drawNcExecutioner, nc_reaper: drawNcReaper, nc_banshee: drawNcBanshee, nc_abomination: drawNcAbomination, nc_gargoyle: drawNcGargoyle, nc_plague: drawNcPlague, nc_tombking: drawNcTombking };
 
 // ------------------------------------------------------------------ Egito Antigo (só no Templo Antigo)
 const GOLD = 0xd4a020;
@@ -3950,3 +3950,66 @@ export function drawEnemy(B, G, z, t) {
   body(B, G, _base, dead ? { ...z, walk: 0, attackT: 0 } : z, col, dead ? 0 : t);
 }
 
+
+// appended necropole models
+function drawNcVampire(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0.9, 0, 0.3, 0.6, 0.25, 0x1a0a1a); // corpo
+  P(base, 0, 1.35, 0, 0.28, 0.28, 0.28, 0xe8d8c8); // cabeça
+  P(base, 0, 1.05, -0.15, 0.34, 0.05, 0.1, 0x2a0a1a); // capa
+  for (const sg of [1,-1]) P(base, sg*0.12, 1.32, 0.16, 0.04, 0.04, 0.02, 0xff2a2a);
+}
+function drawNcNosferatu(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0.85, 0, 0.22, 0.55, 0.2, 0x4a3a4a);
+  P(base, 0, 1.25, 0, 0.24, 0.24, 0.22, 0x9a8a9a);
+  for (const sg of [1,-1]) P(base, sg*0.35, 0.95, 0, 0.3, 0.02, 0.25, 0x3a2a3a, 0, sg*0.4); // asas
+}
+function drawNcKnight(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0.9, 0, 0.4, 0.7, 0.35, 0x5a4a3a); // armadura
+  P(base, 0, 1.35, 0, 0.26, 0.1, 0.26, 0x3a2a1a); // sem cabeça (pescoço cortado)
+  P(base, 0.3, 0.8, 0.2, 0.08, 0.8, 0.08, 0x7a6a5a); // espada
+}
+function drawNcExecutioner(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0.95, 0, 0.45, 0.8, 0.4, 0x3a2a2a);
+  P(base, 0, 1.4, 0, 0.3, 0.3, 0.3, 0x2a1a1a); // máscara
+  P(base, 0.35, 0.85, 0.1, 0.15, 0.9, 0.15, 0x5a4a4a); // cutelo
+}
+function drawNcReaper(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 1.0, 0, 0.35, 0.9, 0.3, 0x1a0a2a); // manto
+  P(base, 0, 1.5, 0, 0.22, 0.22, 0.22, 0x3a2a4a);
+  P(base, 0.3, 1.0, 0.1, 0.06, 1.0, 0.06, 0x6a5a7a); // foice
+}
+function drawNcBanshee(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 1.0, 0, 0.3, 0.8, 0.25, 0x9a8aaa);
+  P(base, 0, 1.45, 0, 0.26, 0.26, 0.26, 0xc8b8d8);
+  P(base, 0, 0.6, 0, 0.4, 0.05, 0.4, 0x7a6a8a); // vestido
+}
+function drawNcAbomination(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0.8, 0, 0.7, 0.9, 0.6, 0x6a3a3a);
+  P(base, -0.2, 1.3, 0.1, 0.25, 0.25, 0.25, 0x8a5a5a);
+  P(base, 0.25, 1.2, -0.1, 0.22, 0.22, 0.22, 0x7a4a4a);
+}
+function drawNcGargoyle(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0.85, 0, 0.4, 0.7, 0.35, 0x7a7a7a);
+  P(base, 0, 1.3, 0, 0.3, 0.3, 0.3, 0x5a5a5a);
+  for (const sg of [1,-1]) P(base, sg*0.3, 1.0, -0.1, 0.15, 0.4, 0.12, 0x6a6a6a, 0, sg*0.5); // asas de pedra
+}
+function drawNcPlague(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0.9, 0, 0.3, 0.6, 0.25, 0x5a7a3a);
+  P(base, 0, 1.35, 0.1, 0.28, 0.28, 0.3, 0x3a4a1a); // máscara bico
+  P(base, 0.15, 1.2, 0.25, 0.1, 0.1, 0.15, 0x8a9a5a);
+}
+function drawNcTombking(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0.9, 0, 0.35, 0.7, 0.3, 0xd8c8a0);
+  P(base, 0, 1.4, 0, 0.3, 0.15, 0.3, 0x9a8a6a); // coroa quebrada
+  P(base, 0.3, 0.9, 0.1, 0.08, 0.8, 0.08, 0xc8b890); // lança
+}
