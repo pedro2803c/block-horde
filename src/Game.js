@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { AudioSystem, SOUND_NAMES } from './core/Audio.js';
 import { BoxBatch, drawCharacter, Particles } from './render.js';
 import { Arena, T_LAVA, T_WATER, T_BUSH, T_TOXIC, T_ELEC, T_PLATFORM, BELT_SPEED } from './Arena.js';
@@ -4469,59 +4469,7 @@ wm.state = 'destruída';
   // habilidades especiais: bote do cão, invocação, esporos, pancada e pedra do colosso
   enemyAbilities(z, tgt, td, dx, dz, dt) {
     const def = z.def;
-    const A = this.arena;
-    if (z.type === 'nc_vampire') {
-      z.teleportCd = (z.teleportCd || 0) - dt;
-      if (z.teleportCd <= 0 && tgt && td > 3) {
-        z.teleportCd = 4 + Math.random() * 3;
-        const a = Math.random() * Math.PI * 2;
-        const r = 4 + Math.random() * 2;
-        const nx = tgt.pos.x + Math.sin(a) * r;
-        const nz = tgt.pos.z + Math.cos(a) * r;
-        if (!A.tallAt(nx, nz)) {
-          for (let k = 0; k < 12; k++) this.parts.spawn(z.pos.x, 1, z.pos.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, 0x8a1a2a, 0.4, 8, 2);
-          z.pos.x = nx; z.pos.z = nz; z.facing = Math.atan2(tgt.pos.x - nx, tgt.pos.z - nz);
-          for (let k = 0; k < 12; k++) this.parts.spawn(nx, 1, nz, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, 0x8a1a2a, 0.4, 8, 2);
-        }
-      }
-      if (tgt && td < (def.reach || 1.2) + 0.5 && z.attackT > 0 && z.attackT < 0.1) {
-        z.hp = Math.min(z.maxHp || z.hp, z.hp + 4);
-      }
-    }
-    if (z.type === 'nc_reaper') {
-      z.teleportCd = (z.teleportCd || 0) - dt;
-      if (z.teleportCd <= 0 && tgt && td > 4) {
-        z.teleportCd = 3 + Math.random() * 2;
-        const a = Math.random() * Math.PI * 2;
-        const r = 5 + Math.random() * 2;
-        const nx = tgt.pos.x + Math.sin(a) * r;
-        const nz = tgt.pos.z + Math.cos(a) * r;
-        if (!A.tallAt(nx, nz)) {
-          for (let k = 0; k < 10; k++) this.parts.spawn(z.pos.x, 1.2, z.pos.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, 0x6a5a7a, 0.4, 8, 2);
-          z.pos.x = nx; z.pos.z = nz; z.facing = Math.atan2(tgt.pos.x - nx, tgt.pos.z - nz);
-          for (let k = 0; k < 10; k++) this.parts.spawn(nx, 1.2, nz, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, 0x6a5a7a, 0.4, 8, 2);
-        }
-      }
-    }
-    if (z.type === 'nc_vampire') {
-      z.teleportCd = (z.teleportCd || 0) - dt;
-      if (z.teleportCd <= 0 && tgt && td > 3) {
-        z.teleportCd = 4 + Math.random() * 3;
-        const a = Math.random() * Math.PI * 2;
-        const r = 4 + Math.random() * 2;
-        const nx = tgt.pos.x + Math.sin(a) * r;
-        const nz = tgt.pos.z + Math.cos(a) * r;
-        if (!A.tallAt(nx, nz)) {
-          for (let k = 0; k < 12; k++) this.parts.spawn(z.pos.x, 1, z.pos.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, 0x8a1a2a, 0.4, 8, 2);
-          z.pos.x = nx; z.pos.z = nz; z.facing = Math.atan2(tgt.pos.x - nx, tgt.pos.z - nz);
-          for (let k = 0; k < 12; k++) this.parts.spawn(nx, 1, nz, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, 0x8a1a2a, 0.4, 8, 2);
-        }
-      }
-      // lifesteal: recupera vida ao acertar o jogador em alcance
-      if (tgt && td < (def.reach || 1.2) + 0.5 && z.attackT > 0 && z.attackT < 0.1) {
-        z.hp = Math.min(z.maxHp || z.hp, z.hp + 4);
-      }
-    }
+    const A = this.aren
     if (def.bossKind === 'pharaoh') this.pharaohTick(z, td, dt);
     if (def.bossKind === 'sobek' && this.sobekTick(z, td, dt)) return;
     if (def.bossKind === 'bastet') this.bastetTick(z, tgt, td, dt);
