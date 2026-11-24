@@ -296,16 +296,18 @@ export class UI {
   }
 
   scr_menu() {
-    return h('div', { class: 'overlay menu' },
+    // layout em duas áreas: marca (esquerda) e navegação com hierarquia (direita)
+    return h('div', { class: 'overlay menu menu-v2' },
       this.fsSupported() ? iconBtn('fs-btn', this.fsOn() ? 'fullscreenExit' : 'fullscreen', this.fsOn() ? 'Sair da tela cheia' : 'Tela cheia', () => this.toggleFullscreen()) : null,
       h('div', { class: 'menu-box' },
-        h('div', {}, logo(), h('div', { class: 'logo-sub' }, 'Sobreviva à horda')),
-        h('div', { class: 'menu-buttons' },
-          btn('primary lg', 'play', 'Jogar agora', () => this.showScreen('difficulty', { back: () => this.showScreen('menu'), go: () => this.g.quickStart() })),
-          btn('', 'map', 'Escolher arena e sobrevivente', () => this.showScreen('pick', { mode: 'solo' })),
-          btn('coop-btn', 'users', 'Co-op · 2 jogadores, 1 teclado', () => this.showScreen('pick', { mode: 'coop' })),
+        h('div', { class: 'menu-brand' }, logo(), h('div', { class: 'logo-sub' }, 'Sobreviva à horda'), h('p', { class: 'tip' }, h('b', {}, 'Dica: '), tip())),
+        h('nav', { class: 'menu-buttons menu-nav', 'aria-label': 'Menu principal' },
+          h('div', { class: 'menu-primary' },
+            btn('primary lg', 'play', 'Jogar agora', () => this.showScreen('difficulty', { back: () => this.showScreen('menu'), go: () => this.g.quickStart() }))),
+          btn('menu-select', 'map', 'Escolher arena e sobrevivente', () => this.showScreen('pick', { mode: 'solo' })),
+          btn('coop-btn menu-select', 'users', 'Co-op · 2 jogadores, 1 teclado', () => this.showScreen('pick', { mode: 'coop' })),
           h('div', { class: 'menu-duo' },
-            btn('wide', 'bolt', 'Habilidades e builds', () => this.showScreen('skills')),
+            btn('', 'bolt', 'Habilidades e builds', () => this.showScreen('skills')),
             btn('', 'skull', 'Inimigos', () => this.showScreen('enemies')),
             btn('', 'vehicle', 'Montarias', () => this.showScreen('mounts')),
             btn('', 'backpack', 'Itens', () => this.showScreen('items')),
@@ -314,8 +316,7 @@ export class UI {
             btn('', 'info', 'Manual e tutorial', () => this.showScreen('manual', { back: 'menu' })),
             btn('', 'gamepad', 'Controles', () => this.showScreen('controls', { back: 'menu' })),
             btn('', 'gear', 'Configurações', () => this.showScreen('settings', { back: 'menu' })),
-            btn('', 'info', 'Créditos', () => this.showScreen('credits')))),
-        h('p', { class: 'tip' }, h('b', {}, 'Dica: '), tip())),
+            btn('', 'star', 'Créditos', () => this.showScreen('credits'))))),
       skyline(),
       h('div', { class: 'version' }, 'v1.1 · tudo gerado por código'));
   }
