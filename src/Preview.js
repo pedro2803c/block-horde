@@ -251,10 +251,55 @@ export class Preview {
   }
 
   // montaria do catálogo: mesmo modelo 3D do jogo (drawMount), girando; a ativa anda (rodas/patas)
+  // Enquadramento automático da montaria: mede a esfera que envolve o modelo (girando e andando)
+  // e afasta a câmera até ela caber no cartão, mantendo o ângulo 3/4 de cima.
+  fitMount(id, aspect) {
+    this._mfit = this._mfit || {};
+    const key = id + ':' + aspect.toFixed(3);
+    if (this._mfit[key]) return this._mfit[key];
+    const { B, G } = this;
+    const def = MOUNTS[id];
+    const wm = {};
+    let minY = Infinity, maxY = -Infinity;
+    const boxes = [];
+    for (let k = 0; k < 16; k++) {
+      const t = k * 0.13;
+      Object.assign(wm, { id, def, alive: true, x: 0, z: 0, facing: (k / 16) * Math.PI * 2, hurtT: 0, wheelT: k % 2 ? t * 6 : 0, rider: { preview: true } });
+      B.begin();
+      G.begin();
+      drawMount(B, G, wm, t, false);
+      for (const bb of [B, G]) {
+        const a = bb.ma;
+        for (let i = 0; i < bb.n; i++) {
+          const o = i * 16;
+          const ex = (Math.abs(a[o]) + Math.abs(a[o + 4]) + Math.abs(a[o + 8])) / 2;
+          const ey = (Math.abs(a[o + 1]) + Math.abs(a[o + 5]) + Math.abs(a[o + 9])) / 2;
+          const ez = (Math.abs(a[o + 2]) + Math.abs(a[o + 6]) + Math.abs(a[o + 10])) / 2;
+          minY = Math.min(minY, a[o + 13] - ey);
+          maxY = Math.max(maxY, a[o + 13] + ey);
+          boxes.push(a[o + 12], a[o + 13], a[o + 14], Math.hypot(ex, ey, ez));
+        }
+      }
+    }
+    B.begin();
+    G.begin();
+    minY = Math.min(minY, 0);
+    const cy = (minY + maxY) / 2;
+    let R = 0.5;
+    for (let i = 0; i < boxes.length; i += 4) R = Math.max(R, Math.hypot(boxes[i], boxes[i + 1] - cy, boxes[i + 2]) + boxes[i + 3] * 0.6);
+    const tanV = Math.tan((15 * Math.PI) / 180);
+    const tanH = tanV * (this.w / this.h);
+    const tanEff = Math.min(tanH, tanV, tanH / aspect); // altura visível do recorte = largura / aspecto do cartão
+    const d = (R * 0.8) / Math.sin(Math.atan(tanEff));
+    const f = { cy, d };
+    this._mfit[key] = f;
+    return f;
+  }
+
   mount(target, id, angle, t, active) {
     const { B, G } = this;
     const def = MOUNTS[id];
-    const s = 1.05 / Math.max(1.2, def.size);
+    const fit = this.fitMount(id, target.width / target.height);
     const wm = this._wm || (this._wm = {});
     Object.assign(wm, { id, def, alive: true, x: 0, z: 0, facing: angle, hurtT: 0, wheelT: active ? t * 6 : 0, rider: { preview: true } });
     B.begin();
@@ -263,9 +308,9 @@ export class Preview {
     B.end();
     G.end();
     const cam = this.camera;
-    const d = 4.7 / s;
-    cam.position.set(0, d * 0.48, d * 0.88);
-    cam.lookAt(0, 0.65, 0);
+    const d = fit.d;
+    cam.position.set(0, fit.cy + d * 0.48, d * 0.88);
+    cam.lookAt(0, fit.cy, 0);
     this.renderer.render(this.scene, cam);
     cam.position.set(0, 1.5, 3.8);
     cam.lookAt(0, 1.0, 0);
