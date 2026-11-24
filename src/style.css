@@ -1352,7 +1352,7 @@ body.touch.lefty .auto-tag { left: auto; right: calc(var(--m-3) + var(--sr)); }
 @keyframes diff-pick { 0% { transform: scale(0.96); } 60% { transform: scale(1.03); } 100% { transform: none; } }
 .diff-card .d-rec { position: absolute; top: 10px; right: 50px; display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: var(--info); color: #001522; font: 700 0.72rem/1.2 var(--body); text-transform: uppercase; }
 .diff-card .d-rec .ic { width: 12px; height: 12px; }
-.diff-card .d-art { display: block; width: 100%; height: 150px; object-fit: contain; background: radial-gradient(ellipse at 50% 80%, color-mix(in srgb, var(--dc) 22%, transparent), transparent 70%); }
+.diff-card .d-art { display: block; width: 100%; height: 175px; object-fit: contain; background: radial-gradient(ellipse at 50% 80%, color-mix(in srgb, var(--dc) 22%, transparent), transparent 70%); }
 .diff-card .d-desc { min-height: 2.6em; }
 .diff-card .d-threat { display: flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.8rem; }
 .diff-card .d-threat .d-tl { font: 700 0.72rem/1 var(--body); color: var(--muted); text-transform: uppercase; margin-right: 0.3rem; }

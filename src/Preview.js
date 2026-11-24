@@ -221,12 +221,12 @@ export class Preview {
     return f;
   }
 
-  enemy(target, type, angle, t, active) {
+  enemy(target, type, angle, t, active, zoom = 1) {
     const { B, G } = this;
     const cam = this.camera;
     const fit = this.fitEnemy(type);
     // câmera centrada no meio real do modelo (cabeça, armas e pés com folga)
-    cam.position.set(0, fit.cy + 0.5, 3.8);
+    cam.position.set(0, fit.cy + 0.5 / zoom, 3.8 / zoom);
     cam.lookAt(0, fit.cy, 0);
     const z = this._ez || (this._ez = { pos: new THREE.Vector3(), minions: [] });
     const show = fit.s;
