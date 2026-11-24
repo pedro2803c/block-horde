@@ -4470,6 +4470,21 @@ wm.state = 'destruída';
   enemyAbilities(z, tgt, td, dx, dz, dt) {
     const def = z.def;
     const A = this.arena;
+    if (z.type === 'nc_vampire') {
+      z.teleportCd = (z.teleportCd || 0) - dt;
+      if (z.teleportCd <= 0 && tgt && td > 3) {
+        z.teleportCd = 4 + Math.random() * 3;
+        const a = Math.random() * Math.PI * 2;
+        const r = 4 + Math.random() * 2;
+        const nx = tgt.pos.x + Math.sin(a) * r;
+        const nz = tgt.pos.z + Math.cos(a) * r;
+        if (!A.tallAt(nx, nz)) {
+          for (let k = 0; k < 12; k++) this.parts.spawn(z.pos.x, 1, z.pos.z, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, 0x8a1a2a, 0.4, 8, 2);
+          z.pos.x = nx; z.pos.z = nz; z.facing = Math.atan2(tgt.pos.x - nx, tgt.pos.z - nz);
+          for (let k = 0; k < 12; k++) this.parts.spawn(nx, 1, nz, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.1, 0x8a1a2a, 0.4, 8, 2);
+        }
+      }
+    }
     if (def.bossKind === 'pharaoh') this.pharaohTick(z, td, dt);
     if (def.bossKind === 'sobek' && this.sobekTick(z, td, dt)) return;
     if (def.bossKind === 'bastet') this.bastetTick(z, tgt, td, dt);
