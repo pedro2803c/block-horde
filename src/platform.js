@@ -2,7 +2,7 @@
 // - fora da CrazyGames (site, arquivo portátil) o SDK nem é carregado
 // - com o SDK "disabled", sem anúncios ou com AdBlock o jogo funciona igual
 const SDK_URL = 'https://sdk.crazygames.com/crazygames-sdk-v3.js';
-const KEYS = ['blockhorde_settings_v1', 'blockhorde_records_v1', 'blockhorde_profile_v1', 'blockhorde_loadout_v1', 'blockhorde_tutorial_v1'];
+const KEYS = ['blockhorde_settings_v1', 'blockhorde_records_v1', 'blockhorde_profile_v1', 'blockhorde_loadout_v1', 'blockhorde_tutorial_v1', 'blockhorde_shop_v1'];
 const MIDGAME_GAP = 180; // s entre anúncios de intervalo (regra da CrazyGames: no máximo 1 a cada 3 min)
 
 function wanted() {

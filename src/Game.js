@@ -13,6 +13,7 @@ import { ArsenalMixin, WALK_TRAPS } from './arsenal.js';
 // mortos-vivos: Sabre Fantasmagórico causa dano extra
 const UNDEAD_TYPES = new Set(['walker', 'runner', 'brute', 'bloater', 'specter', 'reaper', 'mummy', 'skeleton', 'phantom', 'rm_spirit', 'lb_specter', 'nv_pirate', 'nv_ghost', 'nv_harpooner', 'nv_brute', 'nc_vampire', 'nc_nosferatu', 'nc_knight', 'nc_executioner', 'nc_reaper', 'nc_banshee', 'nc_abomination', 'nc_plague', 'nc_tombking', 'lich', 'nc_matriarch', 'nc_colossus']);
 import { WorldMixin } from './world.js';
+import { EconomyMixin } from './economyGame.js';
 import { platform } from './platform.js';
 import { TouchControls } from './touch.js';
 import { ControllerManager } from './gamepad.js';
@@ -70,7 +71,7 @@ export class Game {
   constructor(canvas, uiRoot) {
     this.canvas = canvas;
     this.mountKeys = loadMountKeys(); // teclas configuráveis das montarias (menu Controles)
-    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95, touchAuto: true, touchSize: 1, touchHaptic: true, aimMode: 1, notifyDur: 1, difficulty: 'normal' };
+    this.settings = { master: 0.8, music: 0.5, sfx: 0.85, ambient: 0.5, ui: 0.8, quality: 'medium', showFps: false, crossMode: 'auto', crossColor: 'default', crossSize: 1, crossOpacity: 0.95, touchAuto: true, touchSize: 1, touchHaptic: true, aimMode: 1, notifyDur: 1, difficulty: 'normal' };
     try {
       Object.assign(this.settings, JSON.parse(platform.getItem(SETTINGS_KEY) || '{}'));
     } catch {
@@ -167,7 +168,7 @@ export class Game {
     const s = this.settings;
     // a plataforma pode pedir silêncio (botão de som da CrazyGames) e os anúncios também
     const on = platform.muted || this.adMute ? 0 : 1;
-    this.audio.setVolumes(s.master * on, s.music, s.sfx);
+    this.audio.setVolumes(s.master * on, s.music, s.sfx, s.ambient ?? 0.5, s.ui ?? 0.8);
   }
   saveSettings() {
     try {
@@ -354,6 +355,8 @@ export class Game {
     this.boss = null;
     this.loadouts = loadLoadouts();
     this.players = survivors.map((s, k) => this.makePlayer(s, k, survivors.length > 1));
+    this.econReset();
+    if (!demo) for (const p of this.players) this.applyPermanent(p); // compras permanentes valem em toda partida
     const center = { x: arena.W / 2, z: arena.D / 2 + 4 };
     const montariaDaArena = mountForArena(arenaDef.id); // uma montaria 3D estacionada por arena
     this.players.forEach((p, k) => {
@@ -535,7 +538,8 @@ export class Game {
   }
   continueMatch() {
     if (this.state !== 'gameover') return;
-    this.continued = true;
+    this.continued = true; // moedas perdidas na morte não voltam; a próxima morte volta a zerar o saldo
+    if (this.econ) this.econ.lossDone = false;
     const anchor = this.players[0];
     for (const p of this.players) {
       if (!p.alive && p !== anchor) {
@@ -703,6 +707,8 @@ export class Game {
       else this.resume();
       return;
     }
+    // B abre a loja (compras só no intervalo entre ondas)
+    if (e.code === 'KeyB' && !e.repeat && this.state === 'playing' && !this.demo) { e.preventDefault(); this.openShop(); return; }
     if (e.code === 'Escape' || e.code === 'KeyP') {
       if (this.state === 'playing') this.pause();
       else if (this.state === 'paused') this.resume();
@@ -1455,6 +1461,7 @@ export class Game {
 
   killZombie(z, dx, dz, src) {
     z.alive = false;
+    this.dropCoins(z);
     z.deadT = 0;
     z.fallDir = Math.atan2(dx, dz);
     this.corpses.push(z);
@@ -3531,6 +3538,7 @@ wm.state = 'destruída';
       this.waveT = 5;
       this.stats.score += this.wave * 100;
       this.ui.banner(`ONDA ${this.wave} CONCLUÍDA  +${this.wave * 100}`, 'good');
+      if (this.wallet > 0) this.tutHint('shop');
       this.audio.setMusic('ambient');
       if (this.fieldCount() < Math.max(1, Math.round(4 * this.diff.mul.resources))) this.spawnPickup(this.rollField());
     }
@@ -3934,6 +3942,7 @@ wm.state = 'destruída';
     this.updateScenery(dt);
     this.updateAbilities(dt);
     this.updatePickups(dt);
+    this.updateCoins(dt);
     this.updateStrikes(dt);
     this.scoutT = Math.max(0, this.scoutT - dt);
     this.parts.update(dt, (x, z, s) => Math.random() < 0.5 && A.splat(x, z, s * rand(1.2, 2.2), '#7a0a08', 0.75));
@@ -4650,6 +4659,7 @@ wm.state = 'destruída';
             if (!allowedSummons.length) continue;
             const m = this.spawnZombie(pick(allowedSummons), x, zz);
             if (!m) continue;
+            m.summoned = true; // invocados não pagam moedas
             z.minions.push(m);
             for (let j = 0; j < 10; j++) this.parts.spawn(x, 0.3, zz, rand(-1.5, 1.5), rand(2, 4), rand(-1.5, 1.5), rand(0.1, 0.2), pick([0xc070ff, 0xe0a0ff]), 0.7, 3, 2);
           }
@@ -4979,6 +4989,7 @@ wm.state = 'destruída';
     this.ui.tutorial(-1);
     this.audio.setMusic(null);
     this.audio.play('gameover', { volume: 0.9, priority: true });
+    const coinsLost = this.loseCoinsOnDeath(); // 100% do saldo temporário, uma única vez
     const pf = this.profile(); // antes de gravar o recorde, para não creditar esta partida duas vezes
     const key = `${this.arenaDef.id}_${this.mode}`;
     const rec = this.records();
@@ -5001,7 +5012,7 @@ wm.state = 'destruída';
     this.saveProfile(pf);
     const unlocked = ARENAS.filter((a) => (a.unlock || 1) > before && (a.unlock || 1) <= pf.level).map((a) => a.name);
     this.lastXp = { gained, before, level: pf.level, cur: pf.xp, need: profileNeed(pf.level), unlocked, doubled: false };
-    this.ui.showScreen('gameover', { isRecord, prev, xp: this.lastXp, cont: this.canContinue() });
+    this.ui.showScreen('gameover', { isRecord, prev, xp: this.lastXp, cont: this.canContinue(), coins: { lost: coinsLost, earned: this.econ?.earned || 0, spent: this.econ?.spent || 0 } });
   }
 
   // ------------------------------------------------------------------ câmera e desenho
@@ -5215,6 +5226,7 @@ wm.state = 'destruída';
         if (b.armT <= 0 && Math.sin(this.time * 8) > 0) G.box(b.x, 0.12, b.z, 0.12, 0.05, 0.12, 0xff2020);
       }
     }
+    this.drawCoins(B, G);
     for (const c of this.pickups) {
       const it = ITEMS[c.type];
       // pisca nos últimos 6 s antes de sumir
@@ -5304,4 +5316,4 @@ function rayCircle(ox, oz, dx, dz, cx, cz, r) {
 }
 
 // expansão do arsenal: carregador, elementos, áreas no chão, projéteis novos e armadilhas
-Object.assign(Game.prototype, ArsenalMixin, WorldMixin);
+Object.assign(Game.prototype, ArsenalMixin, WorldMixin, EconomyMixin);

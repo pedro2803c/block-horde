@@ -1614,3 +1614,85 @@ body.touch .tutorial .tut-btns .btn { font-size: 0.62rem; padding: 0.22rem 0.45r
   #ui .menu-v2 .menu-brand { text-align: center; }
 }
 @media (max-width: 420px) and (min-height: 561px) { #ui .menu-v2 .menu-duo { grid-template-columns: 1fr; } }
+
+/* ==========================================================================
+   ECONOMIA — saldo no HUD, loja e perda na morte (tokens do Design System)
+   ========================================================================== */
+.top .coin-chip { cursor: pointer; font: inherit; color: inherit; position: relative; pointer-events: auto; border-color: rgba(255, 193, 7, 0.45); }
+.top .coin-chip svg { color: #FFC107; }
+.top .coin-chip b { color: #FFC107; }
+.top .coin-chip.can-buy { box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.55), 0 0 14px rgba(255, 193, 7, 0.4); }
+.top .coin-chip.can-buy::after { content: 'LOJA'; position: absolute; left: 50%; bottom: -1.05rem; transform: translateX(-50%); font: 400 0.72rem/1 var(--display); letter-spacing: 0.12em; color: #0E1117; background: #FFC107; padding: 0.12rem 0.4rem; border-radius: 3px; }
+.top .coin-chip:focus-visible { outline: 2px solid #FFC107; outline-offset: 2px; }
+.coin-delta { position: absolute; right: 0.35rem; top: -0.55rem; font-style: normal; font-weight: 800; font-size: 0.8rem; color: #2ECC71; text-shadow: 0 1px 2px #000; pointer-events: none; }
+.coin-chip.gain { animation: coin-pop 0.35s ease-out; }
+@keyframes coin-pop { 40% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .coin-chip.gain { animation: none; } }
+body.touch .top .coin-chip.can-buy::after { bottom: -0.9rem; font-size: 0.6rem; }
+
+.shop .panel { width: min(96vw, 76rem); }
+.shop-head { display: flex; gap: 1rem; align-items: center; margin: 0 0 0.8rem; flex-wrap: wrap; }
+.shop-wallet { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.9rem; background: #0E1117; border: 1px solid #2E3440; border-left: 3px solid #FFC107; border-radius: 6px; }
+.shop-wallet svg { width: 1.5rem; height: 1.5rem; color: #FFC107; }
+.shop-wallet b { font: 400 1.7rem/1 var(--display); color: #FFC107; letter-spacing: 0.04em; }
+.shop-wallet small { color: #9aa3ad; }
+.shop-rule { flex: 1 1 20rem; margin: 0; display: flex; gap: 0.5rem; align-items: center; color: #c9ced6; font-size: 0.88rem; }
+.shop-rule svg { flex: none; width: 1.2rem; height: 1.2rem; color: #29B6F6; }
+.shop-rule.ok svg { color: #2ECC71; }
+.shop-rule.warn svg { color: #E53935; }
+.shop-tabs .tab em { font-style: normal; font-size: 0.62rem; margin-left: 0.35rem; padding: 0.05rem 0.3rem; border-radius: 3px; background: #2E3440; color: #9aa3ad; text-transform: uppercase; }
+.shop-tabs .tab.soon { opacity: 0.75; }
+.shop-grid .shop-card { border-top: 3px solid var(--rar); position: relative; }
+.shop-card .shop-rar { position: absolute; top: 0.45rem; left: 0.5rem; font: 400 0.8rem/1 var(--display); letter-spacing: 0.1em; color: var(--rar); text-transform: uppercase; }
+.shop-card .shop-owned { position: absolute; top: 0.4rem; right: 0.5rem; display: flex; gap: 0.2rem; align-items: center; font-size: 0.72rem; font-weight: 700; color: #2ECC71; }
+.shop-card .shop-owned svg { width: 0.9rem; height: 0.9rem; }
+.shop-card.owned { box-shadow: inset 0 0 0 1px rgba(46, 204, 113, 0.35); }
+.shop-card.rar-legendary { box-shadow: 0 0 18px rgba(255, 193, 7, 0.18); }
+.shop-stats { display: flex; gap: 0.6rem; flex-wrap: wrap; font-size: 0.75rem; color: #9aa3ad; }
+.shop-stats b { color: #EAEDEF; }
+.shop-price { display: flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; color: #9aa3ad; }
+.shop-price svg { width: 1rem; height: 1rem; color: #FFC107; }
+.shop-price b { color: #FFC107; font-size: 0.95rem; }
+.shop-card .btn, .shop-card .shop-buy { width: 100%; justify-content: center; margin-top: 0.3rem; min-height: 44px; }
+.shop-card .shop-buy[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
+.shop-state { display: flex; gap: 0.35rem; align-items: center; justify-content: center; font-size: 0.8rem; color: #9aa3ad; padding: 0.6rem 0; }
+.shop-state svg { width: 1rem; height: 1rem; }
+.shop-soon { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 2.5rem 1rem; color: #c9ced6; text-align: center; border: 1px dashed #2E3440; border-radius: 8px; }
+.shop-soon svg { width: 2.4rem; height: 2.4rem; color: #9aa3ad; }
+.shop-soon b { font: 400 1.5rem/1 var(--display); letter-spacing: 0.06em; color: #EAEDEF; }
+.shop-soon p { max-width: 34rem; margin: 0; }
+@media (max-height: 560px) {
+  .shop-head { margin-bottom: 0.4rem; gap: 0.5rem; }
+  .shop-rule { font-size: 0.72rem; }
+  .shop-wallet b { font-size: 1.2rem; }
+  .shop-tabs .tab { font-size: 0.75rem; padding: 0.3rem 0.5rem; }
+}
+
+.coin-loss { display: flex; gap: 0.5rem; align-items: center; margin: 0.4rem 0; padding: 0.5rem 0.8rem; border-radius: 6px; background: rgba(46, 204, 113, 0.1); border: 1px solid rgba(46, 204, 113, 0.35); color: #EAEDEF; font-size: 0.9rem; }
+.coin-loss svg { flex: none; width: 1.3rem; height: 1.3rem; color: #FFC107; }
+.coin-loss.bad { background: rgba(229, 57, 53, 0.12); border-color: rgba(229, 57, 53, 0.5); }
+.coin-loss.bad b { color: #E53935; }
+/* loja: cartões com largura mínima confortável; painel rola por dentro */
+.shop .panel { max-height: calc(100dvh - 24px); overflow-y: auto; }
+#ui .shop-grid { grid-template-columns: repeat(auto-fill, minmax(min(210px, 44vw), 1fr)); gap: 0.8rem; padding-bottom: 4.5rem; }
+.shop-card { display: flex; flex-direction: column; align-items: stretch; gap: 0.35rem; padding: 1.6rem 0.8rem 0.8rem; min-width: 0; }
+.shop-card .model { width: 120px; height: 120px; align-self: center; }
+.shop-card .beast-name { justify-content: center; text-align: center; white-space: normal; word-break: normal; overflow-wrap: anywhere; }
+.shop-card small { text-align: center; }
+.shop-card .shop-stats, .shop-card .shop-price { justify-content: center; }
+@media (max-height: 560px) {
+  .shop-card { padding-top: 1.4rem; }
+  .shop-card .model { width: 84px; height: 84px; }
+  .shop-card small { font-size: 0.7rem; }
+  #ui .shop-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+}
+@media (max-height: 560px) {
+  #ui .shop .tabs.shop-tabs { flex-wrap: nowrap; overflow-x: auto; gap: 0.3rem; margin-bottom: 0.5rem; }
+  #ui .shop .tabs.shop-tabs .tab { flex: none; flex-direction: row; gap: 0.3rem; padding: 0.3rem 0.55rem; min-height: 36px; white-space: nowrap; }
+  .shop .shop-tabs .tab svg { width: 1rem; height: 1rem; }
+  .shop .shop-tabs .tab em { margin-left: 0.2rem; }
+  .shop .shop-wallet { padding: 0.3rem 0.6rem; }
+  .shop .win-head { margin-bottom: 0.3rem; }
+}
+#ui .shop-card .beast-name { overflow-wrap: normal; word-break: normal; hyphens: none; }
+@media (max-height: 560px) { #ui .shop-card .beast-name { font-size: 0.8rem; } }

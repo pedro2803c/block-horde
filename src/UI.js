@@ -10,6 +10,7 @@ import { icon, weaponIcon, skullSvg } from './icons.js';
 import { platform } from './platform.js';
 import { DIFFICULTIES, DIFF_ROWS, diffOf, fmtMul } from './difficulty.js';
 import { ACTIONS, BROWSER_GUIDE, browserTip, browserName } from './gamepad.js';
+import { SHOP_ITEMS, SHOP_CATS, RARITY, loadShop } from './economy.js';
 import { STEPS as TUT_STEPS, MANUAL as TUT_MANUAL, loadTut, saveTut, platOf as tutPlat, pickText as tutText } from './tutorial.js';
 
 // Construtor de DOM enxuto: h('div', { class: 'x', onclick }, filhos...)
@@ -306,6 +307,7 @@ export class UI {
             btn('primary lg', 'play', 'Jogar agora', () => this.showScreen('difficulty', { back: () => this.showScreen('menu'), go: () => this.g.quickStart() }))),
           btn('menu-select', 'map', 'Escolher arena e sobrevivente', () => this.showScreen('pick', { mode: 'solo' })),
           btn('coop-btn menu-select', 'users', 'Co-op · 2 jogadores, 1 teclado', () => this.showScreen('pick', { mode: 'coop' })),
+          btn('menu-select', 'coin', 'Loja e inventário', () => { this.g.audio.play('shop_open', { volume: 0.6 }); this.showScreen('shop', { inMatch: false }); }),
           h('div', { class: 'menu-duo' },
             btn('', 'bolt', 'Habilidades e builds', () => this.showScreen('skills')),
             btn('', 'skull', 'Inimigos', () => this.showScreen('enemies')),
@@ -871,6 +873,8 @@ export class UI {
       slider('volume', 'Volume geral', 'master'),
       slider('music', 'Música', 'music'),
       slider('burst', 'Efeitos', 'sfx'),
+      slider('map', 'Ambiente', 'ambient'),
+      slider('gamepad', 'Interface e loja', 'ui'),
       h('div', { class: 'set' }, icon('monitor'), h('span', {}, 'Qualidade gráfica'), quality),
       h('div', { class: 'set' }, icon('bolt'), h('span', {}, 'Mostrar FPS'), fps),
       ...(g.input.touchMode ? this.touchSettings(slider) : []),
@@ -1440,6 +1444,7 @@ export class UI {
           h('div', { class: 'menu-buttons' },
             btn('primary lg', 'play', 'Continuar', () => g.resume()),
             btn('tree-btn' + (n ? ' has-pts' : ''), 'tree', h('span', { class: 'btn-txt' }, treeLabel, n ? h('span', { class: 'pt-badge inline' }, `+${n}`) : null), () => g.openTree()),
+            btn('', 'coin', g.waveState === 'intermission' ? 'Loja (intervalo: compras liberadas)' : 'Loja (compras no intervalo)', () => g.openShop()),
             btn('', 'info', 'Manual do jogo', () => this.showScreen('manual', { back: 'pause' })),
             btn('', 'keyboard', 'Controles', () => this.showScreen('controls', { back: 'pause' })),
             this.fsButton(),
@@ -1449,7 +1454,103 @@ export class UI {
         h('div', {}, h('h3', { class: 'section slashed', style: 'margin-top:0' }, 'Desbloqueios'), this.unlockList())));
   }
 
-  scr_gameover({ isRecord, prev, xp, cont }) {
+  // ------------------------------------------------------------ loja e inventário permanente
+  // inMatch: aberta durante a partida (compras só no intervalo entre ondas); fora dela, só inventário/equipar
+  scr_shop({ inMatch = false, cat = 'match', sel = null } = {}) {
+    const g = this.g;
+    const s = (g.shopData ||= loadShop());
+    const live = inMatch && (g.state === 'paused' || g.state === 'playing');
+    const canBuy = live && g.canBuyNow();
+    if (!live && cat === 'match') cat = 'weapons';
+    const reopen = (o = {}) => this.showScreen('shop', { inMatch, cat, sel, ...o });
+    const close = () => {
+      g.audio.play('shop_close', { volume: 0.6 });
+      if (live) g.resume();
+      else this.showScreen('menu');
+    };
+    const C = SHOP_CATS.find((c) => c.id === cat);
+    const ids = SHOP_ITEMS.filter((it) => it.cat === cat);
+    const items = [];
+    const stats = (it) => {
+      const w = it.kind === 'weapon' && WEAPONS[it.item];
+      if (!w) return null;
+      const rate = w.rate ? (1 / w.rate).toFixed(1) + '/s' : '—';
+      return h('span', { class: 'shop-stats' }, h('span', {}, 'Dano ', h('b', {}, String(w.dmg * (w.pellets || 1)))), h('span', {}, 'Cadência ', h('b', {}, rate)), h('span', {}, 'Pente ', h('b', {}, w.mag ? String(w.mag) : '∞')));
+    };
+    const card = (it, k) => {
+      const owned = it.kind !== 'consumable' && !!s.owned[it.id];
+      const eq = owned && s.equipped[it.id] !== false;
+      const R = RARITY[it.rarity];
+      const canvas = h('canvas', { class: 'model', width: 200, height: 200, 'aria-hidden': 'true' });
+      const pv = { id: it.item, canvas, angle: 0.6 + k * 0.45, active: sel === it.id };
+      items.push(pv);
+      let action;
+      if (owned) {
+        action = btn(eq ? '' : 'success', eq ? 'close' : 'check', eq ? 'Desequipar' : 'Equipar', () => { g.toggleEquip(it.id); reopen({ sel: it.id }); });
+      } else if (!live) {
+        action = h('span', { class: 'shop-state locked' }, icon('lock'), 'Compre durante a partida');
+      } else {
+        const poor = g.wallet < it.price;
+        let armed = false;
+        const big = it.rarity === 'epic' || it.rarity === 'legendary';
+        const label = h('span', {}, `Comprar · ${fmt(it.price)}`);
+        action = h('button', { class: 'btn ' + (canBuy && !poor ? 'primary' : '') + ' shop-buy', 'aria-disabled': String(!canBuy || poor), onclick: () => {
+          if (canBuy && !poor && big && !armed) {
+            // compra importante: segundo toque confirma
+            armed = true;
+            label.textContent = `Confirmar ${fmt(it.price)}?`;
+            g.audio.play('shop_select', { volume: 0.6 });
+            setTimeout(() => { if (label.isConnected) { armed = false; label.textContent = `Comprar · ${fmt(it.price)}`; } }, 3000);
+            return;
+          }
+          const r = g.buy(it.id);
+          if (r.ok) this.alert(it.kind === 'consumable' ? `${it.name} usado!` : `${it.name} comprado! Agora é seu em todas as partidas.`, 'success', 'checkCircle');
+          else this.alert(r.reason, 'danger', 'warning');
+          reopen({ sel: it.id });
+        } }, icon('coin'), label);
+      }
+      const on = () => (pv.active = true);
+      const off = () => (pv.active = sel === it.id);
+      return h('li', { class: `beast item-card shop-card rar-${it.rarity}${owned ? ' owned' : ''}`, tabindex: '0', style: `--rar:${R.color}`, onpointerenter: on, onpointerleave: off, onfocus: () => { on(); g.audio.play('shop_select', { volume: 0.35 }); }, onblur: off },
+        h('span', { class: 'shop-rar' }, R.name),
+        owned ? h('span', { class: 'shop-owned' }, icon('check'), eq ? 'Equipado' : 'Comprado') : null,
+        canvas,
+        h('span', { class: 'beast-name' }, WEAPONS[it.item] ? weaponIcon(it.item) : icon(ITEMS[it.item]?.icon || 'star'), it.name),
+        h('small', {}, it.desc),
+        stats(it),
+        h('span', { class: 'shop-price' }, it.kind === 'consumable' ? 'Só nesta partida' : 'Permanente', ' · ', icon('coin'), h('b', {}, fmt(it.price))),
+        action);
+    };
+    const tabs = h('div', { class: 'tabs shop-tabs', role: 'tablist' },
+      SHOP_CATS.filter((c) => live || c.id !== 'match').map((c) => h('button', { class: 'tab' + (c.soon ? ' soon' : ''), role: 'tab', 'aria-selected': c.id === cat ? 'true' : 'false', 'data-focus': c.id === cat ? '' : undefined, onclick: () => { g.audio.play('shop_tab', { volume: 0.5 }); reopen({ cat: c.id, sel: null }); } }, icon(c.icon), c.name, c.soon ? h('em', {}, 'em breve') : null)));
+    const rule = live
+      ? (canBuy
+        ? h('p', { class: 'shop-rule ok' }, icon('checkCircle'), 'Intervalo entre ondas: compras liberadas. Moedas não gastas são perdidas 100% se você morrer.')
+        : h('p', { class: 'shop-rule warn' }, icon('lock'), 'Onda em andamento: compras só no intervalo entre ondas. Moedas não gastas são perdidas 100% se você morrer.'))
+      : h('p', { class: 'shop-rule' }, icon('info'), 'Moedas só existem durante a partida: colete derrotando inimigos e compre no intervalo entre ondas (tecla B ou tocando no saldo). Aqui você vê e equipa o que já comprou.');
+    const wallet = live ? h('div', { class: 'shop-wallet' }, icon('coin'), h('b', {}, fmt(g.wallet || 0)), h('small', {}, 'moedas da partida')) : h('div', { class: 'shop-wallet' }, icon('backpack'), h('b', {}, String(Object.keys(s.owned).length)), h('small', {}, 'itens permanentes'));
+    if (!C.soon) this.runPreviews(items, 'shop', (pvr, it, t) => pvr.item(it.canvas, it.id, it.angle, t, it.active));
+    return this.win('enemies items shop', live ? 'Loja' : 'Loja e inventário', close,
+      h('div', { class: 'shop-head' }, wallet, rule),
+      tabs,
+      C.soon
+        ? h('div', { class: 'shop-soon' }, icon(C.icon), h('b', {}, `${C.name}: em breve`), h('p', {}, C.soon))
+        : h('ul', { class: 'beast-grid shop-grid' }, ids.map(card)),
+      h('div', { class: 'row end' }, btn('primary back', live ? 'play' : 'check', live ? 'Voltar ao jogo' : 'Ok', close)));
+  }
+
+  // indicador "+N" junto ao saldo do HUD (agrupa coletas seguidas)
+  coinGain(v) {
+    if (!this.hCoinDelta) return;
+    this.coinDeltaSum = (this.coinDeltaT > 0 ? this.coinDeltaSum : 0) + v;
+    this.coinDeltaT = 1.2;
+    this.hCoinDelta.textContent = `+${fmt(this.coinDeltaSum)}`;
+    this.hCoinChip.classList.remove('gain');
+    void this.hCoinChip.offsetWidth;
+    this.hCoinChip.classList.add('gain');
+  }
+
+  scr_gameover({ isRecord, prev, xp, cont, coins }) {
     const g = this.g;
     // anúncios com recompensa (só na CrazyGames, com anúncios ativos): opcionais e com ícone de vídeo
     let ads = null;
@@ -1486,6 +1587,7 @@ export class UI {
         : h('p', { class: 'muted' }, `Recorde: ${fmt(prev.score)} na onda ${prev.wave}`),
       xpLine,
       unl,
+      coins && (coins.lost > 0 || coins.earned > 0) ? h('p', { class: 'coin-loss' + (coins.lost ? ' bad' : '') }, icon('coin'), coins.lost ? h('span', {}, h('b', {}, `${fmt(coins.lost)} moedas perdidas`), ` · coletadas ${fmt(coins.earned)}, gastas ${fmt(coins.spent)}. Itens comprados continuam na sua conta.`) : h('span', {}, `Nenhuma moeda perdida: você gastou tudo (${fmt(coins.spent)}). Itens comprados continuam na sua conta.`)) : null,
       this.statChips(),
       h('div', { class: 'chips' },
         chip('clock', 'Tempo', fmtTime(g.stats.time), 'blue'),
@@ -1542,6 +1644,7 @@ export class UI {
     this.hudEl.append(
       h('div', { class: 'top' },
         h('div', { class: 'chip' }, icon('trophy'), h('div', {}, h('small', {}, 'Pontos'), this.hScore)),
+        (this.hCoinChip = h('button', { class: 'chip coin-chip', title: 'Moedas da partida — abrir loja (B)', 'aria-label': 'Moedas da partida, abrir loja', onclick: () => this.g.openShop() }, icon('coin'), h('div', {}, h('small', {}, 'Moedas'), (this.hCoins = h('b', {}, '0'))), (this.hCoinDelta = h('i', { class: 'coin-delta' })))),
         h('div', { class: 'chip' }, icon('flag'), h('div', {}, h('small', {}, 'Onda'), this.hWave)),
         h('div', { class: 'chip red' }, icon('skull'), h('div', {}, this.hLeftLabel, this.hLeft)),
         (this.hDiff = h('div', { class: 'chip diff-chip' }, icon('skull'), h('div', {}, h('small', {}, 'Dificuldade'), h('b', {})))),
@@ -1767,6 +1870,9 @@ export class UI {
   updateHud(dt) {
     const g = this.g;
     setT(this.hScore, fmt(g.stats.score));
+    setT(this.hCoins, fmt(g.wallet || 0));
+    if (this.coinDeltaT > 0) { this.coinDeltaT -= dt || 0.016; if (this.coinDeltaT <= 0) this.hCoinDelta.textContent = ''; }
+    tog(this.hCoinChip, 'can-buy', g.waveState === 'intermission' && g.state === 'playing' && !g.demo);
     setT(this.hWave, g.wave || '—');
     if (g.waveState === 'active') {
       let alive = 0;

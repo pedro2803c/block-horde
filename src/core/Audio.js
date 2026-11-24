@@ -215,6 +215,22 @@ const DEFS = {
   eg_divine: [0.58, (c,o) => { tone(c,o,'sine',1100,220,0,0.003,0.38,0.42); tone(c,o,'triangle',1650,330,0.025,0.003,0.2,0.36); }],
   eg_sand_blade: [0.46, (c,o) => { noiseHit(c,o,'bandpass',700,2600,2,0,0.04,0.36,0.3); tone(c,o,'sawtooth',190,310,0,0.04,0.12,0.25); }],
   eg_venom: [0.4, (c,o) => { tone(c,o,'triangle',520,130,0,0.004,0.3,0.25); noiseHit(c,o,'highpass',2600,1100,2,0.01,0.004,0.28,0.2); }],
+  // ---- economia: moedas
+  coin_drop: [0.32, (c, o) => { tone(c, o, 'triangle', 2400, 2100, 0, 0.001, 0.22, 0.05); tone(c, o, 'triangle', 2600, 2300, 0.07, 0.001, 0.15, 0.05); tone(c, o, 'triangle', 2500, 2400, 0.13, 0.001, 0.08, 0.06); }],
+  coin_pick: [0.22, (c, o) => { tone(c, o, 'square', 1568, 1568, 0, 0.002, 0.12, 0.05); tone(c, o, 'square', 2093, 2093, 0.05, 0.002, 0.12, 0.12); }],
+  coin_multi: [0.42, (c, o) => { for (let k = 0; k < 4; k++) tone(c, o, 'square', 1568 + k * 220, 1568 + k * 220, k * 0.05, 0.002, 0.1, 0.08); tone(c, o, 'sine', 3136, 3136, 0.2, 0.003, 0.08, 0.18); }],
+  coin_big: [0.9, (c, o) => { for (let k = 0; k < 8; k++) tone(c, o, 'square', 1318 + (k % 4) * 262, 1318 + (k % 4) * 262, k * 0.06, 0.002, 0.11, 0.09); noiseHit(c, o, 'highpass', 6000, 6000, 1, 0, 0.01, 0.15, 0.6); tone(c, o, 'sine', 2637, 2637, 0.5, 0.004, 0.12, 0.35); }],
+  coin_loss: [1.3, (c, o) => { for (let k = 0; k < 7; k++) tone(c, o, 'triangle', 1800 - k * 170, 1700 - k * 170, k * 0.08, 0.002, 0.16 - k * 0.012, 0.09); tone(c, o, 'sawtooth', 220, 70, 0.5, 0.02, 0.18, 0.7); }],
+  // ---- loja e interface
+  shop_open: [0.5, (c, o) => { tone(c, o, 'triangle', 523, 784, 0, 0.004, 0.22, 0.18); tone(c, o, 'triangle', 784, 1046, 0.1, 0.004, 0.2, 0.25); click(c, o, 0, 3000, 0.25, 0.02); }],
+  shop_close: [0.35, (c, o) => { tone(c, o, 'triangle', 880, 523, 0, 0.004, 0.2, 0.22); }],
+  shop_tab: [0.12, (c, o) => { click(c, o, 0, 2400, 0.35, 0.02); tone(c, o, 'sine', 980, 980, 0, 0.002, 0.12, 0.05); }],
+  shop_select: [0.14, (c, o) => tone(c, o, 'sine', 1240, 1480, 0, 0.003, 0.14, 0.07)],
+  shop_buy: [0.6, (c, o) => { tone(c, o, 'square', 784, 784, 0, 0.003, 0.14, 0.08); tone(c, o, 'square', 1046, 1046, 0.08, 0.003, 0.14, 0.08); tone(c, o, 'square', 1568, 1568, 0.16, 0.003, 0.16, 0.25); click(c, o, 0, 1800, 0.4, 0.03); }],
+  shop_legend: [1.6, (c, o) => { const n = [523, 659, 784, 1046, 1318, 1568]; n.forEach((f, k) => tone(c, o, 'square', f, f, k * 0.09, 0.004, 0.14, 0.2)); tone(c, o, 'sawtooth', 130, 130, 0, 0.05, 0.12, 1.2); noiseHit(c, o, 'highpass', 7000, 7000, 1, 0.5, 0.02, 0.18, 0.9); tone(c, o, 'sine', 2093, 2093, 0.55, 0.01, 0.16, 0.9); }],
+  shop_deny: [0.35, (c, o) => { tone(c, o, 'square', 196, 196, 0, 0.003, 0.2, 0.1); tone(c, o, 'square', 156, 156, 0.12, 0.003, 0.2, 0.16); }],
+  equip: [0.3, (c, o) => { click(c, o, 0, 1400, 0.5, 0.03); tone(c, o, 'triangle', 660, 990, 0.03, 0.003, 0.2, 0.15); }],
+  unequip: [0.3, (c, o) => { click(c, o, 0, 1200, 0.45, 0.03); tone(c, o, 'triangle', 880, 520, 0.03, 0.003, 0.18, 0.15); }],
   crowd: [2.4, (c, o) => { noiseHit(c, o, 'bandpass', 700, 900, 0.6, 0, 0.4, 0.5, 1.9); noiseHit(c, o, 'bandpass', 1300, 1100, 0.8, 0.1, 0.4, 0.3, 1.8); }],
 };
 
@@ -236,7 +252,7 @@ export class AudioSystem {
   constructor() {
     this.buffers = {};
     this.ctx = null;
-    this.vol = { master: 0.8, music: 0.5, sfx: 0.85 };
+    this.vol = { master: 0.8, music: 0.5, sfx: 0.85, ambient: 0.5, ui: 0.8 };
     this.listener = { x: 0, y: 0, z: 0, yaw: 0 };
     this.voices = 0;
     this.musicMode = null;
@@ -265,6 +281,8 @@ export class AudioSystem {
       this.sfx = this.ctx.createGain();
       this.musicBus = this.ctx.createGain();
       this.sfx.connect(this.master);
+      this.uiBus = this.ctx.createGain(); // interface e loja: volume próprio
+      this.uiBus.connect(this.master);
       this.musicBus.connect(this.master);
       this.master.connect(this.ctx.destination);
       this.ambientBus = this.ctx.createGain();
@@ -277,8 +295,8 @@ export class AudioSystem {
     if (this.ctx.state === 'suspended') this.ctx.resume();
   }
 
-  setVolumes(master, music, sfx) {
-    this.vol = { master, music, sfx };
+  setVolumes(master, music, sfx, ambient = this.vol.ambient, ui = this.vol.ui) {
+    this.vol = { master, music, sfx, ambient, ui };
     this.applyVolumes();
   }
   applyVolumes() {
@@ -286,7 +304,8 @@ export class AudioSystem {
     this.master.gain.value = this.vol.master;
     this.sfx.gain.value = this.vol.sfx;
     this.musicBus.gain.value = this.vol.music * 0.55;
-    if (this.ambientBus) this.ambientBus.gain.value = 0.34 * Math.max(0.35, this.vol.music);
+    if (this.ambientBus) this.ambientBus.gain.value = 0.68 * this.vol.ambient;
+    if (this.uiBus) this.uiBus.gain.value = this.vol.ui;
   }
 
   // ---------------- Ambiente procedural por arena ----------------
@@ -426,7 +445,7 @@ export class AudioSystem {
       p.pan.value = pan;
       node = node.connect(p);
     }
-    node.connect(this.sfx);
+    node.connect(opts.bus === 'ui' || name.startsWith('ui_') || name.startsWith('shop_') || name === 'equip' || name === 'unequip' ? this.uiBus || this.sfx : this.sfx);
     this.voices++;
     src.onended = () => {
       this.voices--;

@@ -80,6 +80,7 @@ export const HINTS = {
   levelup: { web: 'Subiu de nível! Gaste o ponto na árvore (Tab).', touch: 'Subiu de nível! Gaste o ponto na árvore (pela pausa).', pad: 'Subiu de nível! Gaste o ponto na árvore de passivas.' },
   unlock: 'Novo item liberado! Ele já está nos seus espaços de arma.',
   ability: 'Habilidade usada: espere o ícone clarear para usar de novo.',
+  shop: { web: 'Intervalo! Aperte B para abrir a loja. Moedas não gastas somem se você morrer.', touch: 'Intervalo! Toque nas moedas no topo para abrir a loja. Moedas não gastas somem se você morrer.', pad: 'Intervalo! Abra a loja pela pausa. Moedas não gastas somem se você morrer.' },
   weapon: 'Cada arma tem alcance, cadência e munição próprios. Teste qual combina com a situação.',
 };
 
@@ -98,6 +99,7 @@ export const MANUAL = [
   { id: 'mounts', title: 'Montarias', icon: 'vehicle', body: { '*': ['A montaria da arena é liberada quando um chefão aparece.', 'Montado, você usa os ataques e habilidades da montaria.', 'Ela tem integridade própria: destruída, você volta a pé.', 'Veja todas em Montarias, no menu.'] } },
   { id: 'xp', title: 'XP e evolução', icon: 'tree', body: { '*': ['Abates dão XP na partida; cada nível dá 1 ponto.', 'Pontos vão para a árvore de passivas (5 níveis por ramo).', 'Ao fim da partida a conta ganha XP e libera conteúdos.'] } },
   { id: 'inventory', title: 'Itens e equipamentos', icon: 'backpack', body: { '*': ['Itens no chão são pegos ao encostar.', 'Equipamentos (colete, capacete, botas, exoesqueleto) entram em uso ao pegar.', 'Armadilhas e torres podem ser posicionadas.', 'Catálogo completo em Itens, no menu.'] } },
+  { id: 'coins', title: 'Moedas e loja', icon: 'coin', body: { web: ['Inimigos derrotados deixam moedas: chefões rendem muito mais.', 'Passe perto para coletar; o saldo fica no topo da tela.', 'A loja abre com B (ou pelo saldo/pausa); compras só no intervalo entre ondas.', 'Ao morrer, você perde 100% das moedas não gastas.', 'Armas e acessórios comprados são permanentes e valem em toda partida.'], touch: ['Inimigos derrotados deixam moedas: chefões rendem muito mais.', 'Passe perto para coletar; o saldo fica no topo da tela.', 'Toque no saldo (ou use a pausa) para abrir a loja; compras só no intervalo entre ondas.', 'Ao morrer, você perde 100% das moedas não gastas.', 'Armas e acessórios comprados são permanentes e valem em toda partida.'] } },
   { id: 'arenas', title: 'Arenas', icon: 'map', body: { '*': ['Cada arena tem dificuldade, clima, inimigos, chefões e montaria próprios.', 'Escolha em "Escolher arena e sobrevivente".', 'A dificuldade geral é escolhida antes de jogar.'] } },
   { id: 'coop', title: 'Multijogador', icon: 'users', body: { '*': ['Co-op local: 2 jogadores no mesmo teclado ("Co-op" no menu).', 'Não há multijogador online por enquanto.'] } },
 ];
