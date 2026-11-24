@@ -1,4 +1,4 @@
-// Biblioteca de itens do Block Horde: modelos em blocos (chão, mão e vitrine), dados e sorteio.
+﻿// Biblioteca de itens do Block Horde: modelos em blocos (chão, mão e vitrine), dados e sorteio.
 // O mesmo modelo serve para o coletável no mapa, a arma na mão e o cartão 3D do menu "Itens".
 
 // ---------------------------------------------------------------- armas na mão
@@ -11,6 +11,12 @@ export const GUN_MODELS = {
     [0, -0.09, 0, 0.075, 0.15, 0.07, 0x1c1c20],
     [0.06, -0.065, 0, 0.06, 0.03, 0.03, 0x1c1c20],
     [0.24, 0.07, 0, 0.02, 0.025, 0.02, 0x1c1c20],
+  ],
+  scythe_soul: [
+    [0.0, 0.0, 0, 0.12, 0.4, 0.06, 0x6a5a7a],
+    [0.0, 0.3, 0, 0.6, 0.08, 0.06, 0x6a5a7a],
+    [0.3, 0.3, 0, 0.15, 0.06, 0.06, 0x8a7a9a],
+    [0.0, -0.3, 0, 0.08, 0.3, 0.06, 0x4a3a5a],
   ],
   uzi: [
     [0.14, 0.02, 0, 0.3, 0.09, 0.09, 0x2a2a2e],
