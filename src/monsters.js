@@ -4023,3 +4023,32 @@ function drawNcTombking(B, G, base, z, col, t) {
   P(base, 0, 1.4, 0, 0.3, 0.15, 0.3, 0x9a8a6a); // coroa quebrada
   P(base, 0.3, 0.9, 0.1, 0.08, 0.8, 0.08, 0xc8b890); // lança
 }
+
+// chefes da Necrópole (mesmo padrão B.part dos mobs nc_*)
+function drawNcMatriarch(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0.9, 0, 0.4, 0.8, 0.3, 0x9a8aaa); // vestido espectral
+  P(base, 0, 0.35, 0, 0.55, 0.3, 0.4, 0x6a5a7a); // barra rasgada
+  P(base, 0, 1.45, 0, 0.3, 0.3, 0.28, 0xd8d0e8); // rosto
+  P(base, 0, 1.55, -0.05, 0.4, 0.35, 0.3, 0x3a2a4a); // véu
+  P(base, 0, 1.78, 0, 0.36, 0.08, 0.1, 0xd4a020); // tiara
+  for (const sg of [1, -1]) {
+    P(base, sg * 0.09, 1.47, 0.15, 0.06, 0.05, 0.02, 0x29b6f6); // olhos
+    P(base, sg * 0.32, 1.0, 0.05, 0.1, 0.55, 0.1, 0x9a8aaa, 0, sg * 0.5); // braços
+  }
+  P(base, 0, 1.35, 0.16, 0.12, 0.08, 0.02, 0x1a0a2a); // boca do grito
+}
+function drawNcColossus(B, G, base, z, col, t) {
+  const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
+  P(base, 0, 0.95, 0, 0.6, 0.7, 0.42, 0x7a7a7a); // tronco de lápides
+  P(base, 0, 1.0, 0.22, 0.3, 0.4, 0.04, 0xd8c8a0); // costelas
+  P(base, 0, 1.5, 0, 0.36, 0.3, 0.32, 0xd8c8a0); // crânio
+  for (const sg of [1, -1]) {
+    P(base, sg * 0.1, 1.52, 0.17, 0.07, 0.06, 0.02, 0x2ecc71); // olhos
+    P(base, sg * 0.45, 1.05, 0, 0.22, 0.65, 0.22, 0x5a5a5a); // braços
+    P(base, sg * 0.45, 0.62, 0.04, 0.3, 0.24, 0.3, 0x8a8a8a); // punhos de pedra
+    P(base, sg * 0.18, 0.32, 0, 0.22, 0.45, 0.24, 0x5a5a5a); // pernas
+    P(base, sg * 0.32, 1.42, -0.05, 0.12, 0.3, 0.06, 0x6a6a6a, 0, sg * 0.3); // lápides nos ombros
+  }
+}
+Object.assign(BODIES, { nc_matriarch: drawNcMatriarch, nc_colossus: drawNcColossus });

@@ -18,6 +18,10 @@ export const GUN_MODELS = {
     [0.3, 0.3, 0, 0.15, 0.06, 0.06, 0x8a7a9a],
     [0.0, -0.3, 0, 0.08, 0.3, 0.06, 0x4a3a5a],
   ],
+  nc_necro_staff: [[0.2, 0, 0, 0.07, 0.7, 0.07, 0x3a1a5a], [0.2, 0.36, 0, 0.2, 0.06, 0.06, 0xd8c8a0], [0.2, 0.46, 0, 0.14, 0.14, 0.14, 0x8a3ad0, true]],
+  nc_exec_crossbow: [[0.14, 0, 0, 0.42, 0.08, 0.08, 0x4a3a3a], [0.12, 0.02, 0, 0.06, 0.5, 0.05, 0x2a2a2a], [0.36, 0.02, 0, 0.18, 0.035, 0.04, 0xe53935, true]],
+  nc_tomb_cannon: [[0.16, 0.02, 0, 0.4, 0.16, 0.16, 0x5a5a5a], [0.42, 0.02, 0, 0.12, 0.2, 0.2, 0x3a3a3a], [0.12, -0.12, 0, 0.14, 0.12, 0.12, 0xd8c8a0], [0.5, 0.02, 0, 0.04, 0.12, 0.12, 0x2ecc71, true]],
+  nc_beyond_pistol: [[0.1, 0.02, 0, 0.26, 0.08, 0.07, 0x3a2a4a], [0.26, 0.03, 0, 0.06, 0.04, 0.04, 0x8a6aff, true], [0.03, -0.09, 0, 0.06, 0.15, 0.06, 0x1a1a1e]],
   uzi: [
     [0.14, 0.02, 0, 0.3, 0.09, 0.09, 0x2a2a2e],
     [0.32, 0.03, 0, 0.08, 0.035, 0.035, 0x18181a],
@@ -374,8 +378,9 @@ for (const [id, m] of Object.entries(TRAP_MODELS)) {
 // armas exclusivas do Templo Antigo (catálogo, modelo no chão e ordem do arsenal)
 const TEMPLE_WEAPONS = ['pharaoh', 'anubis_shotgun', 'scarab_smg', 'sobek_launcher', 'sphinx_drill', 'desert_bow', 'bastet_staff', 'priest_staff', 'horus_spear', 'mummy_blade'];
 const COLISEUM_WEAPONS = ['roman_gladius', 'roman_pilum', 'roman_centurion_bow', 'roman_colosseum_shotgun', 'roman_legion_smg', 'roman_emperor_rifle', 'roman_vestal_flamer', 'roman_siege_glauncher', 'roman_ballista', 'roman_colossus_hammer'];
+const NECRO_WEAPONS = ['scythe_soul','nc_necro_staff','nc_exec_crossbow','nc_tomb_cannon','nc_beyond_pistol'];
 const NAVAL_WEAPONS = ['nv_harpoon', 'nv_pirate_shotgun', 'nv_trident', 'nv_ghost_saber', 'nv_anchor'];
-for (const id of ['pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'uzi', 'rocket', 'lmg', 'flamer', 'glauncher', 'plasma', 'cryo', 'acidgun', ...TEMPLE_WEAPONS, ...COLISEUM_WEAPONS, ...NAVAL_WEAPONS]) {
+for (const id of ['pistol', 'rifle', 'shotgun', 'sniper', 'axe', 'knife', 'uzi', 'rocket', 'lmg', 'flamer', 'glauncher', 'plasma', 'cryo', 'acidgun', ...TEMPLE_WEAPONS, ...COLISEUM_WEAPONS, ...NAVAL_WEAPONS, ...NECRO_WEAPONS]) {
   const m = GUN_MODELS[id];
   const lo = Math.min(...m.map((p) => p[0] - p[3] / 2));
   const c = lo + gunLen(m) / 2;
@@ -443,6 +448,11 @@ export const ITEMS = {
   nv_trident:        { name: 'Tridente das Profundezas', cat: 'weapon', icon: 'bolt',   ring: 0x29b6f6, rarity: 'Lendária', weapon: 'nv_trident',        desc: 'Energia aquática em linha que atravessa múltiplos inimigos.', get: 'Cemitério Naval · Arsenal do Naufrágio' },
   nv_ghost_saber:    { name: 'Sabre Fantasmagórico',     cat: 'weapon', icon: 'burst',  ring: 0x70e8ff, rarity: 'Épica',    weapon: 'nv_ghost_saber',    desc: 'Combos espectrais rápidos com dano extra contra mortos-vivos.', get: 'Cemitério Naval · Arsenal do Naufrágio' },
   nv_anchor:         { name: 'Âncora Esmagadora',        cat: 'weapon', icon: 'fist',   ring: 0xffc107, rarity: 'Lendária', weapon: 'nv_anchor',         desc: 'Arma pesada que esmaga o solo em área e derruba inimigos.', get: 'Cemitério Naval · Arsenal do Naufrágio' },
+  scythe_soul:      { name: 'Foice das Almas',       cat: 'weapon', icon: 'ghost',  ring: 0x8a6aff, rarity: 'Lendária', weapon: 'scythe_soul',      desc: 'Lâmina espectral em meia-lua que atravessa todos os inimigos. Forte contra mortos-vivos.', get: 'Necrópole · Arsenal Profano' },
+  nc_necro_staff:   { name: 'Cajado da Necromancia', cat: 'weapon', icon: 'ghost',  ring: 0x8a3ad0, rarity: 'Épica',    weapon: 'nc_necro_staff',   desc: 'Esferas amaldiçoadas que explodem; a Maldição envenena o alvo.', get: 'Necrópole · Arsenal Profano' },
+  nc_exec_crossbow: { name: 'Besta do Carrasco',     cat: 'weapon', icon: 'target', ring: 0xe53935, rarity: 'Épica',    weapon: 'nc_exec_crossbow', desc: 'Virotes perfurantes; a Sentença marca o alvo para receber mais dano.', get: 'Necrópole · Arsenal Profano' },
+  nc_tomb_cannon:   { name: 'Canhão do Túmulo',      cat: 'weapon', icon: 'burst',  ring: 0x2ecc71, rarity: 'Lendária', weapon: 'nc_tomb_cannon',   desc: 'Projéteis em arco que explodem em área e atordoam.', get: 'Necrópole · Arsenal Profano' },
+  nc_beyond_pistol: { name: 'Pistola do Além',       cat: 'weapon', icon: 'target', ring: 0x8a6aff, rarity: 'Rara',     weapon: 'nc_beyond_pistol', desc: 'Balas espectrais perfurantes que desaceleram. Forte contra mortos-vivos.', get: 'Necrópole · Arsenal Profano' },
   boots: { name: 'Botas de velocidade', cat: 'gear', icon: 'run', ring: 0x40c8ff, rarity: 'Rara', desc: '+15% de velocidade permanente (até cair).', get: 'Mapa e caixas de madeira' },
   exo: { name: 'Exoesqueleto temporário', cat: 'gear', icon: 'fist', ring: 0xffc107, rarity: 'Épica', desc: 'Por 20 s: -45% de dano recebido, golpes 60% mais fortes e imune a lentidão.', get: 'Caixas de madeira a partir da onda 4' },
   proxmine: { name: 'Mina de proximidade', cat: 'trap', icon: 'target', ring: 0xff3020, rarity: 'Rara', weapon: 'proxmine', desc: 'Detecta a 2,4 m, apita e explode em área grande (4 m).', get: 'Multiplicador x10 · cargas nas caixas' },
@@ -452,7 +462,7 @@ export const ITEMS = {
   ftower: { name: 'Torre de fogo', cat: 'trap', icon: 'flame', ring: 0xff7a30, rarity: 'Épica', weapon: 'ftower', desc: 'Lança chamas em quem chega a 4,5 m e incendeia. Bateria de 90 s.', get: 'Multiplicador x18' },
   itower: { name: 'Torre de gelo', cat: 'trap', icon: 'snow', ring: 0x5ac8ff, rarity: 'Épica', weapon: 'itower', desc: 'Dispara projéteis congelantes a até 8 m. Bateria de 90 s.', get: 'Multiplicador x16' },
 };
-export const ITEM_ORDER = ['medkit', 'ammo', 'drink', 'grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'supply', 'dynamite', 'pistol', 'uzi', 'rifle', 'lmg', 'shotgun', 'sniper', 'rocket', 'glauncher', 'flamer', 'plasma', 'cryo', 'acidgun', 'axe', 'knife', ...TEMPLE_WEAPONS, ...COLISEUM_WEAPONS, ...NAVAL_WEAPONS, 'vest', 'helmet', 'boots', 'exo', 'backpack', 'binoculars', 'flashlight', 'radio', 'proxmine', 'spikes', 'efence', 'ltower', 'ftower', 'itower'];
+export const ITEM_ORDER = ['medkit', 'ammo', 'drink', 'grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'supply', 'dynamite', 'pistol', 'uzi', 'rifle', 'lmg', 'shotgun', 'sniper', 'rocket', 'glauncher', 'flamer', 'plasma', 'cryo', 'acidgun', 'axe', 'knife', ...TEMPLE_WEAPONS, ...COLISEUM_WEAPONS, ...NAVAL_WEAPONS, ...NECRO_WEAPONS, 'vest', 'helmet', 'boots', 'exo', 'backpack', 'binoculars', 'flashlight', 'radio', 'proxmine', 'spikes', 'efence', 'ltower', 'ftower', 'itower'];
 export const ITEM_CATS = { supply: 'Suprimento', weapon: 'Arma', gear: 'Proteção', util: 'Utilitário', trap: 'Armadilha' };
 for (const id of ITEM_ORDER) {
   const it = ITEMS[id];

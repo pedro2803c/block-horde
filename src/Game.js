@@ -6,12 +6,12 @@ import { BARREL_MODEL } from './scenery.js';
 import { ACTIVES, ULTIMATES, PASSIVES, BRANCHES, MAX_LEVEL, NODE_REQ, ULT_REQ, levelCost, xpNeed, loadLoadouts, ABILITY_KEYS } from './abilities.js';
 import { Input } from './Input.js';
 import { UI } from './UI.js';
-import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, TRAPS, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS, NAVAL_WEAPONS, profileNeed, matchXp, isEnemyAllowedInArena } from './data.js';
+import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, TRAPS, SLOT_CODES, UNLOCKS, ENEMIES, ENEMY_ORDER, SURVIVORS, ARENAS, NAVAL_WEAPONS, NECRO_WEAPONS, profileNeed, matchXp, isEnemyAllowedInArena } from './data.js';
 import { enemyLook, drawEnemy } from './monsters.js';
 import { ITEMS, GUN_MODELS, GUN_LEN, MELEE, GEAR, drawItem, rollTable } from './items.js';
 import { ArsenalMixin, WALK_TRAPS } from './arsenal.js';
 // mortos-vivos: Sabre Fantasmagórico causa dano extra
-const UNDEAD_TYPES = new Set(['walker', 'runner', 'brute', 'bloater', 'specter', 'reaper', 'mummy', 'skeleton', 'phantom', 'rm_spirit', 'lb_specter', 'nv_pirate', 'nv_ghost', 'nv_harpooner', 'nv_brute']);
+const UNDEAD_TYPES = new Set(['walker', 'runner', 'brute', 'bloater', 'specter', 'reaper', 'mummy', 'skeleton', 'phantom', 'rm_spirit', 'lb_specter', 'nv_pirate', 'nv_ghost', 'nv_harpooner', 'nv_brute', 'nc_vampire', 'nc_nosferatu', 'nc_knight', 'nc_executioner', 'nc_reaper', 'nc_banshee', 'nc_abomination', 'nc_plague', 'nc_tombking', 'lich', 'nc_matriarch', 'nc_colossus']);
 import { WorldMixin } from './world.js';
 import { platform } from './platform.js';
 import { TouchControls } from './touch.js';
@@ -1365,12 +1365,13 @@ export class Game {
     // passivas de quem causou o dano: Dano aumentado, Fúria total e Crítico
     if (src && src.ctl) {
       dmg *= this.dmgMul(src);
-      if (Math.random() < this.pv(src, 'crit') / 100 + (src.navalTempest ? 0.08 : 0)) {
+      if (Math.random() < this.pv(src, 'crit') / 100 + (src.navalTempest ? 0.08 : 0) + (src.necroTempest ? 0.06 : 0)) {
         dmg *= 2;
         for (let k = 0; k < 5; k++) this.parts.spawn(z.pos.x, 1.4 * z.scale, z.pos.z, rand(-2, 2), rand(2, 4), rand(-2, 2), 0.08, pick([0xffe040, 0xffffff]), 0.4, 6, 2);
       }
       if (!quiet) this.navalHit(z, src, dx, dz, dmg);
       if (src.navalTempest) dmg *= 1.15;
+      if (src.necroTempest) { dmg *= 1.12; if (!quiet && Math.random() < 0.25) { src.hp = Math.min(src.maxHp, src.hp + 2); } }
       if (WEAPONS[src.weapon]?.undeadMul && UNDEAD_TYPES.has(z.type)) dmg *= WEAPONS[src.weapon].undeadMul;
     }
     const hy = z.def.fly ? (z.flyY || 1.4) + 0.2 : 0.9 * z.scale;
@@ -1729,6 +1730,16 @@ export class Game {
         if (Math.hypot(q.pos.x - z.pos.x, q.pos.z - z.pos.z) < 2.2) this.damageZombie(q, dmg * 0.25, q.pos.x - z.pos.x, q.pos.z - z.pos.z, src, 1.2, true);
       }
       for (let k = 0; k < 10; k++) { const a = (k / 10) * Math.PI * 2; this.parts.spawn(z.pos.x, 0.3, z.pos.z, Math.sin(a) * 5, 1.2, Math.cos(a) * 5, 0.09, pick([0x29b6f6, 0x9adcff]), 0.45, 4, 2); }
+    }
+  }
+
+  // Tempestade da Necrópole: 3+ armas do Arsenal Profano = +12% dano, +6% crítico e roubo de vida leve
+  updateNecroSet(p) {
+    const n = NECRO_WEAPONS.filter((id) => this.usable(p, id)).length;
+    const on = n >= 3;
+    if (on !== !!p.necroTempest) {
+      p.necroTempest = on;
+      this.ui.toast(p.id, on ? 'TEMPESTADE DA NECRÓPOLE ATIVA: +12% dano, +6% crítico, roubo de vida' : 'Tempestade da Necrópole desativada', 'bolt', on ? undefined : 'bad');
     }
   }
 
@@ -2823,6 +2834,7 @@ wm.state = 'destruída';
     if (regen) p.hp = Math.min(p.maxHp, p.hp + regen * dt);
     if (p.furyT > 0 && Math.random() < dt * 20) this.parts.spawn(p.pos.x + rand(-0.35, 0.35), rand(0.3, 1.6), p.pos.z + rand(-0.35, 0.35), 0, rand(1, 2), 0, rand(0.08, 0.14), pick([0xff5a1a, 0xffb030, 0xff2a10]), 0.45, -1, 2);
     this.updateNavalSet(p);
+    this.updateNecroSet(p);
     // montado: os 4 botões de habilidade viram os ataques da montaria (dano real, recarga própria)
     const mounted = p.isMounted && p.mountId ? p.mountId : null;
     const mountedSkills = mounted ? mountSkills(mounted) : null;
@@ -4469,7 +4481,7 @@ wm.state = 'destruída';
   // habilidades especiais: bote do cão, invocação, esporos, pancada e pedra do colosso
   enemyAbilities(z, tgt, td, dx, dz, dt) {
     const def = z.def;
-    const A = this.aren
+    const A = this.arena;
     if (def.bossKind === 'pharaoh') this.pharaohTick(z, td, dt);
     if (def.bossKind === 'sobek' && this.sobekTick(z, td, dt)) return;
     if (def.bossKind === 'bastet') this.bastetTick(z, tgt, td, dt);

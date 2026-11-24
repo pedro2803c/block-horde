@@ -29,7 +29,11 @@ export const WEAPONS = {
   igrenade: { name: 'Granada incendiária', cat: 'Granada', kind: 'throw', proj: 'g_fire', dmg: 40, rate: 0.65, radius: 3, area: { life: 6, dps: 16 }, start: 3, pack: 2, sound: 'throw', color: 0xd85a1a },
   fgrenade: { name: 'Granada congelante', cat: 'Granada', kind: 'throw', proj: 'g_frost', dmg: 30, rate: 0.65, radius: 3.6, start: 3, pack: 2, sound: 'throw', color: 0x7ad8ff },
   tgrenade: { name: 'Granada tóxica', cat: 'Granada', kind: 'throw', proj: 'g_toxic', dmg: 10, rate: 0.65, radius: 3, area: { life: 8, dps: 14 }, start: 3, pack: 2, sound: 'throw', color: 0x6ab02a },
-  scythe_soul: { name: 'Foice das Almas', cat: 'Necrópole', kind: 'bolt', dmg: 38, rate: 0.45, speed: 24, pierce: 99, el: 'spirit', glow: 0x6a5a7a, mag: 8, reload: 2.0, start: 24, pack: 16, sound: 'shot_gl', color: 0x6a5a7a },
+  scythe_soul: { name: 'Foice das Almas', cat: 'Especial', kind: 'bolt', dmg: 38, rate: 0.45, speed: 24, pierce: 99, el: 'energy', glow: 0x8a6aff, mag: 8, reload: 2.0, start: 24, pack: 16, sound: 'eg_sand_blade', color: 0x6a5a7a, undeadMul: 1.3, special: { id: 'curse', name: 'Tempestade de Foices', every: 5, cooldown: 9, bonus: 1.7 } },
+  nc_necro_staff: { name: 'Cajado da Necromancia', cat: 'Energia', kind: 'bolt', dmg: 34, rate: 0.28, speed: 26, pierce: 1, blast: 1.2, el: 'energy', glow: 0x8a3ad0, mag: 20, reload: 2, start: 60, pack: 40, sound: 'eg_shadow', color: 0x3a1a5a, special: { id: 'curse', name: 'Maldição Necromante', every: 8, cooldown: 10, poison: 30, bonus: 1.4 } },
+  nc_exec_crossbow: { name: 'Besta do Carrasco', cat: 'Precisão', kind: 'bolt', dmg: 78, rate: 0.66, speed: 40, pierce: 4, glow: 0xe53935, mag: 6, reload: 1.9, start: 24, pack: 16, sound: 'eg_bow', color: 0x4a3a3a, special: { id: 'judgment', name: 'Sentença do Carrasco', cooldown: 9, bonus: 1.6, mark: { t: 4, mul: 1.3 } } },
+  nc_tomb_cannon: { name: 'Canhão do Túmulo', cat: 'Explosiva', kind: 'lob', dmg: 100, rate: 0.8, radius: 3.4, speed: 14, bounces: 1, mag: 5, reload: 2.8, start: 10, pack: 8, sound: 'shot_gl', color: 0x5a5a5a, special: { id: 'curse', name: 'Erupção de Ossos', cooldown: 12, stun: 1.0 } },
+  nc_beyond_pistol: { name: 'Pistola do Além', cat: 'Pistola', kind: 'gun', dmg: 22, rate: 0.26, spread: 0.03, range: 24, pellets: 1, pierce: 2, mag: 12, reload: 1.0, start: 72, pack: 48, sound: 'shot_pistol', color: 0x6a5a7a, undeadMul: 1.35, special: { id: 'shadow', name: 'Bala Espectral', every: 6, cooldown: 8, bonus: 1.5, slow: true } },
   proxmine: { name: 'Mina de proximidade', cat: 'Armadilha', kind: 'place', place: 'proxmine', rate: 0.4, start: 3, pack: 2, sound: 'beep', color: 0x3a3a2a },
   spikes: { name: 'Barreira de espinhos', cat: 'Armadilha', kind: 'place', place: 'spikes', rate: 0.4, start: 4, pack: 3, sound: 'crate', color: 0x6a6a70 },
   efence: { name: 'Cerca elétrica', cat: 'Armadilha', kind: 'place', place: 'efence', rate: 0.4, start: 3, pack: 2, sound: 'crate', color: 0xe8b020 },
@@ -69,6 +73,7 @@ export const TEMPLE_WEAPONS = ['pharaoh', 'anubis_shotgun', 'scarab_smg', 'sobek
 // Arsenal exclusivo do Coliseu da Arena. Mesmo padrão do Templo: kind/special consumidos pelo combate compartilhado.
 export const COLISEUM_WEAPONS = ['roman_gladius', 'roman_pilum', 'roman_centurion_bow', 'roman_colosseum_shotgun', 'roman_legion_smg', 'roman_emperor_rifle', 'roman_vestal_flamer', 'roman_siege_glauncher', 'roman_ballista', 'roman_colossus_hammer'];
 // Arsenal do Naufrágio (Arena 09 — Cemitério Naval): 3+ armas ativam o bônus TEMPESTADE ABISSAL
+export const NECRO_WEAPONS = ['scythe_soul','nc_necro_staff','nc_exec_crossbow','nc_tomb_cannon','nc_beyond_pistol'];
 export const NAVAL_WEAPONS = ['nv_harpoon', 'nv_pirate_shotgun', 'nv_trident', 'nv_ghost_saber', 'nv_anchor'];
 // Estruturas posicionáveis: hp = durabilidade · block: ocupa a célula (a horda ataca) · life: bateria (s) · range: detecção
 export const TRAPS = {
@@ -84,7 +89,7 @@ export const TRAPS = {
 };
 // grupos das teclas 1–9, 0 e -: apertar de novo a mesma tecla alterna entre as armas do grupo
 export const WEAPON_GROUPS = [
-  ['pistol'], ['uzi', 'scarab_smg', 'roman_legion_smg'], ['shotgun', 'anubis_shotgun', 'roman_colosseum_shotgun', 'nv_pirate_shotgun'], ['rifle', 'lmg', 'pharaoh', 'sphinx_drill', 'roman_emperor_rifle'], ['sniper', 'plasma', 'desert_bow', 'roman_centurion_bow', 'roman_ballista', 'nv_harpoon'], ['rocket', 'glauncher', 'sobek_launcher', 'roman_siege_glauncher'], ['flamer', 'cryo', 'acidgun', 'bastet_staff', 'priest_staff', 'horus_spear', 'roman_vestal_flamer', 'nv_trident'],
+  ['pistol', 'nc_beyond_pistol'], ['uzi', 'scarab_smg', 'roman_legion_smg'], ['shotgun', 'anubis_shotgun', 'roman_colosseum_shotgun', 'nv_pirate_shotgun'], ['rifle', 'lmg', 'pharaoh', 'sphinx_drill', 'roman_emperor_rifle'], ['sniper', 'plasma', 'desert_bow', 'roman_centurion_bow', 'roman_ballista', 'nv_harpoon', 'nc_exec_crossbow'], ['rocket', 'glauncher', 'sobek_launcher', 'roman_siege_glauncher', 'nc_tomb_cannon'], ['flamer', 'cryo', 'acidgun', 'bastet_staff', 'priest_staff', 'horus_spear', 'roman_vestal_flamer', 'nv_trident', 'scythe_soul', 'nc_necro_staff'],
   ['grenade', 'igrenade', 'fgrenade', 'tgrenade', 'egrenade', 'dynamite', 'roman_pilum'], ['barrel', 'barricade', 'spikes', 'efence'], ['mine', 'proxmine', 'mummy_blade', 'roman_gladius', 'roman_colossus_hammer', 'nv_ghost_saber', 'nv_anchor'], ['ltower', 'ftower', 'itower'],
 ];
 export const WEAPON_ORDER = WEAPON_GROUPS.flat();
@@ -162,6 +167,11 @@ export const UNLOCKS = [
   { level: 9, weapon: 'roman_siege_glauncher', text: 'Lança-granadas de Cerco', only: ['coliseu'] },
   { level: 10, weapon: 'roman_ballista', text: 'Besta Romana', only: ['coliseu'] },
   { level: 11, weapon: 'roman_colossus_hammer', text: 'Martelo do Colosso', only: ['coliseu'] },
+  { level: 2, weapon: 'nc_beyond_pistol', text: 'Pistola do Além', only: ['cemiterio'] },
+  { level: 3, weapon: 'scythe_soul', text: 'Foice das Almas', only: ['cemiterio'] },
+  { level: 5, weapon: 'nc_necro_staff', text: 'Cajado da Necromancia', only: ['cemiterio'] },
+  { level: 7, weapon: 'nc_exec_crossbow', text: 'Besta do Carrasco', only: ['cemiterio'] },
+  { level: 9, weapon: 'nc_tomb_cannon', text: 'Canhão do Túmulo', only: ['cemiterio'] },
   { level: 2, weapon: 'nv_harpoon', text: 'Arpão Abissal', only: ['naval'] },
   { level: 3, weapon: 'nv_pirate_shotgun', text: 'Escopeta Pirata', only: ['naval'] },
   { level: 4, weapon: 'nv_ghost_saber', text: 'Sabre Fantasmagórico', only: ['naval'] },
@@ -271,6 +281,8 @@ export const ENEMIES = {
    nv_shark:     { name: 'Tubarão Abissal',           desc: 'Mordida brutal, investida submersa, abalo das águas e frenesi',      icon: 'paw',    hp: 220, speed: 2.9,  dmg: 24, rate: 0.85, reach: 1.4,  scale: 1.4,  radius: 0.60, score: 74, from: 7, weight: 0.75, lunge: { range: 6.5, speed: 12.5, cd: 2.8, smash: true }, quake: { radius: 2.8, dmg: 14 }, only: ['naval'], blood: [0x2a5a7a, 0x8a1610], sfx: { attack: 'zombie_die', die: 'eg_rumble' } },
    nv_serpent:   { name: 'Serpente das Profundezas',  desc: 'Mordida venenosa, chicote de cauda e investida marinha veloz',       icon: 'burst',  hp: 240, speed: 2.7,  dmg: 22, rate: 0.9,  reach: 1.5,  scale: 1.45, radius: 0.56, score: 80, from: 8, weight: 0.7, lunge: { range: 6.0, speed: 12, cd: 2.7 }, spit: { range: 11, dmg: 12, cd: 2.5, color: 0x30d890, splat: '#1c5a44', sfx: 'throw' }, only: ['naval'], blood: [0x1c6a5a, 0x30d890], sfx: { attack: 'zombie_die', die: 'eg_rumble' } },
    lich: { name: 'O Lich Imortal', desc: 'Necromante ancestral, esferas de energia amaldiçoada e meteoros de crânios', icon: 'skull', hp: 600, speed: 1.8, dmg: 20, rate: 1.0, reach: 2.0, scale: 1.3, radius: 0.6, score: 200, from: 5, boss: true, bossKind: 'lich', only: ['cemiterio'], blood: [0x6a2a8a, 0x3a1a5a], spit: { range: 14, dmg: 18, cd: 2.0, color: 0x6a2a8a, splat: '#3a1a5a', sfx: 'throw' }, sfx: { attack: 'throw', die: 'boss_roar' } },
+   nc_matriarch: { name: 'Matriarca dos Lamentos', desc: 'Espectro ancestral que voa, grita ondas sonoras e mergulha sobre o alvo', icon: 'skull', hp: 520, speed: 2.2, dmg: 18, rate: 0.9, reach: 1.8, scale: 1.6, radius: 0.6, score: 200, from: 10, boss: true, fly: true, only: ['cemiterio'], blood: [0x9a8aaa, 0x6a5a7a], spit: { range: 13, dmg: 16, cd: 1.6, color: 0xb8a8ff, splat: '#6a5a7a', sfx: 'wave' }, lunge: { range: 7, speed: 12, cd: 4 }, sfx: { attack: 'wave', die: 'boss_roar' } },
+   nc_colossus: { name: 'Colosso Sepulcral', desc: 'Gigante de lápides e ossos: arremessa túmulos e faz o chão tremer', icon: 'skull', hp: 900, speed: 1.3, dmg: 30, rate: 1.4, reach: 2.2, scale: 2.0, radius: 0.85, score: 260, from: 15, boss: true, plating: 0.25, only: ['cemiterio'], blood: [0x7a7a7a, 0x4a4a4a], lob: { range: 13, minRange: 3.5, dmg: 22, radius: 2.2, cd: 3.4, windup: 0.8, color: 0x8a8a8a }, quake: { radius: 3.8, dmg: 20, stun: 0.8 }, sfx: { attack: 'stomp', die: 'eg_rumble' } },
    nc_vampire:   { name: 'Vampiro Ancestral', desc: 'Aristocrático, capa rasgada, presas e teleporte entre sombras', icon: 'skull', hp: 80, speed: 2.6, dmg: 14, rate: 0.9, reach: 1.2, scale: 1.05, radius: 0.36, score: 35, from: 1, weight: 1.6, only: ['cemiterio'], blood: [0x8a1a2a, 0x4a0a1a], spit: { range: 12, dmg: 10, cd: 2.0, color: 0x8a1a2a, splat: '#4a0a1a', sfx: 'throw' }, sfx: { attack: 'melee_hit', die: 'zombie_die' } },
    nc_nosferatu: { name: 'Nosferatu', desc: 'Corpo magro deformado, asas membranosas, disparo de espinhos ósseos', icon: 'skull', hp: 60, speed: 2.4, dmg: 10, rate: 0.8, reach: 1.1, scale: 1.0, radius: 0.34, score: 30, from: 1, weight: 1.8, fly: true, only: ['cemiterio'], blood: [0x6a4a5a, 0x3a2a3a], spit: { range: 10, dmg: 8, cd: 1.8, color: 0xd8c8a0, splat: '#9a8a6a', sfx: 'throw' }, lunge: { range: 6.0, speed: 12, cd: 3.0 }, sfx: { attack: 'throw', die: 'zombie_die' } },
    nc_knight:    { name: 'Cavaleiro Sem Cabeça', desc: 'Armadura enferrujada, arma pesada, projéteis cortantes', icon: 'skull', hp: 120, speed: 2.0, dmg: 18, rate: 1.0, reach: 1.4, scale: 1.15, radius: 0.42, score: 45, from: 2, weight: 1.2, only: ['cemiterio'], blood: [0x5a4a3a, 0x3a2a1a], spit: { range: 12, dmg: 12, cd: 2.0, color: 0xc8b890, splat: '#9a8a6a', sfx: 'throw' }, sfx: { attack: 'melee_hit', die: 'zombie_die' } },
@@ -701,7 +713,7 @@ export const ARENAS = [
   },
   {
     id: 'cemiterio', name: 'Necrópole', desc: 'Cemitério Velho elevado a necrópole: capela, criptas e covas que vomitam mortos.', floor: 'graveyard',
-    theme: 'graveyard', ambient: 'graveyard', weather: 'fog', boss: 'boss', unlock: 1, particles: ['ash', 'motes'],
+    theme: 'graveyard', ambient: 'graveyard', weather: 'fog', boss: ['lich', 'nc_matriarch', 'nc_colossus'], unlock: 1, particles: ['ash', 'motes'],
     diff: { label: 'Alta', tier: 2, hp: 1.12, speed: 1.04, count: 1.1 }, eventName: 'Neblina densa',
     tip: 'As covas vomitam mortos: não fique parado perto delas.', lampI: 6,
     light: { sky: 0x10141f, fog: 0x10141f, sun: 0x9ab0e0, sunI: 1.3, hemi: 1.0 },
