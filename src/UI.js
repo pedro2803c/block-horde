@@ -418,7 +418,7 @@ export class UI {
     (() => {
       const c = h('canvas', { class: 'd-art', width: 320, height: 260, 'aria-hidden': 'true' });
       const pv = this.getPreview();
-      if (pv) requestAnimationFrame(() => pv.enemy(c, d.mascot, 0.45, 1.3, false, 1.72));
+      if (pv) requestAnimationFrame(() => pv.enemy(c, d.mascot, 0.45, 1.3, false, 1.52));
       return c;
     })(),
     h('small', { class: 'd-desc' }, d.desc),
