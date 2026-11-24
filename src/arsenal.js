@@ -383,6 +383,46 @@ export const ArsenalMixin = {
   // devolve true quando o projétil terminou
   updateNewProjectile(pr, dt) {
     const A = this.arena;
+    if (pr.kind === 'mproj') {
+      if (pr.homing) {
+        let best = null, bd = 14;
+        for (const z of this.zombies) {
+          if (!z.alive) continue;
+          const d = Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z);
+          if (d < bd) { bd = d; best = z; }
+        }
+        if (best) {
+          const sp = Math.hypot(pr.vx, pr.vz) || 26;
+          const a = Math.atan2(best.pos.x - pr.x, best.pos.z - pr.z);
+          pr.vx += (Math.sin(a) * sp - pr.vx) * Math.min(1, dt * 6);
+          pr.vz += (Math.cos(a) * sp - pr.vz) * Math.min(1, dt * 6);
+        }
+      }
+      pr.x += pr.vx * dt;
+      pr.z += pr.vz * dt;
+      pr.t += dt;
+      if (Math.random() < 0.7) this.parts.spawn(pr.x, pr.y, pr.z, rand(-0.4, 0.4), rand(-0.2, 0.3), rand(-0.4, 0.4), rand(0.06, 0.12), pr.trail, 0.3, 4, 2);
+      let end = pr.t > pr.life || A.tallAt(pr.x, pr.z);
+      if (!end) {
+        for (const z of this.zombies) {
+          if (!z.alive || pr.hit.has(z)) continue;
+          if (Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z) > z.radius + pr.radius) continue;
+          pr.hit.add(z);
+          const dx = pr.vx / (Math.hypot(pr.vx, pr.vz) || 1);
+          const dz = pr.vz / (Math.hypot(pr.vx, pr.vz) || 1);
+          this.damageZombie(z, pr.dmg, dx, dz, pr.owner, 0.6);
+          if (pr.aoe > 0) this.explosion(pr.x, pr.z, pr.aoe, pr.dmg * 0.5, pr.owner);
+          pr.piercedCount = (pr.piercedCount || 0) + 1;
+          if (pr.piercedCount > (pr.pierce || 0)) { end = true; break; }
+        }
+      }
+      if (end) {
+        for (let k = 0; k < 10; k++) this.parts.spawn(pr.x, pr.y, pr.z, rand(-3, 3), rand(0, 3), rand(-3, 3), rand(0.06, 0.14), pr.color, 0.4, 8, 2);
+        if (pr.aoe > 0) this.explosion(pr.x, pr.z, pr.aoe, pr.dmg * 0.3, pr.owner);
+        this.audio.play('zap', { volume: 0.3, pos: pr, rate: rand(1.2, 1.6) });
+      }
+      return end;
+    }
     if (pr.kind === 'dart') {
       // dardo do templo: fere quem estiver no caminho (jogador ou inimigo)
       pr.x += pr.vx * dt;
@@ -517,6 +557,13 @@ export const ArsenalMixin = {
     l.intensity = 18;
   },
   drawNewProjectile(B, G, pr, drawItem) {
+    if (pr.kind === 'mproj') {
+      const c = pr.color || 0xffc107;
+      const a = Math.atan2(pr.vx, pr.vz);
+      G.box(pr.x, pr.y, pr.z, 0.18, 0.18, 0.5, c, a);
+      G.box(pr.x, pr.y, pr.z, 0.09, 0.09, 0.65, 0xffffff, a);
+      return true;
+    }
     if (pr.kind === 'dart') {
       B.box(pr.x, pr.y, pr.z, 0.05, 0.05, 0.42, 0x5a4a3a, pr.ang);
       G.box(pr.x + Math.sin(pr.ang) * 0.22, pr.y, pr.z + Math.cos(pr.ang) * 0.22, 0.06, 0.06, 0.08, 0xff5020, pr.ang);

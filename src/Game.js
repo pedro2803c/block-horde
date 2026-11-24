@@ -2857,15 +2857,14 @@ wm.state = 'destruída';
     switch (sk.kind) {
       case 'burst': {
         // rajada: cada tiro é um hitscan de verdade (acerta inimigos, cenário e barris)
-        const base = mountWeaponDef(MOUNTS[p.mountId]?.weapon) || {};
-        const w = { ...base, dmg: sk.dmg, range: sk.range, pellets: 1, heavy: true, knock: 1.1 };
+        const col = sk.color || 0xffc107;
         for (let k = 0; k < (sk.shots || 6); k++) this.later(k * 0.07, () => {
           if (!p.alive || !p.isMounted) return;
           const a = p.aim + rand(-(sk.spread || 0.04), sk.spread || 0.04);
           const mx = p.pos.x + Math.sin(a) * 0.9;
           const mz = p.pos.z + Math.cos(a) * 0.9;
           this.flashes.push({ x: mx, z: mz, life: 0.05 });
-          this.hitscan(p, mx, mz, a, w);
+          this.projectiles.push({ kind: 'mproj', x: mx, y: 1.0, z: mz, vx: Math.sin(a) * (sk.speed || 26), vz: Math.cos(a) * (sk.speed || 26), ang: a, t: 0, life: sk.range / (sk.speed || 26), dmg: sk.dmg, color: col, trail: col, owner: p, homing: !!sk.homing, aoe: sk.aoe || 0, pierce: sk.pierce || 0, hit: new Set(), radius: sk.radius || 0.22 });
           this.audio.play(sk.sound || 'shot_lmg', { volume: 0.4, pos: p.pos, rate: rand(0.95, 1.05) });
         });
         break;
@@ -2883,10 +2882,14 @@ wm.state = 'destruída';
         this.mountHitArea(p, p.pos.x + fx * (sk.offset || 1.6), p.pos.z + fz * (sk.offset || 1.6), sk.radius || 1.6, sk.dmg, sk);
         this.mountFx(p, 'bite', sk);
         break;
-      case 'line':
-        this.mountHitLine(p, sk.range, sk.width || 1, sk.dmg, sk);
+      case 'line': {
+        const a = p.aim;
+        const mx = p.pos.x + Math.sin(a) * 0.9;
+        const mz = p.pos.z + Math.cos(a) * 0.9;
+        this.projectiles.push({ kind: 'mproj', x: mx, y: 1.0, z: mz, vx: Math.sin(a) * (sk.speed || 30), vz: Math.cos(a) * (sk.speed || 30), ang: a, t: 0, life: sk.range / (sk.speed || 30), dmg: sk.dmg, color: sk.color || 0xff5020, trail: sk.color || 0xff5020, owner: p, homing: false, aoe: 0, pierce: 99, hit: new Set(), radius: sk.width || 0.35 });
         this.mountFx(p, 'line', sk);
         break;
+      }
       case 'sides': {
         const ox = Math.cos(p.aim) * (sk.offset || 1.4);
         const oz = -Math.sin(p.aim) * (sk.offset || 1.4);
