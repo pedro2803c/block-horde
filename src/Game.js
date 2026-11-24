@@ -4764,7 +4764,7 @@ wm.state = 'destruída';
     const A = this.arena;
     for (const pr of this.projectiles) {
       pr.t += dt;
-      if (pr.kind === 'bolt' || pr.kind === 'glob' || pr.kind === 'lobgren' || pr.kind === 'dart') {
+      if (pr.kind === 'bolt' || pr.kind === 'glob' || pr.kind === 'lobgren' || pr.kind === 'dart' || pr.kind === 'mproj') {
         if (this.updateNewProjectile(pr, dt)) pr.dead = true;
         continue;
       }
