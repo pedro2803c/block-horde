@@ -835,6 +835,16 @@ HUMANS.bastet = {
   ],
 };
 HUMANS.bastetclone = HUMANS.bastet; // a ilusão tem a mesma aparência (menor)
+HUMANS.lich = {
+  zombie: true, skin: 0xc8c0b0, shirt: 0x2a1a3a, sleeve: 0x2a1a3a, hands: 0xb0a898, pants: 0x3a2a4a, boots: 0x2a1a3a, noFace: true, arms: 'brawl',
+  extras: [
+    ['head', 0, 0.82, 0.02, 0.34, 0.3, 0.34, 0xd8d0c0],
+    ['head', 0, 0.92, 0.02, 0.18, 0.14, 0.18, 0x6a2a8a, 0, 0, 'glow'],
+    ['torso', 0, 0.5, 0.1, 0.6, 0.4, 0.3, 0x2a1a3a],
+    ['torso', 0, 0.2, 0.12, 0.4, 0.12, 0.02, 0x6a2a8a, 0, 0, 'glow'],
+    ['torso', 0, -0.05, 0, 0.62, 0.12, 0.42, 0x3a2a4a],
+  ],
+};
 
 // Escaravelho Gigante: carapaça azul e dourada, patas reforçadas, olhos vermelhos
 function drawScarab(B, G, base, z, col, t) {
