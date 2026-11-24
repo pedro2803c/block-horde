@@ -2452,7 +2452,7 @@ export class UI {
   }
   interactPrompt(show, text = '', x = 0, y = 0, state = 'available', key = 'E') {
     const el = this.interactEl;
-    if (!show) { el.classList.add('hidden'); return; }
+    if (!show || this.screen || this.g.demo || this.g.state !== 'playing') { el.classList.add('hidden'); return; }
     el.classList.remove('hidden');
     el.style.left = x + 'px';
     el.style.top = y + 'px';
