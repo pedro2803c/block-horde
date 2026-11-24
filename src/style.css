@@ -1696,3 +1696,14 @@ body.touch .top .coin-chip.can-buy::after { bottom: -0.9rem; font-size: 0.6rem; 
 }
 #ui .shop-card .beast-name { overflow-wrap: normal; word-break: normal; hyphens: none; }
 @media (max-height: 560px) { #ui .shop-card .beast-name { font-size: 0.8rem; } }
+
+/* ---- Logo oficial voxel 3D (escudo + caveira) ---- */
+.logo.logo-brand { display: inline-flex; align-items: center; justify-content: center; margin: 0; line-height: 0; max-width: 100%; }
+.logo.logo-brand .logo-img { display: block; width: min(100%, 420px); max-height: 44vh; height: auto; object-fit: contain; filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.7)); user-select: none; -webkit-user-drag: none; }
+#ui .menu-v2 .menu-brand .logo.logo-brand { width: 100%; font-size: 1rem; }
+#ui .menu-v2 .menu-brand .logo.logo-brand .logo-img { width: min(100%, 440px); max-height: 46vh; margin: 0 auto; }
+#ui .menu-v2 .menu-brand .logo-sub { display: none; }
+.loading .logo.logo-brand .logo-img { width: min(82vw, 380px); max-height: 36vh; }
+@media (max-height: 460px) {
+  #ui .menu-v2 .menu-brand .logo.logo-brand .logo-img { width: min(100%, 260px); max-height: 56vh; }
+}

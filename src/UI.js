@@ -12,6 +12,7 @@ import { DIFFICULTIES, DIFF_ROWS, diffOf, fmtMul } from './difficulty.js';
 import { ACTIONS, BROWSER_GUIDE, browserTip, browserName } from './gamepad.js';
 import { SHOP_ITEMS, SHOP_CATS, RARITY, loadShop } from './economy.js';
 import { STEPS as TUT_STEPS, MANUAL as TUT_MANUAL, loadTut, saveTut, platOf as tutPlat, pickText as tutText } from './tutorial.js';
+import logoShieldUrl from './assets/brand/logo-block-horde.png';
 
 // Construtor de DOM enxuto: h('div', { class: 'x', onclick }, filhos...)
 function h(tag, attrs = {}, ...kids) {
@@ -94,10 +95,8 @@ function bar(kind) {
   return { el: h('div', { class: 'bar ' + kind }, fill, val), fill, val };
 }
 function logo() {
-  return h('h1', { class: 'logo', 'aria-label': 'Block Horde' },
-    h('span', { class: 'l1' }, 'BLOCK'),
-    h('span', { class: 'l2' }, 'H', h('span', { class: 'skull', html: skullSvg() }), 'RDE'),
-    h('i', { class: 'claw' }));
+  return h('h1', { class: 'logo logo-brand', 'aria-label': 'Block Horde' },
+    h('img', { class: 'logo-img', src: logoShieldUrl, alt: 'Block Horde — Sobreviva à Horda', draggable: false }));
 }
 // silhueta da cidade com torre de vigia (fundo do menu)
 function skyline() {
