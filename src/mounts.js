@@ -23,17 +23,17 @@ export const MOUNTS = {
 
 // Armas das montarias (registradas em WEAPONS)
 const MOUNT_WEAPONS = {
-  m_mount_mg:     { name: 'Metralhadora', kind: 'gun',    dmg: 16, range: 24, rate: 0.10, pellets: 1, spread: 0.03, mag: Infinity, ammo: Infinity, color: 0xffd040, sound: 'shot_lmg', heavy: true, kick: 0.05 },
-  m_mount_fork:   { name: 'Garfos',       kind: 'gun',    dmg: 34, range: 5,  rate: 0.55, pellets: 1, spread: 0.12, mag: Infinity, ammo: Infinity, color: 0xffc107, sound: 'melee_hit', heavy: true },
-  m_mount_tusk:   { name: 'Presas',       kind: 'gun',    dmg: 40, range: 4,  rate: 0.50, pellets: 1, spread: 0.15, mag: Infinity, ammo: Infinity, color: 0xd8b080, sound: 'melee_hit', heavy: true },
-  m_mount_cannon: { name: 'Canhão',       kind: 'rocket', dmg: 95, range: 32, rate: 1.30, speed: 20, pellets: 1, spread: 0, radius: 3.4, mag: Infinity, ammo: Infinity, color: 0xff8020, sound: 'shot_rifle', heavy: true, kick: 0.4 },
-  m_mount_lance:  { name: 'Lança',        kind: 'gun',    dmg: 46, range: 7,  rate: 0.65, pellets: 1, spread: 0.08, mag: Infinity, ammo: Infinity, color: 0xffe080, sound: 'shot_rifle', heavy: true },
-  m_mount_lance2: { name: 'Lança Sacrificial', kind: 'gun', dmg: 42, range: 8, rate: 0.62, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffc060, sound: 'shot_rifle', heavy: true },
-  m_mount_tusk2:  { name: 'Presas Sagradas',   kind: 'gun', dmg: 38, range: 4.3, rate: 0.50, pellets: 1, spread: 0.12, mag: Infinity, ammo: Infinity, color: 0xd8b080, sound: 'melee_hit', heavy: true },
-  m_mount_plasma: { name: 'Plasma',       kind: 'bolt',   dmg: 24, range: 22, rate: 0.18, speed: 26, pellets: 1, spread: 0, mag: Infinity, ammo: Infinity, color: 0x40ffb0, sound: 'shot_plasma', heavy: false },
-  m_mount_roar:   { name: 'Rugido',              kind: 'flame',  dmg: 18, range: 7,  rate: 0.14, arc: 1.1, burn: { dps: 12, t: 3 }, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffb040, sound: 'flame', heavy: false },
-  m_mount_bite:   { name: 'Mandíbulas', kind: 'gun',    dmg: 58, range: 5.5, rate: 0.45, pellets: 1, spread: 0.10, mag: Infinity, ammo: Infinity, color: 0x40e0ff, sound: 'stomp', heavy: true },
-  m_mount_bone:   { name: 'Punho Ósseo', kind: 'gun',    dmg: 55, range: 3.0, rate: 0.60, pellets: 1, spread: 0.10, mag: Infinity, ammo: Infinity, color: 0xd8c8a0, sound: 'melee_hit', heavy: true },
+  m_mount_mg:     { name: 'Metralhadora', kind: 'gun',    dmg: 16, range: 24, rate: 0.10, pellets: 1, spread: 0.03, mag: Infinity, ammo: Infinity, color: 0xffd040, sound: 'mnt_jeep_mg', heavy: true, kick: 0.05 },
+  m_mount_fork:   { name: 'Garfos',       kind: 'gun',    dmg: 34, range: 5,  rate: 0.55, pellets: 1, spread: 0.12, mag: Infinity, ammo: Infinity, color: 0xffc107, sound: 'mnt_fork_hit', heavy: true },
+  m_mount_tusk:   { name: 'Presas',       kind: 'gun',    dmg: 40, range: 4,  rate: 0.50, pellets: 1, spread: 0.15, mag: Infinity, ammo: Infinity, color: 0xd8b080, sound: 'mnt_boar_tusk', heavy: true },
+  m_mount_cannon: { name: 'Canhão',       kind: 'rocket', dmg: 95, range: 32, rate: 1.30, speed: 20, pellets: 1, spread: 0, radius: 3.4, mag: Infinity, ammo: Infinity, color: 0xff8020, sound: 'mnt_tank_cannon', heavy: true, kick: 0.4 },
+  m_mount_lance:  { name: 'Lança',        kind: 'gun',    dmg: 46, range: 7,  rate: 0.65, pellets: 1, spread: 0.08, mag: Infinity, ammo: Infinity, color: 0xffe080, sound: 'mnt_chariot_lance', heavy: true },
+  m_mount_lance2: { name: 'Lança Sacrificial', kind: 'gun', dmg: 42, range: 8, rate: 0.62, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffc060, sound: 'mnt_chariot_lance', heavy: true },
+  m_mount_tusk2:  { name: 'Presas Sagradas',   kind: 'gun', dmg: 38, range: 4.3, rate: 0.50, pellets: 1, spread: 0.12, mag: Infinity, ammo: Infinity, color: 0xd8b080, sound: 'mnt_cow_tusk', heavy: true },
+  m_mount_plasma: { name: 'Plasma',       kind: 'bolt',   dmg: 24, range: 22, rate: 0.18, speed: 26, pellets: 1, spread: 0, mag: Infinity, ammo: Infinity, color: 0x40ffb0, sound: 'mnt_exo_plasma', heavy: false },
+  m_mount_roar:   { name: 'Rugido',              kind: 'flame',  dmg: 18, range: 7,  rate: 0.14, arc: 1.1, burn: { dps: 12, t: 3 }, pellets: 1, spread: 0.05, mag: Infinity, ammo: Infinity, color: 0xffb040, sound: 'mnt_lion_roar', heavy: false },
+  m_mount_bite:   { name: 'Mandíbulas', kind: 'gun',    dmg: 58, range: 5.5, rate: 0.45, pellets: 1, spread: 0.10, mag: Infinity, ammo: Infinity, color: 0x40e0ff, sound: 'mnt_shark_bite', heavy: true },
+  m_mount_bone:   { name: 'Punho Ósseo', kind: 'gun',    dmg: 55, range: 3.0, rate: 0.60, pellets: 1, spread: 0.10, mag: Infinity, ammo: Infinity, color: 0xd8c8a0, sound: 'mnt_golem_bone', heavy: true },
 };
 
 for (const m of Object.values(MOUNTS)) {
@@ -51,53 +51,53 @@ for (const [id, w] of Object.entries(MOUNT_WEAPONS)) {
 // O dano é aplicado pelo sistema real do jogo (Game.mountAbility → damageZombie / hitscan / explosion).
 export const MOUNT_SKILLS = {
   praca: [
-    { act: 'heavy', name: 'Rajada Pesada', icon: 'target', cd: 5, kind: 'burst', shots: 8, dmg: 22, range: 20, spread: 0.05, sound: 'shot_lmg', desc: 'Rajada de 8 tiros da metralhadora pesada, de longo alcance.' },
+    { act: 'heavy', name: 'Rajada Pesada', icon: 'target', cd: 5, kind: 'burst', shots: 8, dmg: 22, range: 20, spread: 0.05, sound: 'mnt_jeep_mg', desc: 'Rajada de 8 tiros da metralhadora pesada, de longo alcance.' },
     { act: 'dash',  name: 'Atropelamento', icon: 'run',    cd: 8, kind: 'charge', dur: 0.45, dmg: 70, knock: 14, sound: 'roar', desc: 'Acelera e atropela os inimigos à frente.' },
   ],
   armazem: [
-    { act: 'heavy',  name: 'Aríete Frontal',       icon: 'paw',   cd: 5, kind: 'cone', range: 3.2, arc: 1.0, dmg: 85, knock: 13, sound: 'hit_armor', desc: 'Golpe dos garfos à frente: dano alto e empurrão forte.' },
-    { act: 'second', name: 'Empurrão Hidráulico',  icon: 'burst', cd: 8, kind: 'cone', range: 3.6, arc: 1.4, dmg: 25, knock: 18, stun: 0.4, sound: 'stomp', desc: 'Empurra todos à frente sem matar: abre espaço para manobrar.' },
+    { act: 'heavy',  name: 'Aríete Frontal',       icon: 'paw',   cd: 5, kind: 'cone', range: 3.2, arc: 1.0, dmg: 85, knock: 13, sound: 'mnt_fork_hit', desc: 'Golpe dos garfos à frente: dano alto e empurrão forte.' },
+    { act: 'second', name: 'Empurrão Hidráulico',  icon: 'burst', cd: 8, kind: 'cone', range: 3.6, arc: 1.4, dmg: 25, knock: 18, stun: 0.4, sound: 'mnt_fork_push', desc: 'Empurra todos à frente sem matar: abre espaço para manobrar.' },
   ],
   vale: [
-    { act: 'heavy', name: 'Garras',    icon: 'paw', cd: 4, kind: 'cone', range: 3.4, arc: 1.6, dmg: 55, knock: 7, sound: 'blade', desc: 'Garras em leque: fere vários inimigos à frente.' },
-    { act: 'dash',  name: 'Investida', icon: 'run', cd: 7, kind: 'charge', dur: 0.4, dmg: 55, knock: 10, sound: 'roar', desc: 'Corrida curta que atropela quem estiver no caminho.' },
+    { act: 'heavy', name: 'Garras',    icon: 'paw', cd: 4, kind: 'cone', range: 3.4, arc: 1.6, dmg: 55, knock: 7, sound: 'mnt_boar_tusk', desc: 'Garras em leque: fere vários inimigos à frente.' },
+    { act: 'dash',  name: 'Investida', icon: 'run', cd: 7, kind: 'charge', dur: 0.4, dmg: 55, knock: 10, sound: 'mnt_boar_charge', desc: 'Corrida curta que atropela quem estiver no caminho.' },
   ],
   distrito: [
-    { act: 'heavy', name: 'Metralhadora de Casco', icon: 'target', cd: 4, kind: 'burst', shots: 6, dmg: 18, range: 18, spread: 0.05, sound: 'shot_lmg', desc: 'Seis tiros de metralhadora para alvos próximos.' },
+    { act: 'heavy', name: 'Metralhadora de Casco', icon: 'target', cd: 4, kind: 'burst', shots: 6, dmg: 18, range: 18, spread: 0.05, sound: 'mnt_jeep_mg', desc: 'Seis tiros de metralhadora para alvos próximos.' },
   ],
   coliseu: [
-    { act: 'heavy',  name: 'Estocada de Lança', icon: 'target', cd: 5, kind: 'line', range: 8, width: 1.0, dmg: 85, knock: 8, sound: 'blade', desc: 'Estocada longa que fura a fila de inimigos à frente.' },
+    { act: 'heavy',  name: 'Estocada de Lança', icon: 'target', cd: 5, kind: 'line', range: 8, width: 1.0, dmg: 85, knock: 8, sound: 'mnt_chariot_lance', desc: 'Estocada longa que fura a fila de inimigos à frente.' },
     { act: 'dash',   name: 'Atropelamento',     icon: 'run',    cd: 8, kind: 'charge', dur: 0.45, dmg: 70, knock: 14, sound: 'roar', desc: 'Acelera e atropela os inimigos à frente.' },
     { act: 'second', name: 'Lâminas Laterais',  icon: 'burst',  cd: 6, kind: 'sides', offset: 1.5, radius: 2.0, dmg: 60, knock: 9, sound: 'blade', desc: 'As foices das rodas cortam dos dois lados.' },
   ],
   lab: [
-    { act: 'heavy',  name: 'Braço Mecânico',  icon: 'paw',   cd: 4, kind: 'cone', range: 3.0, arc: 1.1, dmg: 70, knock: 11, sound: 'hit_armor', desc: 'Golpe pesado do braço hidráulico à frente.' },
+    { act: 'heavy',  name: 'Braço Mecânico',  icon: 'paw',   cd: 4, kind: 'cone', range: 3.0, arc: 1.1, dmg: 70, knock: 11, sound: 'mnt_fork_hit', desc: 'Golpe pesado do braço hidráulico à frente.' },
     { act: 'second', name: 'Pulso Energético', icon: 'burst', cd: 9, kind: 'area', radius: 4.5, dmg: 65, knock: 6, stun: 0.8, sound: 'emp', desc: 'Descarga de plasma em volta: dano em área e atordoa.' },
   ],
   templo: [
     { act: 'heavy',  name: 'Patada Solar',     icon: 'paw',   cd: 4, kind: 'cone', range: 3.2, arc: 1.3, dmg: 65, knock: 10, sound: 'blade', desc: 'Patada de leão com dano alto à frente.' },
-    { act: 'dash',   name: 'Investida Sagrada', icon: 'run',   cd: 8, kind: 'charge', dur: 0.4, dmg: 60, knock: 12, sound: 'roar', desc: 'Avanço sagrado que atropela os inimigos.' },
+    { act: 'dash',   name: 'Investida Sagrada', icon: 'run',   cd: 8, kind: 'charge', dur: 0.4, dmg: 60, knock: 12, sound: 'mnt_lion_roar', desc: 'Avanço sagrado que atropela os inimigos.' },
     { act: 'second', name: 'Onda Solar',       icon: 'burst', cd: 9, kind: 'area', radius: 5, dmg: 55, knock: 5, burn: { dps: 10, t: 2.5 }, sound: 'wave', desc: 'Onda de fogo em volta: dano em área e queimadura.' },
   ],
   cemiterio: [
-    { act: 'heavy',  name: 'Golpe de Ossos',  icon: 'paw',   cd: 4, kind: 'cone', range: 3.6, arc: 1.4, dmg: 80, knock: 10, sound: 'melee_hit', desc: 'Golpe pesado de osso: dano alto a frente.' },
+    { act: 'heavy',  name: 'Golpe de Ossos',  icon: 'paw',   cd: 4, kind: 'cone', range: 3.6, arc: 1.4, dmg: 80, knock: 10, sound: 'mnt_golem_bone', desc: 'Golpe pesado de osso: dano alto a frente.' },
     { act: 'dash',   name: 'Investida Ossea', icon: 'run',   cd: 8, kind: 'charge', dur: 0.45, dmg: 70, knock: 12, sound: 'stomp', desc: 'Avanco pesado que atropela os inimigos.' },
-    { act: 'second', name: 'Onda de Ossos',    icon: 'burst', cd: 9, kind: 'area', radius: 5, dmg: 70, knock: 6, sound: 'stomp', desc: 'Onda de energia ossea em volta: dano em area.' },
+    { act: 'second', name: 'Onda de Ossos',    icon: 'burst', cd: 9, kind: 'area', radius: 5, dmg: 70, knock: 6, sound: 'mnt_golem_bone', desc: 'Onda de energia ossea em volta: dano em area.' },
     { act: 'special', name: 'Furia do Tumulo', icon: 'flame', cd: 18, kind: 'fury', dur: 8, sound: 'roar', desc: 'Por 8 s: mais velocidade de ataque e dano.' },
   ],
   naval: [
-    { act: 'heavy',   name: 'Mordida Destruidora', icon: 'paw',   cd: 4,  kind: 'bite', dmg: 160, radius: 1.6, offset: 1.8, knock: 4, sound: 'stomp', desc: 'Mordida frontal de dano muito alto.' },
+    { act: 'heavy',   name: 'Mordida Destruidora', icon: 'paw',   cd: 4,  kind: 'bite', dmg: 160, radius: 1.6, offset: 1.8, knock: 4, sound: 'mnt_shark_bite', desc: 'Mordida frontal de dano muito alto.' },
     { act: 'dash',    name: 'Investida Abissal',   icon: 'run',   cd: 7,  kind: 'charge', dur: 0.45, dmg: 30, ram: 2, knock: 6, sound: 'roar', desc: 'Avanço rápido que atropela quem estiver no caminho.' },
-    { act: 'second',  name: 'Onda Esquelética',    icon: 'burst', cd: 10, kind: 'nova', radius: 4.5, dmg: 90, knock: 4, stun: 1.0, sound: 'stomp', desc: 'Impacto aquático em volta: dano em área e atordoa.' },
+    { act: 'second',  name: 'Onda Esquelética',    icon: 'burst', cd: 10, kind: 'nova', radius: 4.5, dmg: 90, knock: 4, stun: 1.0, sound: 'mnt_shark_nova', desc: 'Impacto aquático em volta: dano em área e atordoa.' },
     { act: 'special', name: 'Fúria Predadora',     icon: 'flame', cd: 18, kind: 'fury', dur: 8, sound: 'roar', desc: 'Por 8 s: mais velocidade de ataque e dano.' },
   ],
   templo_2: [
-    { act: 'heavy', name: 'Gado da Sacrifica', icon: 'target', cd: 5, kind: 'burst', shots: 6, dmg: 12, range: 20, spread: 0.05, sound: 'shot_rifle', desc: 'Rajada do escoteiro centenário: inimigos no alcance ganham dano em pilha.' },
+    { act: 'heavy', name: 'Gado da Sacrifica', icon: 'target', cd: 5, kind: 'burst', shots: 6, dmg: 12, range: 20, spread: 0.05, sound: 'mnt_chariot_lance', desc: 'Rajada do escoteiro centenário: inimigos no alcance ganham dano em pilha.' },
     { act: 'dash',  name: 'Investida da Guarda', icon: 'run', cd: 8, kind: 'charge', dur: 0.45, dmg: 68, knock: 14, sound: 'roar', desc: 'Solene avanço que atropela quem estiver no caminho.' },
   ],
   templo_3: [
-    { act: 'heavy', name: 'Mordida Real', icon: 'paw', cd: 4, kind: 'cone', range: 3.2, arc: 1.5, dmg: 58, knock: 9, sound: 'blade', desc: 'Garras do vaca real em leque: fere vários inimigos à frente.' },
-    { act: 'dash',  name: 'Investida Sacrificial', icon: 'run', cd: 7, kind: 'charge', dur: 0.4, dmg: 60, knock: 12, sound: 'roar', desc: 'Corrida pesada que atropela os invasores.' },
+    { act: 'heavy', name: 'Mordida Real', icon: 'paw', cd: 4, kind: 'cone', range: 3.2, arc: 1.5, dmg: 58, knock: 9, sound: 'mnt_cow_tusk', desc: 'Garras do vaca real em leque: fere vários inimigos à frente.' },
+    { act: 'dash',  name: 'Investida Sacrificial', icon: 'run', cd: 7, kind: 'charge', dur: 0.4, dmg: 60, knock: 12, sound: 'mnt_cow_tusk', desc: 'Corrida pesada que atropela os invasores.' },
   ],
 };
 // atropelamento passivo: dano ao encostar com velocidade (só veículos e montarias pesadas)
