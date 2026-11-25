@@ -3962,66 +3962,309 @@ export function drawEnemy(B, G, z, t) {
 
 
 // appended necropole models
+// ---- 10 inimigos da Necrópole (modelagem voxel articulada no padrão Block Horde) ----
 function drawNcVampire(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  P(base, 0, 0.9, 0, 0.3, 0.6, 0.25, 0x1a0a1a); // corpo
-  P(base, 0, 1.35, 0, 0.28, 0.28, 0.28, 0xe8d8c8); // cabeça
-  P(base, 0, 1.05, -0.15, 0.34, 0.05, 0.1, 0x2a0a1a); // capa
-  for (const sg of [1,-1]) P(base, sg*0.12, 1.32, 0.16, 0.04, 0.04, 0.02, 0xff2a2a);
+  const sw = Math.sin(z.walk) * 0.45, atk = z.attackT > 0 ? Math.sin(z.attackT * 10) * 0.8 : 0;
+  // pernas e botas aristocráticas
+  for (const sg of [1, -1]) {
+    const leg = joint(base, sg * 0.14, 0.54, 0, sg * sw, 0, 0);
+    P(leg, 0, -0.22, 0, 0.16, 0.44, 0.17, 0x16121c);
+    P(leg, 0, -0.48, 0.03, 0.17, 0.12, 0.22, 0x0c0a10);
+  }
+  // tronco: fraque escuro + colete carmesim + gola alta
+  P(base, 0, 0.9, 0, 0.48, 0.58, 0.3, 0x181020);
+  P(base, 0, 0.92, 0.14, 0.28, 0.46, 0.05, 0x6a1020);
+  P(base, 0, 1.06, 0.16, 0.12, 0.14, 0.03, 0xe8e0d8); // jabot branco
+  // capa rasgada com gola alta
+  const cape = joint(base, 0, 1.16, -0.16, 0.18 + Math.sin(t * 3) * 0.08, 0, 0);
+  P(cape, 0, -0.36, -0.04, 0.58, 0.76, 0.06, 0x1a0814);
+  P(cape, 0, -0.34, -0.01, 0.48, 0.68, 0.03, 0x781020);
+  P(base, 0, 1.24, -0.15, 0.52, 0.22, 0.06, 0x5a0c18); // gola alta
+  // braços com garras
+  for (const sg of [1, -1]) {
+    const arm = joint(base, sg * 0.32, 1.12, 0, -0.55 - sg * sw * 0.5 - atk, 0, sg * 0.12);
+    P(arm, 0, -0.22, 0, 0.14, 0.44, 0.15, 0x181020);
+    P(arm, 0, -0.46, 0.02, 0.12, 0.12, 0.13, 0xe4d4c8);
+  }
+  // cabeça pálida, cabelo escuro, olhos vermelhos e presas
+  const hd = joint(base, 0, 1.38, 0, 0.05, 0, 0);
+  P(hd, 0, 0.04, 0, 0.36, 0.36, 0.34, 0xe8d8cc);
+  P(hd, 0, 0.21, -0.02, 0.38, 0.12, 0.36, 0x120e16);
+  P(hd, 0, 0.15, 0.15, 0.1, 0.08, 0.04, 0x120e16); // bico de viúva
+  for (const sg of [1, -1]) {
+    G.part(hd, sg * 0.09, 0.06, 0.18, 0, 0, 0, 0, 0, 0.07, 0.05, 0.02, 0xff2020);
+    P(hd, sg * 0.05, -0.08, 0.175, 0.03, 0.07, 0.02, 0xffffff); // presas
+  }
 }
+
 function drawNcNosferatu(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  P(base, 0, 0.85, 0, 0.22, 0.55, 0.2, 0x4a3a4a);
-  P(base, 0, 1.25, 0, 0.24, 0.24, 0.22, 0x9a8a9a);
-  for (const sg of [1,-1]) P(base, sg*0.35, 0.95, 0, 0.3, 0.02, 0.25, 0x3a2a3a, 0, sg*0.4); // asas
+  const sw = Math.sin(z.walk) * 0.5, flap = Math.sin(t * 7) * 0.35;
+  // pernas magras curvadas
+  for (const sg of [1, -1]) {
+    const leg = joint(base, sg * 0.13, 0.52, 0, sg * sw - 0.15, 0, 0);
+    P(leg, 0, -0.24, 0, 0.12, 0.48, 0.13, 0x463a4c);
+    P(leg, 0, -0.48, 0.04, 0.13, 0.08, 0.2, 0x322838);
+  }
+  // tronco magro curvado + costelas
+  const torso = joint(base, 0, 0.56, 0, 0.22, 0, 0);
+  P(torso, 0, 0.28, 0, 0.36, 0.54, 0.24, 0x524458);
+  for (let k = 0; k < 3; k++) P(torso, 0, 0.18 + k * 0.12, 0.12, 0.28, 0.04, 0.03, 0x8a7a90);
+  // asas membranosas
+  for (const sg of [1, -1]) {
+    const w = joint(torso, sg * 0.18, 0.44, -0.1, 0, sg * (-0.35 + flap), sg * 0.25);
+    P(w, sg * 0.32, 0.06, -0.02, 0.64, 0.06, 0.05, 0x2e2234);
+    P(w, sg * 0.34, -0.14, -0.03, 0.58, 0.36, 0.03, 0x3c2642);
+    P(w, sg * 0.62, -0.06, -0.02, 0.05, 0.42, 0.04, 0x261a2c);
+  }
+  // braços longos com garras
+  for (const sg of [1, -1]) {
+    const arm = joint(torso, sg * 0.24, 0.46, 0.04, -0.75 - sg * sw * 0.4, 0, sg * 0.18);
+    P(arm, 0, -0.26, 0, 0.1, 0.52, 0.1, 0x584a5e);
+    for (let k = -1; k <= 1; k++) P(arm, k * 0.035, -0.56, 0.04, 0.025, 0.14, 0.03, 0xc8b8cc);
+  }
+  // cabeça deformada com orelhas pontudas e olhos brilhantes
+  const hd = joint(torso, 0, 0.66, 0.08, -0.1, 0, 0);
+  P(hd, 0, 0.04, 0, 0.32, 0.36, 0.32, 0x9c8ea2);
+  for (const sg of [1, -1]) {
+    P(hd, sg * 0.22, 0.08, -0.02, 0.14, 0.16, 0.06, 0x86788c, 0, sg * -0.4); // orelhas
+    G.part(hd, sg * 0.08, 0.06, 0.17, 0, 0, 0, 0, 0, 0.07, 0.05, 0.02, 0xffcc22);
+  }
 }
+
 function drawNcKnight(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  P(base, 0, 0.9, 0, 0.4, 0.7, 0.35, 0x5a4a3a); // armadura
-  P(base, 0, 1.35, 0, 0.26, 0.1, 0.26, 0x3a2a1a); // sem cabeça (pescoço cortado)
-  P(base, 0.3, 0.8, 0.2, 0.08, 0.8, 0.08, 0x7a6a5a); // espada
+  const sw = Math.sin(z.walk) * 0.4, atk = z.attackT > 0 ? Math.sin(z.attackT * 9) * 1.1 : 0;
+  // pernas de armadura enferrujada
+  for (const sg of [1, -1]) {
+    const leg = joint(base, sg * 0.17, 0.58, 0, sg * sw, 0, 0);
+    P(leg, 0, -0.24, 0, 0.2, 0.48, 0.22, 0x4e3c30);
+    P(leg, 0, -0.2, 0.11, 0.16, 0.14, 0.05, 0x765038); // joelheira
+    P(leg, 0, -0.5, 0.04, 0.22, 0.14, 0.28, 0x382a22);
+  }
+  // peitoral pesado + ombreiras + manto rasgado
+  P(base, 0, 0.96, 0, 0.58, 0.64, 0.38, 0x5c4434);
+  P(base, 0, 0.98, 0.19, 0.44, 0.48, 0.06, 0x78523a);
+  P(base, 0, 0.72, 0, 0.6, 0.12, 0.42, 0x2e221a); // cinto
+  P(base, 0, 0.86, -0.22, 0.52, 0.74, 0.05, 0x261c24); // capa
+  for (const sg of [1, -1]) {
+    P(base, sg * 0.38, 1.24, 0, 0.24, 0.22, 0.34, 0x6a4a36); // ombreiras
+    P(base, sg * 0.42, 1.38, 0, 0.07, 0.12, 0.07, 0x907058); // espinho
+  }
+  // pescoço cortado com chama espectral (sem cabeça!)
+  P(base, 0, 1.32, 0, 0.26, 0.1, 0.26, 0x2a1c16);
+  const fl = Math.sin(t * 8) * 0.04;
+  G.part(base, 0, 1.46 + fl, 0, 0, 0, 0, 0, 0, 0.2, 0.22, 0.2, 0x38e898);
+  G.part(base, 0, 1.62 - fl, 0, 0, 0, 0, 0, 0, 0.11, 0.14, 0.11, 0xb8ffdf);
+  // braço esquerdo (escudo/manopla) e direito (espada pesada)
+  const la = joint(base, -0.38, 1.14, 0, -0.35 + sw * 0.4, 0, -0.12);
+  P(la, 0, -0.24, 0, 0.18, 0.48, 0.18, 0x523e30);
+  const ra = joint(base, 0.38, 1.14, 0, -0.6 - sw * 0.4 - atk, 0, 0.12);
+  P(ra, 0, -0.24, 0, 0.18, 0.48, 0.18, 0x523e30);
+  P(ra, 0, -0.46, 0.22, 0.08, 0.08, 0.34, 0x3a2a20); // punho
+  P(ra, 0, -0.46, 0.36, 0.28, 0.07, 0.07, 0x8a6448); // guarda
+  P(ra, 0, -0.46, 0.86, 0.12, 0.05, 0.94, 0x9aa4ae); // lâmina pesada
+  G.part(ra, 0, -0.46, 0.86, 0, 0, 0, 0, 0, 0.04, 0.06, 0.88, 0x48ffb0);
 }
+
 function drawNcExecutioner(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  P(base, 0, 0.95, 0, 0.45, 0.8, 0.4, 0x3a2a2a);
-  P(base, 0, 1.4, 0, 0.3, 0.3, 0.3, 0x2a1a1a); // máscara
-  P(base, 0.35, 0.85, 0.1, 0.15, 0.9, 0.15, 0x5a4a4a); // cutelo
+  const sw = Math.sin(z.walk) * 0.35, atk = z.attackT > 0 ? Math.sin(z.attackT * 8) * 1.15 : 0;
+  // pernas robustas
+  for (const sg of [1, -1]) {
+    const leg = joint(base, sg * 0.2, 0.56, 0, sg * sw, 0, 0);
+    P(leg, 0, -0.24, 0, 0.24, 0.48, 0.24, 0x2a1e1e);
+    P(leg, 0, -0.5, 0.04, 0.26, 0.14, 0.3, 0x1a1212);
+  }
+  // tronco largo + avental de couro + correntes cruzadas
+  P(base, 0, 0.98, 0, 0.68, 0.72, 0.44, 0x3c2828);
+  P(base, 0, 0.84, 0.22, 0.46, 0.72, 0.06, 0x261616); // avental
+  P(base, 0, 1.02, 0.24, 0.62, 0.08, 0.06, 0x6e747c, 0, 0.42); // corrente
+  P(base, 0, 1.02, 0.24, 0.62, 0.08, 0.06, 0x6e747c, 0, -0.42);
+  // cabeça com capuz e máscara de ferro
+  const hd = joint(base, 0, 1.5, 0, 0, 0, 0);
+  P(hd, 0, 0.04, 0, 0.38, 0.4, 0.38, 0x1e1618);
+  P(hd, 0, 0.04, 0.19, 0.32, 0.34, 0.06, 0x585e66); // máscara de ferro
+  for (const sg of [1, -1]) G.part(hd, sg * 0.09, 0.07, 0.23, 0, 0, 0, 0, 0, 0.07, 0.04, 0.02, 0xff3020);
+  // braços grossos + cutelo gigante
+  const la = joint(base, -0.46, 1.18, 0, -0.25 + sw * 0.4, 0, -0.14);
+  P(la, 0, -0.26, 0, 0.22, 0.54, 0.22, 0x4a3430);
+  const ra = joint(base, 0.46, 1.18, 0, -0.55 - sw * 0.4 - atk, 0, 0.14);
+  P(ra, 0, -0.26, 0, 0.22, 0.54, 0.22, 0x4a3430);
+  P(ra, 0, -0.52, 0.22, 0.09, 0.09, 0.42, 0x3a2418); // cabo
+  P(ra, 0, -0.5, 0.72, 0.08, 0.36, 0.76, 0x7c848c); // cutelo gigante
+  P(ra, 0, -0.66, 0.72, 0.09, 0.06, 0.74, 0xc8d0d8); // fio afiado
 }
+
 function drawNcReaper(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  P(base, 0, 1.0, 0, 0.35, 0.9, 0.3, 0x1a0a2a); // manto
-  P(base, 0, 1.5, 0, 0.22, 0.22, 0.22, 0x3a2a4a);
-  P(base, 0.3, 1.0, 0.1, 0.06, 1.0, 0.06, 0x6a5a7a); // foice
+  const bob = Math.sin(t * 2.8) * 0.1, atk = z.attackT > 0 ? Math.sin(z.attackT * 9) * 0.9 : 0;
+  // manto flutuante com tiras inferiores ondulantes
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const s = joint(base, Math.cos(a) * 0.18, 0.56 + bob, Math.sin(a) * 0.14, Math.sin(t * 3 + i) * 0.18, 0, 0);
+    P(s, 0, -0.22, 0, 0.16, 0.46, 0.12, 0x160c26);
+  }
+  // tronco encapuzado + costelas espectrais
+  P(base, 0, 0.92 + bob, 0, 0.5, 0.66, 0.36, 0x1e1032);
+  P(base, 0, 0.94 + bob, 0.16, 0.3, 0.42, 0.06, 0x10081c);
+  for (let k = 0; k < 3; k++) P(base, 0, 0.8 + k * 0.12 + bob, 0.19, 0.26, 0.04, 0.03, 0xc8d4e0);
+  // capuz escuro + olhos espectrais
+  P(base, 0, 1.44 + bob, -0.02, 0.46, 0.44, 0.46, 0x1a0c2c);
+  P(base, 0, 1.42 + bob, 0.18, 0.3, 0.28, 0.08, 0x08040e);
+  for (const sg of [1, -1]) G.part(base, sg * 0.09, 1.45 + bob, 0.23, 0, 0, 0, 0, 0, 0.08, 0.05, 0.02, 0x60f0ff);
+  // braços esqueléticos + foice espectral gigante
+  const la = joint(base, -0.32, 1.12 + bob, 0, -0.5, 0, -0.2);
+  P(la, 0, -0.22, 0, 0.12, 0.44, 0.12, 0x221238);
+  const ra = joint(base, 0.32, 1.12 + bob, 0, -0.65 - atk, 0, 0.15);
+  P(ra, 0, -0.22, 0, 0.12, 0.44, 0.12, 0x221238);
+  P(ra, 0, -0.42, 0.25, 0.06, 1.45, 0.06, 0x3a2a48, 0.35, 0); // cabo da foice
+  G.part(ra, -0.22, 0.16, 0.56, 0.2, 0, 0.35, 0, 0, 0.62, 0.14, 0.06, 0x70f4ff); // lâmina espectral
+  G.part(ra, -0.46, 0.04, 0.62, 0.2, 0, 0.85, 0, 0, 0.32, 0.1, 0.05, 0xb8ffff);
 }
+
 function drawNcBanshee(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  P(base, 0, 1.0, 0, 0.3, 0.8, 0.25, 0x9a8aaa);
-  P(base, 0, 1.45, 0, 0.26, 0.26, 0.26, 0xc8b8d8);
-  P(base, 0, 0.6, 0, 0.4, 0.05, 0.4, 0x7a6a8a); // vestido
+  const bob = Math.sin(t * 3.2) * 0.12;
+  // vestido fantasmagórico esvoaçante
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const s = joint(base, Math.cos(a) * 0.2, 0.54 + bob, Math.sin(a) * 0.16, Math.sin(t * 3.5 + i) * 0.22, 0, 0);
+    P(s, 0, -0.22, 0, 0.18, 0.48, 0.12, 0x8678a6);
+  }
+  P(base, 0, 0.92 + bob, 0, 0.44, 0.62, 0.28, 0xa89ac8);
+  // braços erguidos com garras
+  for (const sg of [1, -1]) {
+    const arm = joint(base, sg * 0.28, 1.12 + bob, 0, -0.9 + Math.sin(t * 4 + sg) * 0.15, 0, sg * 0.35);
+    P(arm, 0, -0.22, 0, 0.11, 0.46, 0.11, 0xc2b4e0);
+  }
+  // rosto pálido gritando + cabelo flutuante + anel sonoro
+  P(base, 0, 1.42 + bob, 0, 0.34, 0.36, 0.32, 0xdcd4ee);
+  P(base, 0, 1.46 + bob, -0.14, 0.42, 0.56, 0.14, 0x5c4c78); // cabelo
+  P(base, 0, 1.32 + bob, 0.17, 0.12, 0.12, 0.03, 0x160c24); // boca aberta
+  for (const sg of [1, -1]) G.part(base, sg * 0.09, 1.45 + bob, 0.17, 0, 0, 0, 0, 0, 0.08, 0.06, 0.02, 0x70e8ff);
+  const pulse = 0.46 + Math.sin(t * 6) * 0.08;
+  G.part(base, 0, 1.32 + bob, 0.34, 0, 0, 0, 0, 0, pulse, 0.04, 0.04, 0x90f0ff);
+  G.part(base, 0, 1.32 + bob, 0.34, 0, 0, 0, 0, 0, 0.04, pulse, 0.04, 0x90f0ff);
 }
+
 function drawNcAbomination(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  P(base, 0, 0.8, 0, 0.7, 0.9, 0.6, 0x6a3a3a);
-  P(base, -0.2, 1.3, 0.1, 0.25, 0.25, 0.25, 0x8a5a5a);
-  P(base, 0.25, 1.2, -0.1, 0.22, 0.22, 0.22, 0x7a4a4a);
+  const sw = Math.sin(z.walk) * 0.32, atk = z.attackT > 0 ? Math.sin(z.attackT * 7) * 0.9 : 0;
+  // pernas grossas desiguais
+  for (const sg of [1, -1]) {
+    const leg = joint(base, sg * 0.28, 0.56, 0, sg * sw, 0, 0);
+    P(leg, 0, -0.26, 0, 0.28, 0.52, 0.28, sg > 0 ? 0x6c3e3e : 0x5c463c);
+    P(leg, 0, -0.52, 0.04, 0.3, 0.12, 0.34, 0x3a2424);
+  }
+  // tronco gigante costurado + costuras escuras + barriga rasgada
+  P(base, 0, 1.02, 0, 0.86, 0.84, 0.62, 0x723e3e);
+  P(base, 0.16, 1.06, 0.04, 0.44, 0.68, 0.56, 0x624a3e); // remendo diferente
+  P(base, 0, 0.96, 0.32, 0.05, 0.62, 0.04, 0x221010); // costura central
+  for (let k = -2; k <= 2; k++) P(base, 0, 0.96 + k * 0.12, 0.33, 0.18, 0.03, 0.03, 0x1a0c0c);
+  // duas cabeças costuradas
+  P(base, -0.16, 1.58, 0.06, 0.34, 0.34, 0.34, 0x865450);
+  P(base, 0.24, 1.5, -0.02, 0.26, 0.26, 0.26, 0x74584c);
+  for (const sg of [1, -1]) G.part(base, -0.16 + sg * 0.08, 1.6, 0.24, 0, 0, 0, 0, 0, 0.06, 0.05, 0.02, 0x60ff40);
+  G.part(base, 0.24, 1.52, 0.12, 0, 0, 0, 0, 0, 0.06, 0.05, 0.02, 0x60ff40);
+  // braços gigantes (esquerdo: punho enorme; direito: gancho de ferro)
+  const la = joint(base, -0.56, 1.24, 0, -0.4 + sw * 0.4 - atk, 0, -0.15);
+  P(la, 0, -0.32, 0, 0.28, 0.66, 0.28, 0x744242);
+  P(la, 0, -0.66, 0.04, 0.34, 0.26, 0.34, 0x5c3030);
+  const ra = joint(base, 0.56, 1.24, 0, -0.55 - sw * 0.4 - atk, 0, 0.15);
+  P(ra, 0, -0.3, 0, 0.24, 0.6, 0.24, 0x644c40);
+  P(ra, 0, -0.66, 0.1, 0.08, 0.34, 0.08, 0x8a929a); // gancho
+  P(ra, 0, -0.82, 0.22, 0.08, 0.08, 0.26, 0x8a929a);
 }
+
 function drawNcGargoyle(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  P(base, 0, 0.85, 0, 0.4, 0.7, 0.35, 0x7a7a7a);
-  P(base, 0, 1.3, 0, 0.3, 0.3, 0.3, 0x5a5a5a);
-  for (const sg of [1,-1]) P(base, sg*0.3, 1.0, -0.1, 0.15, 0.4, 0.12, 0x6a6a6a, 0, sg*0.5); // asas de pedra
+  const bob = Math.sin(t * 3.4) * 0.08, flap = Math.sin(t * 5.5) * 0.3;
+  // pernas de pedra com garras
+  for (const sg of [1, -1]) {
+    const leg = joint(base, sg * 0.18, 0.54 + bob, 0, -0.25, 0, 0);
+    P(leg, 0, -0.22, 0, 0.18, 0.44, 0.2, 0x686c72);
+    P(leg, 0, -0.46, 0.06, 0.2, 0.1, 0.26, 0x4e5258);
+  }
+  // tronco de pedra rachada
+  P(base, 0, 0.92 + bob, 0, 0.52, 0.6, 0.36, 0x7c8086);
+  P(base, 0, 0.98 + bob, 0.18, 0.38, 0.34, 0.06, 0x64686e);
+  // asas grandes de pedra
+  for (const sg of [1, -1]) {
+    const w = joint(base, sg * 0.24, 1.12 + bob, -0.14, 0, sg * (-0.3 + flap), sg * 0.3);
+    P(w, sg * 0.36, 0.12, -0.02, 0.72, 0.1, 0.08, 0x585c62);
+    P(w, sg * 0.36, -0.12, -0.04, 0.64, 0.42, 0.06, 0x6c7076);
+  }
+  // braços com garras de pedra
+  for (const sg of [1, -1]) {
+    const arm = joint(base, sg * 0.34, 1.1 + bob, 0.04, -0.65, 0, sg * 0.2);
+    P(arm, 0, -0.24, 0, 0.16, 0.48, 0.16, 0x72767c);
+    P(arm, 0, -0.5, 0.06, 0.18, 0.14, 0.2, 0x52565c);
+  }
+  // cabeça demoníaca com chifres e olhos âmbar
+  P(base, 0, 1.4 + bob, 0.06, 0.36, 0.34, 0.36, 0x70747a);
+  for (const sg of [1, -1]) {
+    P(base, sg * 0.16, 1.64 + bob, 0.02, 0.09, 0.24, 0.09, 0x484c52, -0.2, sg * -0.35); // chifres
+    G.part(base, sg * 0.09, 1.42 + bob, 0.25, 0, 0, 0, 0, 0, 0.08, 0.05, 0.02, 0xffaa20);
+  }
 }
+
 function drawNcPlague(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  P(base, 0, 0.9, 0, 0.3, 0.6, 0.25, 0x5a7a3a);
-  P(base, 0, 1.35, 0.1, 0.28, 0.28, 0.3, 0x3a4a1a); // máscara bico
-  P(base, 0.15, 1.2, 0.25, 0.1, 0.1, 0.15, 0x8a9a5a);
+  const sw = Math.sin(z.walk) * 0.4;
+  // botas + sobretudo longo verde-escuro
+  for (const sg of [1, -1]) {
+    const leg = joint(base, sg * 0.14, 0.5, 0, sg * sw, 0, 0);
+    P(leg, 0, -0.22, 0, 0.16, 0.44, 0.18, 0x242e1c);
+    P(leg, 0, -0.46, 0.03, 0.18, 0.1, 0.22, 0x161812);
+  }
+  P(base, 0, 0.88, 0, 0.5, 0.68, 0.34, 0x324622);
+  P(base, 0, 0.68, 0, 0.54, 0.08, 0.38, 0x1c1812); // cinto
+  // frascos de veneno brilhantes na cintura
+  for (const sg of [1, -1]) G.part(base, sg * 0.26, 0.62, 0.14, 0, 0, 0, 0, 0, 0.09, 0.16, 0.09, 0x76ff38);
+  // braços + cajado com frasco tóxico
+  const la = joint(base, -0.32, 1.1, 0, -0.35 + sw * 0.4, 0, -0.1);
+  P(la, 0, -0.22, 0, 0.14, 0.46, 0.14, 0x2c3e1e);
+  const ra = joint(base, 0.32, 1.1, 0, -0.6 - sw * 0.4, 0, 0.1);
+  P(ra, 0, -0.22, 0, 0.14, 0.46, 0.14, 0x2c3e1e);
+  P(ra, 0, -0.38, 0.2, 0.06, 1.1, 0.06, 0x3a2a1c, 0.25, 0);
+  G.part(ra, 0, 0.18, 0.34, 0, 0, 0, 0, 0, 0.16, 0.2, 0.16, 0x76ff38);
+  // chapéu largo + máscara de bico branca + lentes verdes
+  P(base, 0, 1.4, 0, 0.34, 0.34, 0.34, 0x242820);
+  P(base, 0, 1.38, 0.18, 0.24, 0.24, 0.1, 0xe8e4d4); // máscara
+  P(base, 0, 1.33, 0.34, 0.12, 0.12, 0.28, 0xdcd6c0, 0.15, 0); // bico longo
+  P(base, 0, 1.58, 0, 0.62, 0.06, 0.62, 0x1c2018); // aba do chapéu
+  P(base, 0, 1.7, 0, 0.36, 0.2, 0.36, 0x242a1e); // copa do chapéu
+  for (const sg of [1, -1]) G.part(base, sg * 0.09, 1.42, 0.24, 0, 0, 0, 0, 0, 0.08, 0.07, 0.03, 0x80ff40);
 }
+
 function drawNcTombking(B, G, base, z, col, t) {
   const P = (m, cx, cy, cz, sx, sy, sz, c, rx = 0, rz = 0) => B.part(m, cx, cy, cz, rx, rz, 0, 0, 0, sx, sy, sz, col(c));
-  P(base, 0, 0.9, 0, 0.35, 0.7, 0.3, 0xd8c8a0);
-  P(base, 0, 1.4, 0, 0.3, 0.15, 0.3, 0x9a8a6a); // coroa quebrada
-  P(base, 0.3, 0.9, 0.1, 0.08, 0.8, 0.08, 0xc8b890); // lança
+  const sw = Math.sin(z.walk) * 0.38, atk = z.attackT > 0 ? Math.sin(z.attackT * 9) * 0.9 : 0;
+  // pernas esqueléticas com grevas douradas
+  for (const sg of [1, -1]) {
+    const leg = joint(base, sg * 0.15, 0.56, 0, sg * sw, 0, 0);
+    P(leg, 0, -0.24, 0, 0.13, 0.48, 0.13, 0xd8caa6);
+    P(leg, 0, -0.36, 0.02, 0.17, 0.22, 0.18, 0xb88c24);
+  }
+  // tronco esquelético + manto real + ombreiras douradas
+  P(base, 0, 0.94, 0, 0.42, 0.6, 0.28, 0xc8b892);
+  for (let k = 0; k < 3; k++) P(base, 0, 0.82 + k * 0.13, 0.14, 0.36, 0.05, 0.04, 0xe8dcc0);
+  P(base, 0, 0.86, -0.18, 0.54, 0.82, 0.06, 0x3a1842); // manto real
+  for (const sg of [1, -1]) P(base, sg * 0.32, 1.2, 0, 0.22, 0.18, 0.28, 0xd4a020);
+  // crânio + coroa dourada + olhos espectrais
+  P(base, 0, 1.44, 0, 0.34, 0.36, 0.34, 0xe2d6b8);
+  P(base, 0, 1.66, 0, 0.38, 0.12, 0.38, 0xd4a020); // base da coroa
+  for (const sg of [-1, 0, 1]) P(base, sg * 0.13, 1.78, 0.14, 0.07, 0.14, 0.06, 0xf0c840);
+  for (const sg of [1, -1]) G.part(base, sg * 0.09, 1.46, 0.18, 0, 0, 0, 0, 0, 0.08, 0.06, 0.02, 0xc060ff);
+  // braços esqueléticos + lança espectral real
+  const la = joint(base, -0.32, 1.12, 0, -0.3 + sw * 0.4, 0, -0.12);
+  P(la, 0, -0.22, 0, 0.11, 0.46, 0.11, 0xd8caa6);
+  const ra = joint(base, 0.32, 1.12, 0, -0.6 - sw * 0.4 - atk, 0, 0.12);
+  P(ra, 0, -0.22, 0, 0.11, 0.46, 0.11, 0xd8caa6);
+  P(ra, 0, -0.36, 0.24, 0.06, 1.45, 0.06, 0xb88c24, 0.3, 0);
+  G.part(ra, 0, 0.34, 0.46, 0.3, 0, 0, 0, 0, 0.14, 0.36, 0.08, 0xc870ff);
 }
 
 // chefes da Necrópole (mesmo padrão B.part dos mobs nc_*)
