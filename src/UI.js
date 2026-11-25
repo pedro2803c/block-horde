@@ -246,6 +246,7 @@ export class UI {
     this.screen = name;
     this.screenData = data;
     document.body.classList.toggle('screen-open', !!name);
+    if (name) this.interactEl?.classList.add('hidden');
     this.screenEl.replaceChildren();
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
     if (!name) return;

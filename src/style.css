@@ -545,7 +545,7 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 .reload-line i b { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--primary-lo), var(--primary-hi)); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .interact-prompt { position: absolute; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.6rem; border-radius: var(--r-sm); background: linear-gradient(180deg, #1b1f28, #0e1117); border: 2px solid var(--primary); color: #fff; font-weight: 700; font-size: 0.85rem; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 193, 7, 0.3); pointer-events: none; z-index: 10; white-space: nowrap; }
-.interact-prompt.hidden { display: none; }
+.interact-prompt.hidden, body.screen-open .interact-prompt { display: none !important; }
 .interact-prompt .interact-key { display: inline-flex; align-items: center; justify-content: center; min-width: 1.6rem; height: 1.6rem; padding: 0 0.3rem; border-radius: 4px; background: var(--primary); color: #000; font-weight: 900; font-size: 0.85rem; }
 .interact-prompt .interact-text { color: var(--text); }
 /* Estados visuais */
