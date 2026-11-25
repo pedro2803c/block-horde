@@ -2920,10 +2920,11 @@ const V2 = {
       P(J.torso, 0, 0.64, -0.32, 0.045, 0.18, 0.045, 0x2a2420); // pavio
       const spark = 0.11 + Math.sin(J.t * 24) * 0.03;
       L(J.torso, 0, 0.76, -0.32, spark, spark, spark, Math.sin(J.t * 24) > 0 ? 0xffe840 : 0xff6818);
-      // banana de dinamite acesa na mão direita
-      P(J.armR, 0, -0.34, 0.08, 0.08, 0.28, 0.08, 0xe0241c, 0.4, 0);
-      P(J.armR, 0, -0.34, 0.12, 0.085, 0.06, 0.02, 0xf4ece0, 0.4, 0);
-      L(J.armR, 0, -0.18, 0.14, 0.09, 0.09, 0.09, 0xffc820);
+      // bananas de dinamite extras nas laterais da cintura
+      for (const sg of [1, -1]) {
+        P(J.torso, sg * 0.38, 0.28, 0.04, 0.09, 0.34, 0.09, 0xe0241c);
+        P(J.torso, sg * 0.38, 0.28, -0.07, 0.09, 0.34, 0.09, 0xc81e16);
+      }
     },
   }),
   armored: (B, G, b, z, col, t) => drawRigV2(B, G, b, z, col, t, {
