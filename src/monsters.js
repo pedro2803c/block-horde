@@ -2896,15 +2896,34 @@ const V2 = {
     },
   }),
   bloater: (B, G, b, z, col, t) => drawRigV2(B, G, b, z, col, t, {
-    skin: PALE, shirt: 0xb8b0a0, belly: 0xd8c8b0, pants: 0x4a3a2c, boots: 0x2c241c, eye: 0xffd040,
-    w: 1.55, chest: 1.1, depth: 1.7, legW: 1.1, legH: 0.4, torsoH: 0.62, head: 0.72, headFwd: 0.6, headDown: 0.0, hunch: -0.08, arms: 'reach', armW: 0.85, stride: 0.4, gait: 0.75, bob: 0.05,
+    skin: PALE, shirt: 0x3e3a36, belly: 0x2c2824, pants: 0x4a3a2c, boots: 0x221c18, eye: 0xff3820,
+    w: 1.32, chest: 1.12, depth: 1.35, legW: 1.05, legH: 0.44, torsoH: 0.62, head: 0.82, headFwd: 0.35, headDown: 0.0, hunch: 0.06, arms: 'reach', armW: 0.9, stride: 0.45, gait: 0.8, bob: 0.05,
     extra: (J, P, L) => {
-      const pulse = 1 + Math.sin(J.t * 6) * 0.06;
-      P(J.torso, 0, 0.24, 0.12, 0.66 * pulse, 0.44 * pulse, 0.5 * pulse, 0xd8c0a0); // barriga inchada
-      for (const [x, y, zz] of [[-0.22, 0.32, 0.38], [0.2, 0.16, 0.38], [0.05, 0.42, 0.38], [0.3, 0.38, 0.2]]) L(J.torso, x, y, zz, 0.1, 0.1, 0.04, 0xffb020); // bolhas incandescentes
-      for (let i = 0; i < 3; i++) P(J.torso, -0.1 + i * 0.1, 0.2 + i * 0.08, 0.385, 0.03, 0.2, 0.02, 0x8a3a20, 0, 0.4 * (i - 1)); // veias
-      P(J.torso, 0.2, 0.46, -0.3, 0.12, 0.12, 0.12, 0x5a5a50); // fusível
-      if (Math.sin(J.t * 22) > 0) L(J.torso, 0.2, 0.58, -0.3, 0.1, 0.1, 0.1, 0xffe060);
+      // 5 bananas de TNT vermelhas amarradas na frente do peito
+      for (const x of [-0.24, -0.12, 0, 0.12, 0.24]) {
+        P(J.torso, x, 0.3, 0.3, 0.095, 0.36, 0.095, 0xe0241c);
+      }
+      // faixa branca/amarela TNT + cintas pretas segurando as bombas
+      P(J.torso, 0, 0.3, 0.345, 0.6, 0.09, 0.02, 0xf4ece0);
+      P(J.torso, 0, 0.3, 0.358, 0.36, 0.04, 0.015, 0x181818);
+      P(J.torso, 0, 0.42, 0.28, 0.64, 0.045, 0.14, 0x1c1816);
+      P(J.torso, 0, 0.18, 0.28, 0.64, 0.045, 0.14, 0x1c1816);
+      // detonador piscando no centro do peito
+      if (Math.sin(J.t * 16) > 0) L(J.torso, 0, 0.42, 0.36, 0.08, 0.08, 0.04, 0xff2820);
+      // fardo grande de TNT nas costas com pavio aceso
+      for (const x of [-0.14, 0, 0.14]) {
+        P(J.torso, x, 0.34, -0.32, 0.12, 0.46, 0.14, 0xd82018);
+      }
+      P(J.torso, 0, 0.34, -0.395, 0.44, 0.1, 0.02, 0xf4ece0);
+      P(J.torso, 0, 0.48, -0.32, 0.46, 0.045, 0.16, 0x1c1816);
+      P(J.torso, 0, 0.2, -0.32, 0.46, 0.045, 0.16, 0x1c1816);
+      P(J.torso, 0, 0.64, -0.32, 0.045, 0.18, 0.045, 0x2a2420); // pavio
+      const spark = 0.11 + Math.sin(J.t * 24) * 0.03;
+      L(J.torso, 0, 0.76, -0.32, spark, spark, spark, Math.sin(J.t * 24) > 0 ? 0xffe840 : 0xff6818);
+      // banana de dinamite acesa na mão direita
+      P(J.armR, 0, -0.34, 0.08, 0.08, 0.28, 0.08, 0xe0241c, 0.4, 0);
+      P(J.armR, 0, -0.34, 0.12, 0.085, 0.06, 0.02, 0xf4ece0, 0.4, 0);
+      L(J.armR, 0, -0.18, 0.14, 0.09, 0.09, 0.09, 0xffc820);
     },
   }),
   armored: (B, G, b, z, col, t) => drawRigV2(B, G, b, z, col, t, {
