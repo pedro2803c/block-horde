@@ -3474,8 +3474,6 @@ const V3 = {
       L(J.head, 0, 0.2, 0.25, 0.36, 0.05, 0.02, 0x40ff9a);
       P(J.torso, 0, J.tH * 0.6, -0.26, 0.4, 0.56, 0.2, 0x2a3a30); // gerador
       for (const x of [-0.12, 0.12]) { P(J.torso, x, J.tH * 0.6 + 0.4, -0.26, 0.06, 0.4, 0.06, 0x8a9a90); L(J.torso, x, J.tH * 0.6 + 0.62, -0.26, 0.1, 0.1, 0.1, 0x40ff9a); }
-      const p = 0.5 + 0.5 * Math.sin(J.t * 4);
-      L(J.torso, 0, -0.5, 0, 1.4 + p * 0.3, 0.02, 1.4 + p * 0.3, 0x2ecc71); // anel do campo
     },
   }),
   lb_corrosive: R2({
@@ -3485,7 +3483,6 @@ const V3 = {
       for (const [x, y, s] of [[-0.22, 0.25, 0.18], [0.2, 0.42, 0.14], [0.02, 0.15, 0.2], [0.26, 0.15, 0.1]]) { P(J.torso, x, y, 0.2, s, s, 0.08, 0x7a9a3a); L(J.torso, x, y, 0.245, s * 0.6, s * 0.6, 0.02, 0xc0ff40); } // bolsas ácidas
       L(J.jaw, 0, -0.12, 0.22, 0.06, 0.18, 0.04, 0xc0ff40); // baba ácida
       for (const a of J.arms) L(a.el, 0, -0.42, 0.06, 0.05, 0.12, 0.05, 0xc0ff40);
-      L(J.torso, 0, -0.5, 0.1, 0.5, 0.02, 0.5, 0x8aff30); // poça
     },
   }),
   lb_incendiary: R2({
