@@ -1896,30 +1896,4 @@ body.mode-pvp .radar {
   body.mode-pvp .pp .avatar { display: none; }
 }
 
-/* ===== SELEÇÃO DE MONTARIAS NO LOBBY PVP ===== */
-.pvp-mount-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
-  gap: 8px;
-}
-.pvp-mount-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: 4px;
-  padding: 10px 12px;
-  background: #1B1F28;
-  border: 1px solid #2E3440;
-  border-radius: 8px;
-  color: #EAEDEF;
-  cursor: pointer;
-}
-.pvp-mount-card.selected {
-  border-color: #FFC107;
-  box-shadow: 0 0 0 1px rgba(255, 193, 7, 0.35);
-}
-.pvp-mount-head { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 6px; }
-.pvp-mount-cat { font-size: 10px; font-weight: 700; color: #29B6F6; text-transform: uppercase; }
-.pvp-mount-stats { display: flex; gap: 8px; font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 0.04em; color: #FFC107; margin-top: 2px; }
-.pvp-slot-mount { font-size: 11px; color: #FFC107; font-weight: 600; }
+/* ===== PVP: SEM MONTARIAS (sempre a pé) ===== */

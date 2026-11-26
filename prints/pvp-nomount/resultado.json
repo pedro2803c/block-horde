@@ -1,0 +1,50 @@
+{
+  "results": [
+    {
+      "name": "Tela Criar Sala sem montaria",
+      "pass": true,
+      "detail": "{\"hasMountWord\":false,\"mountCards\":0,\"mountGrids\":0,\"steps\":[\"01\",\"02\",\"03\"]}"
+    },
+    {
+      "name": "Tela Entrar na Sala sem montaria",
+      "pass": true,
+      "detail": "{\"hasMountWord\":false,\"mountCards\":0,\"mountGrids\":0}"
+    },
+    {
+      "name": "Partida PvP inicia (2 jogadores)",
+      "pass": true,
+      "detail": "{\"state\":\"playing\",\"mode\":\"pvp\",\"players\":2}"
+    },
+    {
+      "name": "Nenhum jogador montado/montaria instanciada",
+      "pass": true,
+      "detail": "{\"mounted\":[false,false],\"mounts\":[null,null],\"worldMount\":null,\"mountBarHidden\":true,\"mountIndicatorHidden\":true}"
+    },
+    {
+      "name": "Chefe em PvP não libera montaria",
+      "pass": true,
+      "detail": "{\"worldMount\":null}"
+    },
+    {
+      "name": "HUD sem barra/indicador de montaria",
+      "pass": true,
+      "detail": "{\"bar\":true,\"ind\":true}"
+    },
+    {
+      "name": "Sem erros de página no PvP",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Mobile: controles visíveis e sem botão Montar no PvP",
+      "pass": true,
+      "detail": "{\"touchMode\":true,\"touchVisible\":true,\"mountBtnHidden\":true}"
+    },
+    {
+      "name": "Sem erros de página no PvP mobile",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "ok": true
+}

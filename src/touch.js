@@ -373,7 +373,7 @@ export class TouchControls {
     this.autoTag.classList.toggle('hidden', this.s.touchAuto === false);
     // botão de montar: visível quando há montaria viva na arena (ou o jogador está montado)
     const wm = g.worldMount;
-    const showMount = !!(wm && (p.isMounted || wm.alive));
+    const showMount = g.mode !== 'pvp' && !!(wm && (p.isMounted || wm.alive));
     this.bMount.classList.toggle('hidden', !showMount);
     if (showMount) {
       const near = !p.isMounted && Math.hypot(wm.x - p.pos.x, wm.z - p.pos.z) <= MOUNT_USE_DIST;

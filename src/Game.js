@@ -1528,28 +1528,6 @@ export class Game {
   // special: explosões, ácido, nuvens, pedras, pancada, investida e botes (o capacete reduz)
   damagePlayer(p, dmg, fx, fz, knock = 0, special = false) {
     if (!p.alive || this.debugGod) return;
-    // montaria PvP recebe dano primeiro (vida independente; ao destruir, não volta na mesma partida)
-    if (this.mode === 'pvp' && p.isMounted && p.pvpMount?.alive) {
-      const pm = p.pvpMount;
-      pm.hp -= dmg;
-      pm.hurtT = 0.16;
-      p.mountHp = Math.max(0, pm.hp);
-      if (pm.hp <= 0) {
-        pm.hp = 0;
-        pm.alive = false;
-        pm.destroyed = true;
-        p.isMounted = false;
-        p.weapon = 'pistol';
-        for (let k = 0; k < 14; k++) this.parts.spawn(p.pos.x + rand(-0.6, 0.6), rand(0.4, 1.4), p.pos.z + rand(-0.6, 0.6), rand(-4, 4), rand(2, 5), rand(-4, 4), 0.16, pick([0xff7a1a, 0xffc107, 0x2e3440]), 0.6, 12, 1);
-        this.audio.play('boom', { volume: 0.75, priority: true });
-        this.noiseShake(0.35);
-        this.ui.alert(`${pm.spec.name} destruída! Continue o combate a pé.`, 'danger', 'warning');
-        return;
-      }
-      this.audio.play('hit_armor', { volume: 0.55, priority: true });
-      this.noiseShake(0.14);
-      return;
-    }
     // montaria recebe dano primeiro (instância da partida, sem mutar MOUNTS)
     if (p.isMounted && this.worldMount && this.worldMount.rider === p) {
       const wm = this.worldMount;
@@ -1836,6 +1814,7 @@ export class Game {
   releaseMount(boss) {
     if (!boss || boss._mountReleased) return; // evita disparo duplicado para o mesmo chefe
     boss._mountReleased = true;
+    if (this.mode === 'pvp') return; // PvP é sempre a pé: nenhuma montaria é liberada
     const arenaId = this.arena.def.id;
     const prog = mountOrderForArena(arenaId);
     const bt = boss.type;
@@ -4031,9 +4010,8 @@ wm.state = 'destruída';
     }
     const len = Math.hypot(mx, mz);
     const ter = this.arena.terrainAt(p.pos.x, p.pos.z);
-    // montaria: usa velocidade da montaria em vez de velocidade do jogador
-    const pvpMDef = this.mode === 'pvp' && p.isMounted && p.pvpMount?.alive ? p.pvpMount.def : null;
-    let speed = pvpMDef ? pvpMDef.speed : (p.isMounted && p.mountId !== null ? mountDef(p.mountId).speed : 4.7 * (p.energyT > 0 ? 1.3 : 1) * (ter === T_WATER ? 0.6 : ter === T_BUSH ? 0.7 : 1) * (1 + this.pv(p, 'agility') / 100) * (p.furyT > 0 ? 1.3 : 1) * (p.boots ? 1.15 : 1));
+    // montaria (solo/co-op): usa velocidade da montaria em vez de velocidade do jogador
+    let speed = p.isMounted && p.mountId !== null ? mountDef(p.mountId).speed : 4.7 * (p.energyT > 0 ? 1.3 : 1) * (ter === T_WATER ? 0.6 : ter === T_BUSH ? 0.7 : 1) * (1 + this.pv(p, 'agility') / 100) * (p.furyT > 0 ? 1.3 : 1) * (p.boots ? 1.15 : 1);
     // metralhadora pesada atirando: passos curtos
     const cw = WEAPONS[p.weapon];
     if (cw.slowFire && p.firingT > 0.3 && !(p.exoT > 0)) speed *= cw.slowFire;
@@ -4132,23 +4110,18 @@ wm.state = 'destruída';
     if (c.reload && inp.anyHit(c.reload)) this.startReload(p);
     p.fireCd -= dt;
     const wantMelee = inp.any(c.melee) || (c.mouse && inp.mouse.right);
-    if (wantMelee && this.mode === 'pvp' && p.isMounted && p.pvpMount?.alive) {
-      this.pvpMountAttack(p, true);
-    } else if (wantMelee && p.meleeCd <= 0 && p.meleeT <= 0) this.melee(p);
+    if (wantMelee && p.meleeCd <= 0 && p.meleeT <= 0) this.melee(p);
     const wantFire = inp.any(c.fire) || (c.mouse && inp.mouse.left) || (tt && inp.touchMode && this.settings.touchAuto !== false && AUTO_FIRE.has(WEAPONS[p.weapon].kind));
     if (wantFire && p.fireCd <= 0 && p.meleeT <= 0) {
-      if (this.mode === 'pvp' && p.isMounted && p.pvpMount?.alive) this.pvpMountAttack(p, false);
-      else this.fire(p);
+      this.fire(p);
     }
 
     // --- montaria: entrar/sair com KeyC (borda de subida para não piscar) ---
     // solo/J1: tecla configurável; J2: teclas fixas; controle e toque: botão virtual
     const isP2 = this.players.length > 1 && p.id === 1;
-    const pressingMount = inp.anyHit(isP2 && this.mode !== 'pvp' ? [...c.mount, 'VMount2'] : [this.mountKeys.toggle, 'VMount']);
-    if (this.mode === 'pvp' && pressingMount) {
-      if (p.isMounted) { p.isMounted = false; p.weapon = 'pistol'; }
-      else if (p.pvpMount && !p.pvpMount.destroyed && Math.hypot(p.pos.x - p.pvpMount.x, p.pos.z - p.pvpMount.z) <= MOUNT_USE_DIST) { p.isMounted = true; }
-    } else if (pressingMount && !p.isMounted && this.worldMount) {
+    // PvP é sempre a pé: a tecla/botão de montaria não faz nada nesse modo
+    const pressingMount = this.mode !== 'pvp' && inp.anyHit(isP2 && this.mode !== 'pvp' ? [...c.mount, 'VMount2'] : [this.mountKeys.toggle, 'VMount']);
+    if (pressingMount && !p.isMounted && this.worldMount) {
       this.startMount(p, this.worldMount.id);
     } else if (pressingMount && p.isMounted) {
       this.dismount(p);
@@ -5135,9 +5108,7 @@ wm.state = 'destruída';
       const cloak = p.cloakT > 0;
       if (!cloak || Math.random() > 0.08) {
         const look = cloak ? p.holoLook || (p.holoLook = holoLook(p.look)) : p.look;
-        const mountedDef = p.isMounted
-          ? (this.mode === 'pvp' ? (p.pvpMount?.alive ? p.pvpMount.def : null) : (this.worldMount && this.worldMount.rider === p ? this.worldMount.def : null))
-          : null;
+        const mountedDef = p.isMounted && this.worldMount && this.worldMount.rider === p ? this.worldMount.def : null;
         const seatY = mountedDef ? mountedDef.seatY : 0;
         const seatZ = mountedDef ? mountedDef.seatZ : 0;
         const px = p.pos.x + Math.sin(p.facing) * seatZ;
@@ -5168,11 +5139,6 @@ wm.state = 'destruída';
       G.box(p.pos.x + 0.48, 0.03, p.pos.z, 0.06, 0.02, 0.9, c);
       // indicador da direção de tiro
       G.box(p.pos.x + Math.sin(p.aim) * 0.85, 0.04, p.pos.z + Math.cos(p.aim) * 0.85, 0.12, 0.02, 0.12, c);
-    }
-    if (this.mode === 'pvp') {
-      for (const pl of this.players) {
-        if (pl.pvpMount && pl.pvpMount.alive) drawMount(B, G, pl.pvpMount, this.time, false);
-      }
     }
     if (this.worldMount && this.worldMount.alive) {
       const wm = this.worldMount;
