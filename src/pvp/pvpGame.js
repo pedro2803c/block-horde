@@ -1,6 +1,7 @@
 // Block Horde — Mixin de PvP Online (2 a 5 jogadores) + Horda de Zumbis (WebRTC P2P)
 import { ARENAS, SURVIVORS } from '../data.js';
 import { PvpPeer, PVP_MAX_PLAYERS } from './webrtc.js';
+import { PVP_MOUNT_ORDER, pvpMountSpec, createPvpMountInstance } from './pvpMounts.js';
 
 export const pvpMethods = {
   pvpState() {
@@ -13,22 +14,24 @@ export const pvpMethods = {
     this.pvpLocalIdx = 0;
   },
 
-  pvpHost(arenaId, survivorId) {
+  pvpHost(arenaId, survivorId, mountId) {
     this.pvpLeave();
+    const mId = pvpMountSpec(mountId || PVP_MOUNT_ORDER[0]).id;
     const state = {
       role: 'host',
       code: '',
       arenaId: arenaId || ARENAS[0].id,
       survivorId: survivorId || SURVIVORS[0].id,
+      mountId: mId,
       status: 'creating',
       error: '',
       started: false,
-      slots: [{ idx: 0, peerId: 'host', survivorId: survivorId || SURVIVORS[0].id, label: 'Jogador 1 (Host)' }],
+      slots: [{ idx: 0, peerId: 'host', survivorId: survivorId || SURVIVORS[0].id, mountId: mId, label: 'Jogador 1 (Host)' }],
       kills: [0, 0, 0, 0, 0],
       syncT: 0,
       remoteTargets: {},
     };
-    const refresh = () => { if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', arenaId: state.arenaId, survId: state.survivorId }, false); };
+    const refresh = () => { if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', arenaId: state.arenaId, survId: state.survivorId, mountId: state.mountId }, false); };
     const peer = new PvpPeer({
       ready: ({ code }) => {
         state.code = code;
@@ -67,21 +70,25 @@ export const pvpMethods = {
     const aDef = ARENAS.find((a) => a.id === pv.arenaId) || ARENAS[0];
     const picks = pv.slots.map((s) => SURVIVORS.find((x) => x.id === s.survivorId) || SURVIVORS[0]);
     const survIds = picks.map((s) => s.id);
+    const mountIds = pv.slots.map((s, i) => pvpMountSpec(s.mountId || PVP_MOUNT_ORDER[i % PVP_MOUNT_ORDER.length]).id);
     for (const s of pv.slots) {
-      if (s.peerId !== 'host') pv.peer.sendTo(s.peerId, { t: 'start', arenaId: aDef.id, survIds, myIdx: s.idx });
+      if (s.peerId !== 'host') pv.peer.sendTo(s.peerId, { t: 'start', arenaId: aDef.id, survIds, mountIds, myIdx: s.idx });
     }
     this.pvpLocalIdx = 0;
     this.startMatch(aDef, picks, 'pvp');
-    this.ui.alert(`PvP + Horda iniciado com ${picks.length} jogadores!`, 'success', 'checkCircle');
+    this.initPvpMounts(mountIds);
+    this.ui.alert(`PvP + Montarias iniciado com ${picks.length} jogadores!`, 'success', 'checkCircle');
   },
 
-  pvpJoin(code, survivorId) {
+  pvpJoin(code, survivorId, mountId) {
     this.pvpLeave();
+    const mId = pvpMountSpec(mountId || PVP_MOUNT_ORDER[1]).id;
     const state = {
       role: 'guest',
       code: String(code || '').toUpperCase().trim(),
       arenaId: ARENAS[0].id,
       survivorId: survivorId || SURVIVORS[1]?.id || SURVIVORS[0].id,
+      mountId: mId,
       status: 'joining',
       error: '',
       started: false,
@@ -90,7 +97,7 @@ export const pvpMethods = {
       syncT: 0,
       remoteTargets: {},
     };
-    const refresh = () => { if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: state.status === 'connected' || state.slots.length ? 'lobby' : 'join', survId: state.survivorId, code: state.code }, false); };
+    const refresh = () => { if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: state.status === 'connected' || state.slots.length ? 'lobby' : 'join', survId: state.survivorId, mountId: state.mountId, code: state.code }, false); };
     const peer = new PvpPeer({
       ready: () => {
         state.status = 'connecting';
@@ -98,7 +105,7 @@ export const pvpMethods = {
       },
       connected: () => {
         state.status = 'connected';
-        peer.send({ t: 'hello', survivorId: state.survivorId });
+        peer.send({ t: 'hello', survivorId: state.survivorId, mountId: state.mountId });
         refresh();
       },
       data: ({ msg, peerId }) => this.pvpOnData(msg, peerId),
@@ -139,24 +146,26 @@ export const pvpMethods = {
       let existing = pv.slots.find((s) => s.peerId === peerId);
       if (!existing) {
         const idx = pv.slots.length;
-        existing = { idx, peerId, survivorId: msg.survivorId || SURVIVORS[idx % SURVIVORS.length].id, label: `Jogador ${idx + 1}` };
+        const mId = pvpMountSpec(msg.mountId || PVP_MOUNT_ORDER[idx % PVP_MOUNT_ORDER.length]).id;
+        existing = { idx, peerId, survivorId: msg.survivorId || SURVIVORS[idx % SURVIVORS.length].id, mountId: mId, label: `Jogador ${idx + 1}` };
         pv.slots.push(existing);
       }
-      const pubSlots = pv.slots.map(({ idx, survivorId: sid, label }) => ({ idx, survivorId: sid, label }));
+      const pubSlots = pv.slots.map(({ idx, survivorId: sid, mountId: mid, label }) => ({ idx, survivorId: sid, mountId: mid, label }));
       pv.peer.broadcast({ t: 'lobby', arenaId: pv.arenaId, slots: pubSlots });
       if (pv.started) {
         const aDef = ARENAS.find((a) => a.id === pv.arenaId) || ARENAS[0];
         const survIds = pv.slots.map((s) => s.survivorId || SURVIVORS[0].id);
-        pv.peer.sendTo(peerId, { t: 'start', arenaId: aDef.id, survIds, myIdx: existing.idx });
+        const mountIds = pv.slots.map((s, i) => pvpMountSpec(s.mountId || PVP_MOUNT_ORDER[i % PVP_MOUNT_ORDER.length]).id);
+        pv.peer.sendTo(peerId, { t: 'start', arenaId: aDef.id, survIds, mountIds, myIdx: existing.idx });
       }
-      if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', arenaId: pv.arenaId, survId: pv.survivorId }, false);
+      if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', arenaId: pv.arenaId, survId: pv.survivorId, mountId: pv.mountId }, false);
       return;
     }
 
     if (msg.t === 'lobby' && pv.role === 'guest') {
       pv.arenaId = msg.arenaId || pv.arenaId;
       pv.slots = msg.slots || [];
-      if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', survId: pv.survivorId, code: pv.code }, false);
+      if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', survId: pv.survivorId, mountId: pv.mountId, code: pv.code }, false);
       return;
     }
 
@@ -164,9 +173,11 @@ export const pvpMethods = {
       pv.started = true;
       const aDef = ARENAS.find((a) => a.id === msg.arenaId) || ARENAS[0];
       const picks = (msg.survIds || []).map((id) => SURVIVORS.find((s) => s.id === id) || SURVIVORS[0]);
+      const mountIds = (msg.mountIds || []).length ? msg.mountIds : picks.map((_, i) => PVP_MOUNT_ORDER[i % PVP_MOUNT_ORDER.length]);
       this.pvpLocalIdx = msg.myIdx || 1;
       this.startMatch(aDef, picks.length >= 2 ? picks : [SURVIVORS[0], SURVIVORS[1]], 'pvp');
-      this.ui.alert(`Conectado! PvP + Horda com ${picks.length} jogadores!`, 'success', 'checkCircle');
+      this.initPvpMounts(mountIds);
+      this.ui.alert(`Conectado! PvP + Montarias com ${picks.length} jogadores!`, 'success', 'checkCircle');
       return;
     }
 
@@ -225,8 +236,19 @@ export const pvpMethods = {
     const me = this.players[localIdx];
     if (!me) return;
 
-    // envia estado local a ~20 Hz
+    // envia estado local a ~20 Hz (inclui montaria PvP: id, montado, hp, destruída)
     pv.syncT += dt;
+    const myM = me.pvpMount;
+    if (myM) {
+      myM.hurtT = Math.max(0, (myM.hurtT || 0) - dt);
+      myM.skillCd = Math.max(0, (myM.skillCd || 0) - dt);
+      if (me.isMounted && myM.alive) {
+        myM.x = me.pos.x;
+        myM.z = me.pos.z;
+        myM.facing = me.facing;
+        myM.walk = me.walk;
+      }
+    }
     if (pv.syncT >= 0.05) {
       pv.syncT = 0;
       pv.peer.broadcast({
@@ -239,10 +261,14 @@ export const pvpMethods = {
         arm: Math.round(me.armor || 0),
         w: me.weapon,
         alive: me.alive ? 1 : 0,
+        mId: myM?.id || '',
+        mOn: me.isMounted && myM?.alive ? 1 : 0,
+        mHp: Math.round(myM?.hp || 0),
+        mDead: myM?.destroyed ? 1 : 0,
       });
     }
 
-    // interpola posição/mira de todos os jogadores remotos (até 4)
+    // interpola posição/mira/montaria de todos os jogadores remotos (até 4)
     const k = Math.min(1, dt * 16);
     for (let i = 0; i < this.players.length; i++) {
       if (i === localIdx) continue;
@@ -259,7 +285,77 @@ export const pvpMethods = {
       other.armor = rt.arm;
       other.alive = !!rt.alive;
       if (rt.w && other.weapon !== rt.w) other.weapon = rt.w;
+      if (rt.mId && !other.pvpMount) other.pvpMount = createPvpMountInstance(other, rt.mId);
+      if (other.pvpMount) {
+        other.pvpMount.hp = rt.mHp ?? other.pvpMount.hp;
+        other.pvpMount.destroyed = !!rt.mDead;
+        other.pvpMount.alive = !other.pvpMount.destroyed;
+        other.isMounted = !!rt.mOn && other.pvpMount.alive;
+        if (other.isMounted) {
+          other.pvpMount.x = other.pos.x;
+          other.pvpMount.z = other.pos.z;
+          other.pvpMount.facing = other.facing;
+          other.pvpMount.walk = other.walk;
+        }
+      }
     }
+  },
+
+  // inicializa cada jogador montado na montaria escolhida no lobby PvP
+  initPvpMounts(mountIds = []) {
+    if (this.mode !== 'pvp' || !this.players) return;
+    this.players.forEach((p, i) => {
+      const mId = pvpMountSpec(mountIds[i] || PVP_MOUNT_ORDER[i % PVP_MOUNT_ORDER.length]).id;
+      const inst = createPvpMountInstance(p, mId);
+      p.pvpMount = inst;
+      p.isMounted = true;
+      p.mountId = mId;
+      p.mountHp = inst.hp;
+      p.mountMaxHp = inst.maxHp;
+    });
+  },
+
+  // ataque físico corpo a corpo da montaria no PvP (sem projéteis, mísseis ou balas)
+  pvpMountAttack(p, isSkill = false) {
+    if (this.mode !== 'pvp' || !p?.isMounted || !p.pvpMount?.alive) return false;
+    const m = p.pvpMount;
+    const spec = m.spec;
+    if (isSkill && m.skillCd > 0) return false;
+    const range = isSkill ? spec.skillRange : spec.range;
+    const dmg = isSkill ? spec.skillDmg : spec.dmg;
+    const knock = isSkill ? spec.skillKnock : spec.knock;
+    if (isSkill) m.skillCd = spec.skillCd;
+    p.fireCd = isSkill ? Math.max(p.fireCd, 0.45) : spec.rate;
+    p.firingT = 0.25;
+    p.recoil = 0.35;
+    this.audio.play(spec.sound || 'mnt_fork_hit', { volume: 0.7, pos: p.pos });
+    const fx = Math.sin(p.facing);
+    const fz = Math.cos(p.facing);
+    // efeito visual de impacto físico frontal
+    for (let k = 0; k < (isSkill ? 10 : 5); k++) {
+      this.parts.spawn(p.pos.x + fx * (range * 0.65), 0.7, p.pos.z + fz * (range * 0.65), (Math.random() - 0.5) * 4, 1 + Math.random() * 2, (Math.random() - 0.5) * 4, 0.12, isSkill ? 0xffc107 : 0xeaedef, 0.35, 8, 1);
+    }
+    const localIdx = this.pvpLocalIdx || 0;
+    // acerta zumbis da horda dentro do alcance físico
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      const d = Math.hypot(z.pos.x - p.pos.x, z.pos.z - p.pos.z);
+      if (d <= range + z.radius) this.damageZombie(z, dmg, p, false, fx * knock, fz * knock);
+    }
+    // acerta rivais PvP dentro do alcance físico real
+    if (p === this.players[localIdx] && this.pvp?.peer?.connected) {
+      for (let i = 0; i < this.players.length; i++) {
+        if (i === localIdx) continue;
+        const other = this.players[i];
+        if (!other || !other.alive) continue;
+        const hitR = other.isMounted && other.pvpMount?.alive ? other.pvpMount.spec.radius : other.radius;
+        const d = Math.hypot(other.pos.x - p.pos.x, other.pos.z - p.pos.z);
+        if (d <= range + hitR) {
+          this.pvp.peer.broadcast({ t: 'hit', fromIdx: localIdx, targetIdx: i, dmg });
+        }
+      }
+    }
+    return true;
   },
 
   // verifica se um disparo do jogador local acertou qualquer rival na arena (2 a 5 jogadores)

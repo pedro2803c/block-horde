@@ -1,5 +1,6 @@
 ﻿import { WEAPONS, WEAPON_ORDER, WEAPON_GROUPS, SLOT_KEYS, UNLOCKS, SURVIVORS, ARENAS, TIPS, ENEMIES, ENEMY_ORDER, profileNeed } from './data.js';
 import { mountDef, mountForArena, MOUNT_USE_DIST, MOUNTS, MOUNT_INFO, MOUNT_CATALOG } from './mounts.js';
+import { PVP_MOUNT_ORDER, pvpMountSpec } from './pvp/pvpMounts.js';
 import { MOUNT_ACTIONS, MOUNT_DEFAULTS, actionsOf, mountsUsing, keyLabel, conflictFor, saveMountKeys } from './mountControls.js';
 import { ITEMS, ITEM_ORDER, ITEM_CATS, MELEE } from './items.js';
 import { SCENERY, SCENERY_ORDER, SCENERY_CATS, SCENERY_BEH } from './scenery.js';
@@ -324,11 +325,30 @@ export class UI {
   }
 
   // ---- Lobby PvP Online (2 a 5 jogadores + Horda via WebRTC P2P) ----
-  scr_pvp({ view = 'home', arenaId, survId, code = '' } = {}) {
+  scr_pvp({ view = 'home', arenaId, survId, mountId, code = '' } = {}) {
     const g = this.g;
     const pv = g.pvpState();
     const curArena = arenaId || pv?.arenaId || ARENAS[0].id;
     const curSurv = survId || pv?.survivorId || SURVIVORS[view === 'join' ? 1 : 0]?.id || SURVIVORS[0].id;
+    const curMount = mountId || pv?.mountId || PVP_MOUNT_ORDER[view === 'join' ? 1 : 0] || PVP_MOUNT_ORDER[0];
+    const makeMountCards = (onPick) => PVP_MOUNT_ORDER.map((mid) => {
+      const m = pvpMountSpec(mid);
+      const sel = mid === curMount;
+      return h('button', {
+        type: 'button',
+        class: 'pvp-card pvp-mount-card' + (sel ? ' selected' : ''),
+        onclick: () => onPick(mid),
+      },
+        sel ? h('span', { class: 'pvp-check' }, icon('check')) : null,
+        h('div', { class: 'pvp-mount-head' },
+          h('b', { class: 'pvp-card-name' }, m.name),
+          h('span', { class: 'pvp-mount-cat' }, m.category)),
+        h('small', { class: 'pvp-card-sub' }, `${m.skillName} · ${m.desc}`),
+        h('div', { class: 'pvp-mount-stats' },
+          h('span', {}, `HP ${m.hp}`),
+          h('span', {}, `VEL ${m.speed}`),
+          h('span', {}, `DANO ${m.dmg}`)));
+    });
     const leaveAll = () => { g.pvpLeave(); this.showScreen('menu'); };
     const goHome = () => { g.pvpLeave(); this.showScreen('pvp', { view: 'home', arenaId: curArena, survId: curSurv }); };
     const prev = this.getPreview();
@@ -394,6 +414,7 @@ export class UI {
       const survCards = SURVIVORS.map((s) => makeSurvCard(s, s.id === curSurv, () => this.showScreen('pvp', { view: 'create', arenaId: curArena, survId: s.id }, false)));
       this.runPreviews(survPreviews, 'pvp');
 
+      const mountCards = makeMountCards((mid) => this.showScreen('pvp', { view: 'create', arenaId: curArena, survId: curSurv, mountId: mid }, false));
       const body = h('div', { class: 'pvp-create' },
         h('div', { class: 'pvp-step' },
           h('div', { class: 'pvp-step-head' }, h('span', { class: 'pvp-step-num' }, '01'), h('h3', {}, 'ESCOLHER ARENA')),
@@ -401,13 +422,16 @@ export class UI {
         h('div', { class: 'pvp-step' },
           h('div', { class: 'pvp-step-head' }, h('span', { class: 'pvp-step-num' }, '02'), h('h3', {}, 'ESCOLHER SOBREVIVENTE')),
           h('div', { class: 'pvp-surv-grid' }, survCards)),
+        h('div', { class: 'pvp-step' },
+          h('div', { class: 'pvp-step-head' }, h('span', { class: 'pvp-step-num' }, '03'), h('h3', {}, 'ESCOLHER MONTARIA (9)')),
+          h('div', { class: 'pvp-mount-grid' }, mountCards)),
         h('div', { class: 'pvp-step pvp-step-launch' },
-          h('div', { class: 'pvp-step-head' }, h('span', { class: 'pvp-step-num' }, '03'), h('h3', {}, 'CRIAR PARTIDA')),
+          h('div', { class: 'pvp-step-head' }, h('span', { class: 'pvp-step-num' }, '04'), h('h3', {}, 'CRIAR PARTIDA')),
           h('div', { class: 'pvp-launch-bar' },
-            h('p', { class: 'muted' }, 'Crie sua sala e convide outros jogadores para enfrentar a horda.'),
+            h('p', { class: 'muted' }, 'Crie sua sala e convide outros jogadores para enfrentar a horda com montarias.'),
             btn('primary lg', 'play', 'CRIAR SALA 1V1', () => {
-              g.pvpHost(curArena, curSurv);
-              this.showScreen('pvp', { view: 'lobby', arenaId: curArena, survId: curSurv });
+              g.pvpHost(curArena, curSurv, curMount);
+              this.showScreen('pvp', { view: 'lobby', arenaId: curArena, survId: curSurv, mountId: curMount });
             }, { 'data-focus': '' }))));
       return this.win('pvp-win pvp-create-win', 'CRIAR SALA · PVP ONLINE', goHome, body,
         h('div', { class: 'row end' }, btn('back', 'back', 'Voltar', goHome)));
@@ -425,6 +449,7 @@ export class UI {
       const errMsg = pv && pv.role === 'guest' && pv.error ? pv.error : '';
       const statusMsg = pv && pv.role === 'guest' && !errMsg && (pv.status === 'joining' || pv.status === 'connecting') ? `Conectando à sala ${pv.code}...` : '';
 
+      const mountCards = makeMountCards((mid) => this.showScreen('pvp', { view: 'join', survId: curSurv, mountId: mid, code: inp.value }, false));
       const body = h('div', { class: 'pvp-join' },
         h('div', { class: 'pvp-join-card' },
           h('small', {}, 'CÓDIGO DE CONVITE (5 CARACTERES)'),
@@ -435,12 +460,15 @@ export class UI {
             btn('primary lg', 'play', 'ENTRAR NA PARTIDA', () => {
               const c = inp.value.trim().toUpperCase();
               if (c.length < 4) { this.alert('Digite o código completo de 5 letras.', 'danger', 'warning'); return; }
-              g.pvpJoin(c, curSurv);
-              this.showScreen('pvp', { view: 'join', survId: curSurv, code: c });
+              g.pvpJoin(c, curSurv, curMount);
+              this.showScreen('pvp', { view: 'join', survId: curSurv, mountId: curMount, code: c });
             }, { 'data-focus': '' }))),
         h('div', { class: 'pvp-step' },
           h('div', { class: 'pvp-step-head' }, h('span', { class: 'pvp-step-num' }, '★'), h('h3', {}, 'SEU SOBREVIVENTE')),
-          h('div', { class: 'pvp-surv-grid' }, survCards)));
+          h('div', { class: 'pvp-surv-grid' }, survCards)),
+        h('div', { class: 'pvp-step' },
+          h('div', { class: 'pvp-step-head' }, h('span', { class: 'pvp-step-num' }, '⚡'), h('h3', {}, 'SUA MONTARIA (9)')),
+          h('div', { class: 'pvp-mount-grid' }, mountCards)));
       return this.win('pvp-win pvp-join-win', 'ENTRAR NA SALA', goHome, body,
         h('div', { class: 'row end' }, btn('back', 'back', 'Voltar', goHome)));
     }
@@ -464,7 +492,8 @@ export class UI {
             h('span', { class: 'pvp-slot-role' }, i === 0 ? 'JOGADOR 01 · HOST' : `JOGADOR 0${i + 1} · CONVIDADO`),
             connBadge(true, 'CONECTADO')),
           c,
-          h('b', { class: 'pvp-slot-name' }, sObj.name)));
+          h('b', { class: 'pvp-slot-name' }, sObj.name),
+          h('small', { class: 'pvp-slot-mount' }, `Montaria: ${pvpMountSpec(sl.mountId || PVP_MOUNT_ORDER[i % PVP_MOUNT_ORDER.length]).name}`)));
       } else {
         slotEls.push(h('div', { class: 'pvp-slot empty' },
           h('div', { class: 'pvp-slot-top' },
@@ -2135,14 +2164,16 @@ export class UI {
       const foe = g.players.find((_, idx) => idx !== localIdx);
       const pv = g.pvp;
       if (me) {
-        setT(this.pvpMeName, `${me.look?.name || 'VOCÊ'} (VOCÊ)`);
-        setT(this.pvpMeHpTxt, `${Math.max(0, Math.round(me.hp))}`);
-        setW(this.pvpMeHpFill, Math.max(0, Math.min(100, (me.hp / (me.maxHp || 100)) * 100)));
+        const mm = me.isMounted && me.pvpMount?.alive ? me.pvpMount : null;
+        setT(this.pvpMeName, mm ? `${mm.spec.name} (VOCÊ)` : `${me.look?.name || 'VOCÊ'} (VOCÊ)`);
+        setT(this.pvpMeHpTxt, mm ? `${Math.max(0, Math.round(mm.hp))}` : `${Math.max(0, Math.round(me.hp))}`);
+        setW(this.pvpMeHpFill, mm ? Math.max(0, Math.min(100, (mm.hp / (mm.maxHp || 100)) * 100)) : Math.max(0, Math.min(100, (me.hp / (me.maxHp || 100)) * 100)));
       }
       if (foe) {
-        setT(this.pvpFoeName, foe.look?.name || 'RIVAL');
-        setT(this.pvpFoeHpTxt, `${Math.max(0, Math.round(foe.hp))}`);
-        setW(this.pvpFoeHpFill, Math.max(0, Math.min(100, (foe.hp / (foe.maxHp || 100)) * 100)));
+        const fm = foe.isMounted && foe.pvpMount?.alive ? foe.pvpMount : null;
+        setT(this.pvpFoeName, fm ? fm.spec.name : (foe.look?.name || 'RIVAL'));
+        setT(this.pvpFoeHpTxt, fm ? `${Math.max(0, Math.round(fm.hp))}` : `${Math.max(0, Math.round(foe.hp))}`);
+        setW(this.pvpFoeHpFill, fm ? Math.max(0, Math.min(100, (fm.hp / (fm.maxHp || 100)) * 100)) : Math.max(0, Math.min(100, (foe.hp / (foe.maxHp || 100)) * 100)));
       }
       const myKills = pv?.kills?.[localIdx] || 0;
       const foeKills = (pv?.kills || []).reduce((acc, v, idx) => (idx === localIdx ? acc : acc + (v || 0)), 0);
