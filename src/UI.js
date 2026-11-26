@@ -1828,7 +1828,30 @@ export class UI {
     this.ptBadge = h('span', { class: 'pt-badge hidden', 'aria-hidden': 'true' });
     this.pauseBtn = iconBtn('sm pause-btn', 'pause', 'Pausar (P)', () => this.g.pause());
     this.pauseBtn.append(this.ptBadge);
+    // HUD superior exclusivo do modo PvP 1v1 + Horda
+    this.pvpMeName = h('span', { class: 'pvp-hud-name' }, 'VOCÊ');
+    this.pvpMeHpFill = h('i', { class: 'pvp-hud-fill me' });
+    this.pvpMeHpTxt = h('b', { class: 'pvp-hud-hp' }, '100');
+    this.pvpFoeName = h('span', { class: 'pvp-hud-name' }, 'RIVAL');
+    this.pvpFoeHpFill = h('i', { class: 'pvp-hud-fill foe' });
+    this.pvpFoeHpTxt = h('b', { class: 'pvp-hud-hp' }, '100');
+    this.pvpScoreMe = h('b', { class: 'pvp-sc-me' }, '0');
+    this.pvpScoreFoe = h('b', { class: 'pvp-sc-foe' }, '0');
+    this.pvpTimer = h('span', { class: 'pvp-hud-timer' }, '00:00');
+    this.pvpHorde = h('span', { class: 'pvp-hud-horde' }, 'ONDA 1 · 0');
+    this.pvpConn = h('span', { class: 'pvp-hud-conn on', title: 'Conexão P2P' }, h('i'), 'P2P');
+    this.pvpTop = h('div', { class: 'pvp-top hidden', 'aria-label': 'Placar PvP' },
+      h('div', { class: 'pvp-side me' },
+        h('div', { class: 'pvp-side-head' }, this.pvpMeName, this.pvpMeHpTxt),
+        h('div', { class: 'pvp-hud-bar' }, this.pvpMeHpFill)),
+      h('div', { class: 'pvp-mid' },
+        h('div', { class: 'pvp-score-row' }, this.pvpScoreMe, h('span', { class: 'pvp-vs' }, '×'), this.pvpScoreFoe),
+        h('div', { class: 'pvp-meta-row' }, this.pvpTimer, this.pvpHorde, this.pvpConn)),
+      h('div', { class: 'pvp-side foe' },
+        h('div', { class: 'pvp-side-head' }, this.pvpFoeHpTxt, this.pvpFoeName),
+        h('div', { class: 'pvp-hud-bar' }, this.pvpFoeHpFill)));
     this.hudEl.append(
+      this.pvpTop,
       h('div', { class: 'top' },
         h('div', { class: 'chip' }, icon('trophy'), h('div', {}, h('small', {}, 'Pontos'), this.hScore)),
         (this.hCoinChip = h('button', { class: 'chip coin-chip', title: 'Moedas da partida — abrir loja (B)', 'aria-label': 'Moedas da partida, abrir loja', onclick: () => this.g.openShop() }, icon('coin'), h('div', {}, h('small', {}, 'Moedas'), (this.hCoins = h('b', {}, '0'))), (this.hCoinDelta = h('i', { class: 'coin-delta' })))),
@@ -1864,8 +1887,16 @@ export class UI {
   hud(on) {
     this.hudEl.classList.toggle('hidden', !on);
     this.alertsEl.replaceChildren();
+    const isPvp = !!on && this.g.mode === 'pvp';
+    this.hudEl.classList.toggle('pvp-hud-mode', isPvp);
+    document.body.classList.toggle('mode-pvp', isPvp);
+    if (this.pvpTop) this.pvpTop.classList.toggle('hidden', !isPvp);
     if (!on) return;
     const g = this.g;
+    const localIdx = g.pvpLocalIdx || 0;
+    this.pEls.forEach((el, k) => {
+      el.root.classList.toggle('pvp-hidden', isPvp && k !== localIdx);
+    });
     const pv = this.getPreview();
     const dd = g.diff || diffOf('normal');
     this.hDiff.style.setProperty('--dc', dd.color);
@@ -2097,6 +2128,34 @@ export class UI {
       this.radarT = 0.05;
       this.drawRadar();
     }
+    // HUD competitivo exclusivo do PvP
+    if (g.mode === 'pvp' && this.pvpTop) {
+      const localIdx = g.pvpLocalIdx || 0;
+      const me = g.players[localIdx];
+      const foe = g.players.find((_, idx) => idx !== localIdx);
+      const pv = g.pvp;
+      if (me) {
+        setT(this.pvpMeName, `${me.look?.name || 'VOCÊ'} (VOCÊ)`);
+        setT(this.pvpMeHpTxt, `${Math.max(0, Math.round(me.hp))}`);
+        setW(this.pvpMeHpFill, Math.max(0, Math.min(100, (me.hp / (me.maxHp || 100)) * 100)));
+      }
+      if (foe) {
+        setT(this.pvpFoeName, foe.look?.name || 'RIVAL');
+        setT(this.pvpFoeHpTxt, `${Math.max(0, Math.round(foe.hp))}`);
+        setW(this.pvpFoeHpFill, Math.max(0, Math.min(100, (foe.hp / (foe.maxHp || 100)) * 100)));
+      }
+      const myKills = pv?.kills?.[localIdx] || 0;
+      const foeKills = (pv?.kills || []).reduce((acc, v, idx) => (idx === localIdx ? acc : acc + (v || 0)), 0);
+      setT(this.pvpScoreMe, `${myKills}`);
+      setT(this.pvpScoreFoe, `${foeKills}`);
+      const secs = Math.max(0, Math.floor(g.stats?.time || 0));
+      setT(this.pvpTimer, `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`);
+      let aliveZ = 0;
+      for (const z of g.zombies) if (z.alive) aliveZ++;
+      setT(this.pvpHorde, `ONDA ${g.wave || 1} · ${aliveZ + (g.toSpawn?.length || 0)}`);
+      const ok = !!pv?.peer?.connected;
+      tog(this.pvpConn, 'on', ok);
+    }
     // mira do mouse (solo)
     this.updateCrosshairs(dt);
   }
@@ -2107,7 +2166,7 @@ export class UI {
     const v = this._xv || (this._xv = g.mouseWorld.clone());
     this.xhs.forEach((x, k) => {
       const p = g.players[k];
-      const show = p && p.alive && g.state === 'playing';
+      const show = p && p.alive && g.state === 'playing' && (g.mode !== 'pvp' || k === (g.pvpLocalIdx || 0));
       tog(x.el, 'hidden', !show);
       if (!show) {
         x.target = null;

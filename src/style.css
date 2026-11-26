@@ -1788,3 +1788,110 @@ body.touch .top .coin-chip.can-buy::after { bottom: -0.9rem; font-size: 0.6rem; 
   .pvp-surv-grid { grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); }
   .pvp-lobby-arena-canvas { width: 110px; height: 70px; }
 }
+
+/* ===== HUD COMPETITIVO EXCLUSIVO E ADAPTATIVO PARA PVP 1V1 + HORDA ===== */
+body.mode-pvp .hud > .top { display: none !important; }
+body.mode-pvp .pp.pvp-hidden { display: none !important; }
+
+.pvp-top {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: minmax(150px, 230px) auto minmax(150px, 230px);
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: rgba(14, 17, 23, 0.86);
+  border: 1px solid #2E3440;
+  border-bottom: 2px solid rgba(255, 193, 7, 0.45);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 25;
+  pointer-events: none;
+  max-width: calc(100vw - 120px);
+}
+.pvp-side { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pvp-side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: 'Exo 2', sans-serif; font-size: 11px; color: #EAEDEF; }
+.pvp-hud-name { font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pvp-hud-hp { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.04em; color: #FFC107; }
+.pvp-side.foe .pvp-hud-hp { color: #E53935; }
+.pvp-hud-bar { height: 7px; border-radius: 4px; background: #1B1F28; border: 1px solid #2E3440; overflow: hidden; }
+.pvp-hud-fill { display: block; height: 100%; width: 100%; transition: width 0.12s linear; }
+.pvp-hud-fill.me { background: linear-gradient(90deg, #2ECC71, #58E08E); }
+.pvp-hud-fill.foe { background: linear-gradient(90deg, #E53935, #FF6F60); margin-left: auto; }
+.pvp-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 10px; border-left: 1px solid #2E3440; border-right: 1px solid #2E3440; }
+.pvp-score-row { display: flex; align-items: center; gap: 8px; font-family: 'Bebas Neue', sans-serif; font-size: 24px; line-height: 1; letter-spacing: 0.06em; }
+.pvp-sc-me { color: #2ECC71; }
+.pvp-sc-foe { color: #E53935; }
+.pvp-vs { color: #FFC107; font-size: 18px; }
+.pvp-meta-row { display: flex; align-items: center; gap: 8px; font-family: 'Exo 2', sans-serif; font-size: 10px; font-weight: 700; color: #B8C0CC; letter-spacing: 0.04em; white-space: nowrap; }
+.pvp-hud-timer { color: #EAEDEF; }
+.pvp-hud-horde { color: #FFC107; }
+.pvp-hud-conn { display: inline-flex; align-items: center; gap: 4px; color: #E53935; }
+.pvp-hud-conn i { width: 6px; height: 6px; border-radius: 50%; background: #E53935; display: inline-block; }
+.pvp-hud-conn.on { color: #2ECC71; }
+.pvp-hud-conn.on i { background: #2ECC71; box-shadow: 0 0 6px #2ECC71; }
+
+/* Card local compacto no PvP: área central 100% livre */
+body.mode-pvp .players {
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: max(10px, env(safe-area-inset-left));
+  right: auto;
+  justify-content: flex-start;
+  pointer-events: none;
+}
+body.mode-pvp .pp {
+  padding: 8px 12px;
+  gap: 8px;
+  max-width: 310px;
+  background: rgba(27, 31, 40, 0.84);
+  border-color: #2E3440;
+}
+body.mode-pvp .pp .avatar { width: 44px; height: 44px; }
+body.mode-pvp .pp .slots,
+body.mode-pvp .pp .xpbar { display: none !important; }
+body.mode-pvp .pp .bar-line { display: none; }
+
+/* Notificações compactas fora da mira no PvP */
+body.mode-pvp .alerts {
+  top: calc(max(10px, env(safe-area-inset-top)) + 68px);
+  right: max(12px, env(safe-area-inset-right));
+  left: auto;
+  transform: none;
+  max-width: 280px;
+}
+
+/* Radar mais compacto no PvP */
+body.mode-pvp .radar {
+  width: 96px;
+  height: 96px;
+  top: max(10px, env(safe-area-inset-top));
+  right: calc(max(12px, env(safe-area-inset-right)) + 48px);
+}
+
+/* Responsividade: Tablet e Mobile (vertical e horizontal) */
+@media (max-width: 900px) {
+  .pvp-top { grid-template-columns: minmax(100px, 1fr) auto minmax(100px, 1fr); gap: 8px; padding: 6px 10px; max-width: calc(100vw - 72px); }
+  .pvp-score-row { font-size: 20px; }
+  body.mode-pvp .radar { width: 76px; height: 76px; }
+  body.mode-pvp .pp { max-width: 240px; padding: 6px 10px; }
+  body.mode-pvp .pp .avatar { display: none; }
+}
+@media (max-width: 560px) {
+  .pvp-top { top: max(6px, env(safe-area-inset-top)); padding: 5px 8px; gap: 6px; }
+  .pvp-hud-name { font-size: 10px; }
+  .pvp-meta-row { font-size: 9px; gap: 5px; }
+  body.mode-pvp .radar { display: none; }
+  body.mode-pvp .players { left: 50%; transform: translateX(-50%); bottom: max(8px, env(safe-area-inset-bottom)); }
+  body.mode-pvp .pp { max-width: calc(100vw - 24px); }
+}
+@media (max-height: 460px) {
+  .pvp-top { top: 4px; padding: 4px 10px; }
+  .pvp-score-row { font-size: 18px; }
+  body.mode-pvp .players { bottom: 6px; left: 50%; transform: translateX(-50%); }
+  body.mode-pvp .pp { padding: 4px 10px; }
+  body.mode-pvp .pp .avatar { display: none; }
+}
