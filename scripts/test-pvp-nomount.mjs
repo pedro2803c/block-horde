@@ -20,9 +20,11 @@ try {
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(URL, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => !!window.__bh, { timeout: 15000 });
+  await page.waitForFunction(() => window.__bh.ui?.screen === 'menu', { timeout: 20000 }); // boot concluído
 
   // abre PvP > Criar Sala
   await page.evaluate(() => window.__bh.ui.showScreen('pvp', { view: 'create' }));
+  await page.waitForSelector('.pvp-create-win', { timeout: 10000 });
   await page.waitForTimeout(250);
   const createAudit = await page.evaluate(() => {
     const root = document.querySelector('.pvp-create-win') || document.body;
@@ -39,6 +41,7 @@ try {
 
   // abre Entrar na Sala
   await page.evaluate(() => window.__bh.ui.showScreen('pvp', { view: 'join' }));
+  await page.waitForSelector('.pvp-join-win', { timeout: 10000 });
   await page.waitForTimeout(250);
   const joinAudit = await page.evaluate(() => {
     const root = document.querySelector('.pvp-join-win') || document.body;
@@ -60,8 +63,9 @@ try {
     g.pvpStartFromHost();
     return { state: g.state, mode: g.mode, players: g.players.length };
   });
-  await page.waitForFunction(() => window.__bh.state === 'playing', { timeout: 8000 });
-  check('Partida PvP inicia (2 jogadores)', sim.state === 'playing' && sim.mode === 'pvp' && sim.players >= 2, JSON.stringify(sim));
+  await page.waitForFunction(() => window.__bh.state === 'playing' && window.__bh.players?.length >= 2, { timeout: 8000 });
+  const live = await page.evaluate(() => ({ state: window.__bh.state, mode: window.__bh.mode, players: window.__bh.players.length }));
+  check('Partida PvP inicia (2 jogadores)', live.state === 'playing' && live.mode === 'pvp' && live.players >= 2, JSON.stringify(live));
 
   const st = await page.evaluate(() => {
     const g = window.__bh;
@@ -76,6 +80,7 @@ try {
     const g = window.__bh;
     g.releaseMount({ type: 'boss_test', _mountReleased: false }); // chefe em PvP não deve liberar montaria
     return {
+      players: g.players.length,
       mounted: g.players.map((p) => !!p.isMounted),
       mounts: g.players.map((p) => p.pvpMount || null),
       worldMount: g.worldMount,
@@ -83,7 +88,7 @@ try {
       mountIndicatorHidden: document.querySelector('.mount-indicator')?.classList.contains('hidden'),
     };
   });
-  check('Nenhum jogador montado/montaria instanciada', after.mounted.every((v) => !v) && after.mounts.every((m) => !m), JSON.stringify(after));
+  check('Nenhum jogador montado/montaria instanciada', after.players >= 2 && after.mounted.every((v) => !v) && after.mounts.every((m) => !m), JSON.stringify(after));
   check('Chefe em PvP não libera montaria', !after.worldMount, JSON.stringify({ worldMount: after.worldMount }));
   check('HUD sem barra/indicador de montaria', after.mountBarHidden && after.mountIndicatorHidden, JSON.stringify({ bar: after.mountBarHidden, ind: after.mountIndicatorHidden }));
   await page.screenshot({ path: path.join(OUT, 'partida-pvp.png') });
@@ -97,6 +102,7 @@ try {
   mp.on('pageerror', (e) => merr.push(e.message));
   await mp.goto(URL, { waitUntil: 'networkidle' });
   await mp.waitForFunction(() => !!window.__bh, { timeout: 15000 });
+  await mp.waitForFunction(() => window.__bh.ui?.screen === 'menu', { timeout: 20000 }); // boot concluído
   await mp.evaluate(() => {
     const g = window.__bh;
     g.pvpHost('courtyard', 'kairo');
