@@ -1707,3 +1707,14 @@ body.touch .top .coin-chip.can-buy::after { bottom: -0.9rem; font-size: 0.6rem; 
 @media (max-height: 460px) {
   #ui .menu-v2 .menu-brand .logo.logo-brand .logo-img { width: min(100%, 260px); max-height: 56vh; }
 }
+
+/* ---- PvP Online 1v1 (WebRTC P2P) ---- */
+.pvp-box { display: flex; flex-direction: column; gap: 1rem; margin-top: 0.6rem; }
+.pvp-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.8rem; }
+.pvp-fields label { display: flex; flex-direction: column; gap: 0.35rem; font-weight: 700; font-size: 0.9rem; color: var(--muted); }
+.pvp-select, .pvp-input { background: #0e1117; color: var(--text); border: 2px solid var(--border); border-radius: var(--r-sm); padding: 0.6rem 0.75rem; font: 700 1rem var(--ui); }
+.pvp-input { font: 400 1.8rem/1 var(--display); letter-spacing: 0.18em; text-align: center; text-transform: uppercase; color: var(--primary); }
+.pvp-code-card { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 1.2rem; background: rgba(14, 17, 23, 0.85); border: 2px solid var(--primary); border-radius: var(--r); }
+.pvp-code-card small { font-weight: 800; letter-spacing: 0.16em; color: var(--muted); }
+.pvp-code { font: 400 3.2rem/1 var(--display); letter-spacing: 0.24em; color: var(--primary); text-shadow: 0 0 18px rgba(255, 193, 7, 0.45); }
+.pvp-status { margin: 0; font-weight: 700; color: var(--info); text-align: center; }

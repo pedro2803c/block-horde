@@ -14,6 +14,7 @@ import { ArsenalMixin, WALK_TRAPS } from './arsenal.js';
 const UNDEAD_TYPES = new Set(['walker', 'runner', 'brute', 'bloater', 'specter', 'reaper', 'mummy', 'skeleton', 'phantom', 'rm_spirit', 'lb_specter', 'nv_pirate', 'nv_ghost', 'nv_harpooner', 'nv_brute', 'nc_vampire', 'nc_nosferatu', 'nc_knight', 'nc_executioner', 'nc_reaper', 'nc_banshee', 'nc_abomination', 'nc_plague', 'nc_tombking', 'lich', 'nc_matriarch', 'nc_colossus']);
 import { WorldMixin } from './world.js';
 import { EconomyMixin } from './economyGame.js';
+import { pvpMethods } from './pvp/pvpGame.js';
 import { platform } from './platform.js';
 import { TouchControls } from './touch.js';
 import { ControllerManager } from './gamepad.js';
@@ -900,6 +901,7 @@ export class Game {
     const ox = p.pos.x;
     const oz = p.pos.z;
     const wallT = this.arena.rayFree(ox, oz, dx, dz, w.range);
+    if (this.mode === 'pvp') this.pvpCheckHit(p, ox, oz, dx, dz, wallT, w.dmg);
     const hits = [];
     for (const z of this.zombies) {
       if (!z.alive) continue;
@@ -3943,6 +3945,7 @@ wm.state = 'destruída';
     this.updateAbilities(dt);
     this.updatePickups(dt);
     this.updateCoins(dt);
+    this.pvpTick(dt);
     this.updateStrikes(dt);
     this.scoutT = Math.max(0, this.scoutT - dt);
     this.parts.update(dt, (x, z, s) => Math.random() < 0.5 && A.splat(x, z, s * rand(1.2, 2.2), '#7a0a08', 0.75));
@@ -5332,4 +5335,4 @@ function rayCircle(ox, oz, dx, dz, cx, cz, r) {
 }
 
 // expansão do arsenal: carregador, elementos, áreas no chão, projéteis novos e armadilhas
-Object.assign(Game.prototype, ArsenalMixin, WorldMixin, EconomyMixin);
+Object.assign(Game.prototype, ArsenalMixin, WorldMixin, EconomyMixin, pvpMethods);
