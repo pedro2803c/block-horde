@@ -285,33 +285,21 @@ export const pvpMethods = {
       other.armor = rt.arm;
       other.alive = !!rt.alive;
       if (rt.w && other.weapon !== rt.w) other.weapon = rt.w;
-      if (rt.mId && !other.pvpMount) other.pvpMount = createPvpMountInstance(other, rt.mId);
-      if (other.pvpMount) {
-        other.pvpMount.hp = rt.mHp ?? other.pvpMount.hp;
-        other.pvpMount.destroyed = !!rt.mDead;
-        other.pvpMount.alive = !other.pvpMount.destroyed;
-        other.isMounted = !!rt.mOn && other.pvpMount.alive;
-        if (other.isMounted) {
-          other.pvpMount.x = other.pos.x;
-          other.pvpMount.z = other.pos.z;
-          other.pvpMount.facing = other.facing;
-          other.pvpMount.walk = other.walk;
-        }
-      }
+      // montarias desativadas no PvP
+      other.pvpMount = null;
+      other.isMounted = false;
     }
   },
 
   // inicializa cada jogador montado na montaria escolhida no lobby PvP
-  initPvpMounts(mountIds = []) {
+  initPvpMounts(mountIds) {
     if (this.mode !== 'pvp' || !this.players) return;
-    this.players.forEach((p, i) => {
-      const mId = pvpMountSpec(mountIds[i] || PVP_MOUNT_ORDER[i % PVP_MOUNT_ORDER.length]).id;
-      const inst = createPvpMountInstance(p, mId);
-      p.pvpMount = inst;
-      p.isMounted = true;
-      p.mountId = mId;
-      p.mountHp = inst.hp;
-      p.mountMaxHp = inst.maxHp;
+    this.players.forEach((p) => {
+      p.pvpMount = null;
+      p.isMounted = false;
+      p.mountId = null;
+      p.mountHp = 0;
+      p.mountMaxHp = 0;
     });
   },
 
