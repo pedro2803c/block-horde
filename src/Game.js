@@ -1806,16 +1806,16 @@ export class Game {
     }
   }
 
-  // libera a montaria exclusiva da arena (uma vez por partida) no ponto livre perto do jogador e longe do chefe
+  // libera a montaria exclusiva da arena sempre que um chefe nasce, em ponto livre perto do jogador e longe do chefe
   releaseMount(boss) {
+    if (!boss || boss._mountReleased) return; // evita disparo duplicado para o mesmo chefe
+    boss._mountReleased = true;
     const arenaId = this.arena.def.id;
     const prog = mountOrderForArena(arenaId);
     const bt = boss.type;
     if (this.bossStarted.indexOf(bt) === -1) this.bossStarted.push(bt);
-    const releaseN = this.bossStarted.length; // 1º, 2º, 3º chefe iniciado nesta partida
-    if (this.mountReleases >= 3) return; // regra de integridade: máximo de três liberações
-    if (this.mountReleasedBoss[bt]) return; // evento duplicado não libera novamente
     this.mountReleasedBoss[bt] = true;
+    const releaseN = this.mountReleases + 1;
     // transição: destrói a montaria anterior antes de disponibilizar a próxima
     if (this.worldMount && this.worldMount.alive) {
       const wm = this.worldMount;
@@ -1826,7 +1826,7 @@ export class Game {
     const pid = prog[Math.min(releaseN - 1, prog.length - 1)]; // montaria correspondente ao confronto
     const pend = mountDef(pid);
     if (!pend) return;
-    this.mountReleases += 1;
+    this.mountReleases = releaseN;
     const A = this.arena;
     const p = this.players.find((q) => q.alive) || this.players[0];
     const R = Math.max(1.35, pend.size * 0.8);
