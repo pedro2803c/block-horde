@@ -1881,7 +1881,7 @@ body.mode-pvp .radar {
   body.mode-pvp .pp .avatar { display: none; }
 }
 @media (max-width: 560px) {
-  .pvp-top { top: max(6px, env(safe-area-inset-top)); left: 8px; right: 54px; transform: none; max-width: none; padding: 5px 8px; gap: 6px; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .pvp-top { top: max(6px, env(safe-area-inset-top)); left: 8px; right: 66px; transform: none; max-width: none; padding: 5px 8px; gap: 6px; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
   .pvp-hud-name { font-size: 10px; }
   .pvp-meta-row { font-size: 9px; gap: 5px; }
   body.mode-pvp .radar { display: none; }
