@@ -132,17 +132,23 @@ export const pvpMethods = {
     }
 
     if (msg.t === 'hello' && pv.role === 'host') {
-      if (pv.slots.length >= PVP_MAX_PLAYERS || pv.started) {
+      if (pv.slots.length >= PVP_MAX_PLAYERS) {
         pv.peer.sendTo(peerId, { t: 'full' });
         return;
       }
-      const existing = pv.slots.find((s) => s.peerId === peerId);
+      let existing = pv.slots.find((s) => s.peerId === peerId);
       if (!existing) {
         const idx = pv.slots.length;
-        pv.slots.push({ idx, peerId, survivorId: msg.survivorId || SURVIVORS[idx % SURVIVORS.length].id, label: `Jogador ${idx + 1}` });
+        existing = { idx, peerId, survivorId: msg.survivorId || SURVIVORS[idx % SURVIVORS.length].id, label: `Jogador ${idx + 1}` };
+        pv.slots.push(existing);
       }
       const pubSlots = pv.slots.map(({ idx, survivorId: sid, label }) => ({ idx, survivorId: sid, label }));
       pv.peer.broadcast({ t: 'lobby', arenaId: pv.arenaId, slots: pubSlots });
+      if (pv.started) {
+        const aDef = ARENAS.find((a) => a.id === pv.arenaId) || ARENAS[0];
+        const survIds = pv.slots.map((s) => s.survivorId || SURVIVORS[0].id);
+        pv.peer.sendTo(peerId, { t: 'start', arenaId: aDef.id, survIds, myIdx: existing.idx });
+      }
       if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', arenaId: pv.arenaId, survId: pv.survivorId }, false);
       return;
     }
@@ -176,9 +182,10 @@ export const pvpMethods = {
     if (msg.t === 'hit') {
       if (msg.targetIdx === this.pvpLocalIdx) {
         const me = this.players?.[this.pvpLocalIdx];
+        const from = this.players?.[msg.fromIdx];
         if (me && me.alive && !this.debugGod) {
           const dmg = Math.max(1, Math.min(200, Number(msg.dmg) || 10));
-          this.damagePlayer(me, dmg, 'pvp');
+          this.damagePlayer(me, dmg, from?.pos.x ?? me.pos.x, from?.pos.z ?? me.pos.z, 2);
           if (!me.alive) {
             const killMsg = { t: 'killed', killerIdx: msg.fromIdx, victimIdx: this.pvpLocalIdx };
             pv.peer.broadcast(killMsg);
@@ -242,8 +249,11 @@ export const pvpMethods = {
       const other = this.players[i];
       const rt = pv.remoteTargets[i];
       if (!other || !rt) continue;
-      other.pos.x += (rt.x - other.pos.x) * k;
-      other.pos.z += (rt.z - other.pos.z) * k;
+      const dx = (rt.x - other.pos.x) * k;
+      const dz = (rt.z - other.pos.z) * k;
+      other.pos.x += dx;
+      other.pos.z += dz;
+      other.walk += Math.hypot(dx, dz) * 2.6;
       other.facing = rt.a;
       other.hp = rt.hp;
       other.armor = rt.arm;

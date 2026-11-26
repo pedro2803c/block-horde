@@ -396,11 +396,13 @@ export class Game {
   }
 
   makePlayer(look, k, coop) {
+    const isPvp = this.mode === 'pvp';
+    const lo = this.loadouts[k % this.loadouts.length] || this.loadouts[0];
     const p = {
       id: k,
       look: { ...look, eyes: 0x1a1a1a },
-      color: PLAYER_COLORS[k],
-      ctl: CONTROLS[coop ? (k ? 'p2' : 'p1') : 'solo'],
+      color: PLAYER_COLORS[k % PLAYER_COLORS.length],
+      ctl: CONTROLS[isPvp ? 'solo' : (coop ? (k ? 'p2' : 'p1') : 'solo')],
       pos: new THREE.Vector3(),
       vel: new THREE.Vector3(),
       facing: Math.PI,
@@ -443,11 +445,11 @@ export class Game {
       pts: 0,
       pas: {},
       ultOn: false,
-      slots: [...this.loadouts[k].actives, this.loadouts[k].ult],
-      build: this.loadouts[k].build || null,
+      slots: [...lo.actives, lo.ult],
+      build: lo.build || null,
       cds: [0, 0, 0, 0],
       cdMax: [1, 1, 1, 1],
-      akeys: ABILITY_KEYS[coop ? (k ? 'p2' : 'p1') : 'solo'],
+      akeys: ABILITY_KEYS[isPvp ? 'solo' : (coop ? (k ? 'p2' : 'p1') : 'solo')],
       shieldT: 0,
       cloakT: 0,
       furyT: 0,
@@ -5028,7 +5030,8 @@ wm.state = 'destruída';
   updateCamera(dt) {
     if (this.state === 'playing' || this.state === 'paused' || this.state === 'gameover') {
       const alive = this.players.filter((p) => p.alive);
-      const list = alive.length ? alive : this.players;
+      const localP = this.mode === 'pvp' ? this.players[this.pvpLocalIdx || 0] : null;
+      const list = localP ? [localP] : (alive.length ? alive : this.players);
       let cx = 0;
       let cz = 0;
       for (const p of list) {
@@ -5041,9 +5044,9 @@ wm.state = 'destruída';
       for (const p of list) spread = Math.max(spread, Math.abs(p.pos.x - cx) * 0.75, Math.abs(p.pos.z - cz) * 1.3);
       // telas estreitas (retrato) precisam de mais distância para ver o mesmo pedaço da arena
       const aspectK = Math.min(1.8, Math.max(1, 1.45 / this.camera.aspect));
-      // luneta (sniper no solo com mouse): câmera avança na direção da mira e se afasta para ver longe
-      const sp = this.players[0];
-      const scope = this.mode === 'solo' && this.state === 'playing' && sp?.alive && sp.weapon === 'sniper' && !this.input.mouseIdle;
+      // luneta (sniper no solo ou PvP com mouse): câmera avança na direção da mira e se afasta para ver longe
+      const sp = localP || this.players[0];
+      const scope = (this.mode === 'solo' || this.mode === 'pvp') && this.state === 'playing' && sp?.alive && sp.weapon === 'sniper' && !this.input.mouseIdle;
       this.scopeK += ((scope ? 1 : 0) - (this.scopeK || 0)) * Math.min(1, dt * 4);
       if (this.scopeK > 0.01) {
         const ox = this.mouseWorld.x - sp.pos.x;
