@@ -67,7 +67,6 @@ export class BoxBatch {
   // caixa a partir de uma matriz-base (personagem) + transformação local
   part(base, px, py, pz, rx, rz, cx, cy, cz, sx, sy, sz, color) {
     if (this.n >= this.max) return;
-    // pivô local -> rotação -> deslocamento do centro da peça -> escala
     _e.set(rx, 0, rz);
     _q.setFromEuler(_e);
     _l.compose(_p.set(px, py, pz), _q, _s.set(1, 1, 1));
