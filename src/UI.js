@@ -307,7 +307,7 @@ export class UI {
             btn('primary lg', 'play', 'Jogar agora', () => this.showScreen('difficulty', { back: () => this.showScreen('menu'), go: () => this.g.quickStart() }))),
           btn('menu-select', 'map', 'Escolher arena e sobrevivente', () => this.showScreen('pick', { mode: 'solo' })),
           btn('coop-btn menu-select', 'users', 'Co-op · 2 jogadores, 1 teclado', () => this.showScreen('pick', { mode: 'coop' })),
-          btn('menu-select pvp-btn', 'crosshair', 'PvP Online · 1v1 + Horda (código de sala)', () => this.showScreen('pvp', { tab: 'host' })),
+          btn('menu-select pvp-btn', 'crosshair', 'PvP Online · até 5 jogadores + Horda', () => this.showScreen('pvp', { tab: 'host' })),
           btn('menu-select', 'coin', 'Loja e inventário', () => { this.g.audio.play('shop_open', { volume: 0.6 }); this.showScreen('shop', { inMatch: false }); }),
           h('div', { class: 'menu-duo' },
             btn('', 'bolt', 'Habilidades e builds', () => this.showScreen('skills')),
@@ -340,23 +340,25 @@ export class UI {
       const sSel = h('select', { class: 'pvp-select', onchange: (e) => this.showScreen('pvp', { tab: 'host', arenaId: curArena, survId: e.target.value }) },
         SURVIVORS.map((s) => h('option', { value: s.id, selected: s.id === curSurv }, s.name)));
       const waiting = pv && pv.role === 'host' && pv.code;
+      const slots = pv?.slots || [];
       body = h('div', { class: 'pvp-box' },
-        h('p', { class: 'muted' }, 'Crie uma sala gratuita (WebRTC P2P), envie o código de 5 letras para o outro jogador e enfrente o rival + horda de zumbis na mesma arena.'),
+        h('p', { class: 'muted' }, 'Crie uma sala gratuita (WebRTC P2P) para 2 a 5 jogadores, envie o código de 5 letras para os amigos e inicie o duelo + horda de zumbis na mesma arena.'),
         h('div', { class: 'pvp-fields' },
           h('label', {}, 'Arena', aSel),
           h('label', {}, 'Seu sobrevivente', sSel)),
         waiting
           ? h('div', { class: 'pvp-code-card' },
-              h('small', {}, 'CÓDIGO DA SALA'),
+              h('small', {}, `CÓDIGO DA SALA · ${slots.length}/5 JOGADORES`),
               h('div', { class: 'pvp-code' }, pv.code),
               h('div', { class: 'row' },
                 btn('primary', 'check', 'Copiar código', () => {
                   navigator.clipboard?.writeText(pv.code);
                   this.alert(`Código ${pv.code} copiado!`, 'success', 'checkCircle');
                 }),
+                btn(slots.length >= 2 ? 'primary' : '', 'play', `Iniciar partida (${slots.length}/5)`, () => g.pvpStartFromHost(), { disabled: slots.length < 2 }),
                 btn('', 'refresh', 'Novo código', () => { g.pvpHost(curArena, curSurv); this.showScreen('pvp', { tab: 'host', arenaId: curArena, survId: curSurv }); })),
-              h('p', { class: 'pvp-status' }, pv.error || (pv.status === 'waiting' ? 'Aguardando o Jogador 2 entrar com este código...' : pv.status === 'connected' ? 'Jogador 2 conectado! Iniciando...' : 'Preparando sala...')))
-          : h('div', { class: 'row' }, btn('primary lg', 'play', 'Criar sala 1v1', () => {
+              h('p', { class: 'pvp-status' }, pv.error || (slots.length < 2 ? 'Aguardando pelo menos mais 1 jogador entrar com este código (até 5 na sala)...' : `Pronto para iniciar! ${slots.map((s) => s.label).join(' · ')}`)))
+          : h('div', { class: 'row' }, btn('primary lg', 'play', 'Criar sala (até 5 jogadores)', () => {
               g.pvpHost(curArena, curSurv);
               this.showScreen('pvp', { tab: 'host', arenaId: curArena, survId: curSurv });
             }, { 'data-focus': '' })));
@@ -367,8 +369,9 @@ export class UI {
         class: 'pvp-input', type: 'text', maxlength: 6, placeholder: 'EX: A7K9P', value: code || pv?.code || '',
         oninput: (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); },
       });
+      const slots = pv?.slots || [];
       body = h('div', { class: 'pvp-box' },
-        h('p', { class: 'muted' }, 'Digite o código de 5 letras enviado pelo Jogador 1 para entrar direto na arena.'),
+        h('p', { class: 'muted' }, 'Digite o código de 5 letras enviado pelo Host (até 5 jogadores por arena) e aguarde o início da partida.'),
         h('div', { class: 'pvp-fields' },
           h('label', {}, 'Código da sala', inp),
           h('label', {}, 'Seu sobrevivente', sSel)),
@@ -376,9 +379,9 @@ export class UI {
           g.pvpJoin(inp.value, curSurv);
           this.showScreen('pvp', { tab: 'join', survId: curSurv, code: inp.value });
         }, { 'data-focus': '' })),
-        pv && pv.role === 'guest' ? h('p', { class: 'pvp-status' }, pv.error || (pv.status === 'connecting' || pv.status === 'joining' ? `Conectando à sala ${pv.code}...` : '')) : null);
+        pv && pv.role === 'guest' ? h('p', { class: 'pvp-status' }, pv.error || (slots.length ? `Na sala (${slots.length}/5): ${slots.map((s) => s.label).join(' · ')} — aguardando o Host iniciar...` : `Conectando à sala ${pv.code}...`)) : null);
     }
-    return this.win('pvp-win', 'PvP Online · 1v1 + Horda', back, tabs, body,
+    return this.win('pvp-win', 'PvP Online · até 5 jogadores + Horda', back, tabs, body,
       h('div', { class: 'row end' }, btn('back', 'back', 'Voltar', back)));
   }
 

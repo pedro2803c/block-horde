@@ -1,9 +1,10 @@
-// Block Horde — PvP Online 1v1 via WebRTC P2P (PeerJS, 100% gratuito)
-// O jogador 1 (host) cria uma sala com código de 5 letras; o jogador 2 entra com o código.
+// Block Horde — PvP Online até 5 jogadores via WebRTC P2P (PeerJS, topologia estrela)
+// O jogador 1 (host) cria a sala com código de 5 letras; até 4 convidados entram com o mesmo código.
 import Peer from 'peerjs';
 
 const PREFIX = 'bh-pvp-v1-';
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export const PVP_MAX_PLAYERS = 5;
 
 export function makeRoomCode(len = 5) {
   let out = '';
@@ -15,11 +16,15 @@ export class PvpPeer {
   constructor(handlers = {}) {
     this.handlers = handlers;
     this.peer = null;
-    this.conn = null;
+    this.conns = new Map(); // peerId -> DataConnection (host: até 4; guest: 1 para o host)
     this.role = null; // 'host' | 'guest'
     this.code = '';
-    this.connected = false;
     this.closed = false;
+  }
+
+  get connected() {
+    for (const c of this.conns.values()) if (c.open) return true;
+    return false;
   }
 
   _emit(name, payload) {
@@ -27,20 +32,20 @@ export class PvpPeer {
   }
 
   _bindConn(conn) {
-    this.conn = conn;
+    const pid = conn.peer;
+    this.conns.set(pid, conn);
     conn.on('open', () => {
-      this.connected = true;
-      this._emit('connected', { role: this.role, code: this.code });
+      this._emit('connected', { role: this.role, code: this.code, peerId: pid });
     });
     conn.on('data', (msg) => {
-      if (msg && typeof msg === 'object') this._emit('data', msg);
+      if (msg && typeof msg === 'object') this._emit('data', { msg, peerId: pid });
     });
     conn.on('close', () => {
-      this.connected = false;
-      this._emit('disconnected', { reason: 'O outro jogador desconectou.' });
+      this.conns.delete(pid);
+      this._emit('disconnected', { peerId: pid, reason: this.role === 'host' ? 'Um jogador saiu da sala.' : 'O host encerrou a sala.' });
     });
     conn.on('error', (err) => {
-      this._emit('error', { message: err?.message || 'Erro na conexão P2P.' });
+      this._emit('error', { peerId: pid, message: err?.message || 'Erro na conexão P2P.' });
     });
   }
 
@@ -49,13 +54,15 @@ export class PvpPeer {
     this.closed = false;
     this.role = 'host';
     this.code = (customCode || makeRoomCode(5)).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) || makeRoomCode(5);
-    const id = PREFIX + this.code;
-    this.peer = new Peer(id, { debug: 0 });
+    this.peer = new Peer(PREFIX + this.code, { debug: 0 });
     this.peer.on('open', () => {
       this._emit('ready', { role: 'host', code: this.code });
     });
     this.peer.on('connection', (conn) => {
-      if (this.conn && this.connected) { conn.close(); return; }
+      if (this.conns.size >= PVP_MAX_PLAYERS - 1) {
+        conn.on('open', () => { try { conn.send({ t: 'full' }); } catch (_) {} conn.close(); });
+        return;
+      }
       this._bindConn(conn);
     });
     this.peer.on('error', (err) => {
@@ -91,17 +98,30 @@ export class PvpPeer {
     });
   }
 
+  sendTo(peerId, msg) {
+    const c = this.conns.get(peerId);
+    if (!c || !c.open) return false;
+    try { c.send(msg); return true; } catch (_) { return false; }
+  }
+
+  broadcast(msg, exceptPeerId = null) {
+    let sent = 0;
+    for (const [pid, c] of this.conns.entries()) {
+      if (pid === exceptPeerId || !c.open) continue;
+      try { c.send(msg); sent++; } catch (_) {}
+    }
+    return sent;
+  }
+
   send(msg) {
-    if (!this.conn || !this.connected) return false;
-    try { this.conn.send(msg); return true; } catch (_) { return false; }
+    return this.broadcast(msg) > 0;
   }
 
   close() {
     this.closed = true;
-    this.connected = false;
-    try { this.conn?.close(); } catch (_) {}
+    for (const c of this.conns.values()) { try { c.close(); } catch (_) {} }
+    this.conns.clear();
     try { this.peer?.destroy(); } catch (_) {}
-    this.conn = null;
     this.peer = null;
   }
 }
