@@ -79,7 +79,7 @@ export class Game {
       /* sem armazenamento */
     }
     this.state = 'boot';
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: (this.settings?.quality !== 'low'), powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
     this.renderer.shadowMap.enabled = true;
@@ -149,7 +149,7 @@ export class Game {
   pixelRatio() {
     const q = this.settings.quality;
     const k = this.input?.touchMode && this.adapt ? this.adapt.scale : 1;
-    return Math.min(window.devicePixelRatio || 1, q === 'low' ? 0.75 : q === 'high' ? 1.5 : 1.1) * k;
+    return Math.min(window.devicePixelRatio || 1, q === 'low' ? 0.8 : q === 'high' ? 2 : 1.25) * k;
   }
 
   applyQuality() {
@@ -240,8 +240,7 @@ export class Game {
     scene.add(this.hemi);
     const sun = (this.sun = new THREE.DirectionalLight(L.sun, L.sunI));
     sun.castShadow = this.settings.quality !== 'low';
-    const _sm = this.settings.quality === 'high' ? 1024 : this.settings.quality === 'medium' ? 512 : 256;
-    sun.shadow.mapSize.set(_sm, _sm);
+    sun.shadow.mapSize.set(2048, 2048);
     const arena = (this.arena = new Arena(arenaDef));
     const sc = sun.shadow.camera;
     sc.left = -arena.W * 0.65;
