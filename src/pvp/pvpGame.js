@@ -28,7 +28,7 @@ export const pvpMethods = {
       syncT: 0,
       remoteTargets: {},
     };
-    const refresh = () => { if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { tab: 'host', arenaId: state.arenaId, survId: state.survivorId }, false); };
+    const refresh = () => { if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', arenaId: state.arenaId, survId: state.survivorId }, false); };
     const peer = new PvpPeer({
       ready: ({ code }) => {
         state.code = code;
@@ -90,7 +90,7 @@ export const pvpMethods = {
       syncT: 0,
       remoteTargets: {},
     };
-    const refresh = () => { if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { tab: 'join', survId: state.survivorId, code: state.code }, false); };
+    const refresh = () => { if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: state.status === 'connected' || state.slots.length ? 'lobby' : 'join', survId: state.survivorId, code: state.code }, false); };
     const peer = new PvpPeer({
       ready: () => {
         state.status = 'connecting';
@@ -127,7 +127,7 @@ export const pvpMethods = {
     if (msg.t === 'full') {
       pv.status = 'error';
       pv.error = `Sala cheia (máximo ${PVP_MAX_PLAYERS} jogadores).`;
-      if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { tab: 'join', survId: pv.survivorId, code: pv.code }, false);
+      if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', survId: pv.survivorId, code: pv.code }, false);
       return;
     }
 
@@ -143,14 +143,14 @@ export const pvpMethods = {
       }
       const pubSlots = pv.slots.map(({ idx, survivorId: sid, label }) => ({ idx, survivorId: sid, label }));
       pv.peer.broadcast({ t: 'lobby', arenaId: pv.arenaId, slots: pubSlots });
-      if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { tab: 'host', arenaId: pv.arenaId, survId: pv.survivorId }, false);
+      if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', arenaId: pv.arenaId, survId: pv.survivorId }, false);
       return;
     }
 
     if (msg.t === 'lobby' && pv.role === 'guest') {
       pv.arenaId = msg.arenaId || pv.arenaId;
       pv.slots = msg.slots || [];
-      if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { tab: 'join', survId: pv.survivorId, code: pv.code }, false);
+      if (this.ui.screen === 'pvp') this.ui.showScreen('pvp', { view: 'lobby', survId: pv.survivorId, code: pv.code }, false);
       return;
     }
 
