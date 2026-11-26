@@ -87,7 +87,7 @@ export class PvpPeer {
     this.peer = new Peer(undefined, { debug: 0 });
     this.peer.on('open', () => {
       this._emit('ready', { role: 'guest', code: this.code });
-      const conn = this.peer.connect(PREFIX + this.code, { reliable: false });
+      const conn = this.peer.connect(PREFIX + this.code, { reliable: true });
       this._bindConn(conn);
     });
     this.peer.on('error', (err) => {
