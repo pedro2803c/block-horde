@@ -561,7 +561,7 @@ export class Game {
     this.ui.showScreen(null);
     this.audio.setMusic(this.boss ? 'boss' : 'combat');
     this.ui.banner('DE VOLTA À LUTA!', 'good');
-    this.canvas.style.cursor = this.mode === 'solo' ? 'none' : 'default';
+    this.canvas.style.cursor = (this.mode === 'solo' || this.mode === 'pvp') ? 'none' : 'default';
   }
   adDoubleXp(onDone, onFail) {
     if (this.adBusy || !platform.adsAvailable || !this.lastXp || this.lastXp.doubled) return;
@@ -698,7 +698,7 @@ export class Game {
     if (this.state !== 'paused') return;
     this.state = 'playing';
     this.ui.showScreen(null);
-    this.canvas.style.cursor = this.mode === 'solo' ? 'none' : 'default';
+    this.canvas.style.cursor = (this.mode === 'solo' || this.mode === 'pvp') ? 'none' : 'default';
   }
   onKey(e) {
     // Tab abre/fecha a árvore de habilidades (pausa o jogo)
@@ -3919,11 +3919,14 @@ wm.state = 'destruída';
       } else this.meter = 0;
     }
     // mira do mouse
-    if (this.mode === 'solo') {
+    if (this.mode === 'solo' || this.mode === 'pvp') {
       this.raycaster.setFromCamera(this.input.mouseNdc, this.camera);
       this.raycaster.ray.intersectPlane(this.aimPlane, this.mouseWorld);
     }
-    for (const p of this.players) this.updatePlayer(p, dt);
+    for (let i = 0; i < this.players.length; i++) {
+      if (this.mode === 'pvp' && i !== (this.pvpLocalIdx || 0)) continue;
+      this.updatePlayer(this.players[i], dt);
+    }
     this.updateWorldMount(dt);
     this.flowT -= dt;
     if (this.flowT <= 0) {
