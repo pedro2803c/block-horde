@@ -4879,7 +4879,10 @@ wm.state = 'destruída';
         }
         pr.x += pr.vx * dt;
         pr.z += pr.vz * dt;
-        this.parts.spawn(pr.x, pr.y, pr.z, rand(-0.4, 0.4), rand(0.3, 0.8), rand(-0.4, 0.4), rand(0.15, 0.25), 0x8a8a8a, 0.6, -1, 0);
+        const ra = Math.atan2(pr.vx, pr.vz);
+        const bx = pr.x - Math.sin(ra) * 0.42, bz = pr.z - Math.cos(ra) * 0.42;
+        this.parts.spawn(bx, pr.y, bz, rand(-0.45, 0.45), rand(0.25, 0.75), rand(-0.45, 0.45), rand(0.18, 0.3), 0x8a8e96, 0.55, -1, 0);
+        if (Math.random() < 0.65) this.parts.spawn(bx, pr.y, bz, rand(-0.3, 0.3), rand(-0.1, 0.3), rand(-0.3, 0.3), rand(0.08, 0.14), pick([0xff6a18, 0xffd040]), 0.22, 0, 2);
         let hit = A.tallAt(pr.x, pr.z) || pr.t > 1.6;
         if (!hit) for (const z of this.zombies) if (z.alive && Math.hypot(z.pos.x - pr.x, z.pos.z - pr.z) < z.radius + 0.2) hit = true;
         if (!hit) for (const b of this.placeables) if (!b.dead && !WALK_TRAPS.has(b.kind) && Math.hypot(b.x - pr.x, b.z - pr.z) < 0.55) hit = true;
@@ -5178,8 +5181,21 @@ wm.state = 'destruída';
         if (Math.random() < 0.7) G.box(pr.x + Math.sin(pr.t * 6) * 0.06, pr.y + 0.3, pr.z + Math.cos(pr.t * 6) * 0.06, 0.07, 0.07, 0.07, 0xffd040);
       } else if (pr.kind === 'rocket') {
         const a = Math.atan2(pr.vx, pr.vz);
-        B.box(pr.x, pr.y, pr.z, 0.14, 0.14, 0.5, 0x4a5a4a, a);
-        G.box(pr.x - Math.sin(a) * 0.3, pr.y, pr.z - Math.cos(a) * 0.3, 0.12, 0.12, 0.12, 0xffb030, a);
+        const sa = Math.sin(a), ca = Math.cos(a);
+        const bodyC = pr.w?.color || 0x4a5a4a;
+        const fl = 0.14 + Math.sin(this.time * 45 + pr.t * 20) * 0.04;
+        // corpo metálico + faixa de alerta amarela
+        B.box(pr.x, pr.y, pr.z, 0.18, 0.18, 0.62, bodyC, a);
+        B.box(pr.x + sa * 0.16, pr.y, pr.z + ca * 0.16, 0.195, 0.195, 0.09, 0xffc107, a);
+        // ogiva vermelha pontuda
+        B.box(pr.x + sa * 0.36, pr.y, pr.z + ca * 0.36, 0.15, 0.15, 0.2, 0xe53935, a);
+        B.box(pr.x + sa * 0.49, pr.y, pr.z + ca * 0.49, 0.09, 0.09, 0.12, 0xff5252, a);
+        // aletas estabilizadoras na cauda
+        B.box(pr.x - sa * 0.24, pr.y, pr.z - ca * 0.24, 0.38, 0.05, 0.18, 0x262a32, a);
+        B.box(pr.x - sa * 0.24, pr.y, pr.z - ca * 0.24, 0.05, 0.38, 0.18, 0x262a32, a);
+        // propulsor aceso (chama laranja + núcleo amarelo)
+        G.box(pr.x - sa * 0.42, pr.y, pr.z - ca * 0.42, fl, fl, 0.26, 0xff6a18, a);
+        G.box(pr.x - sa * 0.38, pr.y, pr.z - ca * 0.38, fl * 0.6, fl * 0.6, 0.16, 0xfff080, a);
       } else if (pr.kind === 'rock') {
         B.box(pr.x, pr.y, pr.z, 0.7, 0.6, 0.7, 0x5e504a, pr.t * 5);
         G.box(pr.x, pr.y, pr.z, 0.5, 0.64, 0.12, 0xff5a1a, pr.t * 5);
