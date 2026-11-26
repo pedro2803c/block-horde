@@ -61,7 +61,8 @@ export class TouchControls {
 
     // liga o modo toque no primeiro toque; um mouse de verdade desliga
     const mq = (q) => window.matchMedia && window.matchMedia(q).matches;
-    if (mq('(pointer: coarse)') && !mq('(any-pointer: fine)')) this.setMode(true);
+    const hasTouch = mq('(pointer: coarse)') || (navigator.maxTouchPoints || 0) > 0 || 'ontouchstart' in window;
+    if (hasTouch) this.setMode(true);
     window.addEventListener('pointerdown', (e) => {
       if (e.pointerType !== 'touch') return;
       this.setMode(true);
@@ -351,7 +352,7 @@ export class TouchControls {
       document.body.classList.toggle('portrait-lock', blocked);
       if (blocked && g.state === 'playing') g.pause();
     }
-    const show = this.on && g.state === 'playing' && g.mode === 'solo';
+    const show = this.on && g.state === 'playing' && (g.mode === 'solo' || g.mode === 'pvp');
     if (show !== this.shown) {
       this.shown = show;
       this.root.classList.toggle('hidden', !show);
