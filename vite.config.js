@@ -13,6 +13,13 @@ export default defineConfig(({ mode }) => {
     build: {
       target: 'es2022',
       chunkSizeWarningLimit: 1500,
+      rollupOptions: portable ? {} : {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/three/')) return 'three';
+          },
+        },
+      },
       ...(portable && { outDir: 'portable', emptyOutDir: true, assetsInlineLimit: 100000000 }),
     },
   };
